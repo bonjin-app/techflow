@@ -1,0 +1,137 @@
+{
+  "id": "devops-engineer",
+  "name": "DevOps Engineer Roadmap",
+  "tagline": "From the shell to running fleets of containers you can observe, scale and recover",
+  "summary": "An ordered path for engineers who build and run the platform other developers deploy onto. It starts with Linux, scripting and Git, then the networking layers every outage eventually traces back to, then containers, pipelines and infrastructure as code, and finally the orchestration, observability and reliability practices that keep production up while it changes many times a day.",
+  "category": "career",
+  "tags": ["DevOps", "Career", "Learning Path", "Infrastructure", "SRE"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "steps": [
+    {
+      "label": "Linux & the shell",
+      "stage": "Foundations",
+      "note": "Every server, container and CI runner is Linux; processes, permissions, file descriptors, ports and systemd are the vocabulary of every incident."
+    },
+    {
+      "ref": "programming-fundamentals",
+      "label": "Scripting (Bash & Python)",
+      "stage": "Foundations",
+      "note": "Automation is the job; a glue language for parsing logs, calling APIs and wiring tools together comes before any specific tool."
+    },
+    {
+      "label": "Git & version control",
+      "stage": "Foundations",
+      "note": "Infrastructure, pipelines and configuration all live in Git; branching, reviews and history are how change is controlled later."
+    },
+    {
+      "ref": "tcp",
+      "label": "TCP/IP & networking basics",
+      "stage": "Networking",
+      "note": "Connections, ports, retransmits and timeouts explain the 'it works locally but times out in the cluster' class of problems."
+    },
+    {
+      "ref": "dns",
+      "label": "DNS",
+      "stage": "Networking",
+      "note": "Service discovery, TTL-driven failover and half of all 'the site is down' reports are DNS; learn it before load balancers depend on it."
+    },
+    {
+      "ref": "tls",
+      "label": "TLS & certificates",
+      "stage": "Networking",
+      "note": "Terminating, rotating and trusting certificates is a platform responsibility, and expired certs are a classic self-inflicted outage."
+    },
+    {
+      "ref": "http",
+      "label": "HTTP",
+      "stage": "Networking",
+      "note": "Health checks, proxies, caches and gateways all speak HTTP; status codes and headers are how you read what a proxy did to a request."
+    },
+    {
+      "ref": "nginx",
+      "label": "Nginx & reverse proxies",
+      "stage": "Networking",
+      "note": "A reverse proxy is the first place TLS, routing, compression and rate limits meet real traffic — and the simplest load balancer you will run."
+    },
+    {
+      "ref": "load-balancing",
+      "label": "Load balancing",
+      "stage": "Networking",
+      "note": "Once traffic spans several instances, algorithms, health checks and connection draining decide whether a deploy is invisible or an outage."
+    },
+    {
+      "ref": "docker",
+      "label": "Docker & containers",
+      "stage": "Containers",
+      "note": "Images, layers, namespaces and cgroups are the unit everything downstream schedules; build small, reproducible images before orchestrating them."
+    },
+    {
+      "label": "CI/CD pipelines",
+      "stage": "Delivery",
+      "note": "Automated build, test and deploy on every push turns container images into a repeatable delivery flow and removes hand-run deploy scripts."
+    },
+    {
+      "label": "Infrastructure as Code (Terraform)",
+      "stage": "Infrastructure",
+      "note": "Declaring networks, clusters and databases in reviewed code makes environments reproducible and destroys the snowflake server."
+    },
+    {
+      "label": "Cloud platforms (AWS / GCP / Azure)",
+      "stage": "Infrastructure",
+      "note": "IAM, VPCs, managed databases and object storage are the primitives Terraform provisions; know one provider's model deeply."
+    },
+    {
+      "ref": "s3",
+      "label": "Object storage",
+      "stage": "Infrastructure",
+      "note": "Artifacts, backups, logs and Terraform state all land in object storage; its consistency and cost model shape how you use it."
+    },
+    {
+      "ref": "kubernetes",
+      "label": "Kubernetes",
+      "stage": "Orchestration",
+      "note": "With containers, networking and cloud primitives understood, the orchestrator's scheduling, rollouts, probes and autoscaling stop being magic."
+    },
+    {
+      "label": "Secrets & configuration management",
+      "stage": "Orchestration",
+      "note": "Credentials and config must be injected, rotated and audited outside images; this is where platform and security teams meet."
+    },
+    {
+      "ref": "prometheus",
+      "label": "Prometheus & metrics",
+      "stage": "Observability",
+      "note": "Pull-based metrics, labels and alert rules are how you know a rollout is failing before users tell you."
+    },
+    {
+      "ref": "observability",
+      "label": "Observability (logs, metrics, traces)",
+      "stage": "Observability",
+      "note": "Metrics say something is wrong, logs and traces say where; correlating the three across services is the skill that shortens incidents."
+    },
+    {
+      "ref": "availability",
+      "label": "Availability & SLOs",
+      "stage": "Reliability",
+      "note": "Defining error budgets and SLOs turns 'is it reliable enough' into a number that decides when to ship and when to harden."
+    },
+    {
+      "ref": "circuit-breaker",
+      "label": "Resilience patterns",
+      "stage": "Reliability",
+      "note": "Timeouts, retries with backoff, circuit breakers and bulkheads are how a platform stops one failing dependency from taking down the rest."
+    },
+    {
+      "label": "Incident response & postmortems",
+      "stage": "Reliability",
+      "note": "On-call rotations, runbooks and blameless postmortems convert outages into fixes; this is where the previous steps prove their worth."
+    },
+    {
+      "ref": "microservices",
+      "label": "Platform for microservices",
+      "stage": "Design",
+      "note": "Finish by studying a microservices architecture end to end — gateway, discovery, messaging, observability — and mapping each part to what you now run."
+    }
+  ]
+}

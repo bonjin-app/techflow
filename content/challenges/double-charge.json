@@ -1,0 +1,13 @@
+{
+  "id": "double-charge",
+  "question": "A mobile client retries a failed “pay” request after a timeout, and some customers are charged twice. What is the right fix?",
+  "context": "The first request actually succeeded on the server but the response was lost on a flaky network. Retries are necessary — you cannot tell the client to stop retrying.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Wrap the charge in a database transaction", "correct": false, "why": "A transaction makes one request atomic, but the two retries are two separate requests — both commit successfully.", "ref": "transaction" },
+    { "label": "Require an idempotency key per payment attempt", "correct": true, "why": "The client generates a key once per intent; the server stores the result under that key and returns the stored response on retries. Same key → same effect, no matter how many times it arrives.", "ref": "idempotency" },
+    { "label": "Add a distributed lock around the endpoint", "correct": false, "why": "A lock serialises the two requests but the second still runs after the first releases — and charges again. Locks prevent concurrency, not duplication.", "ref": "distributed-lock" },
+    { "label": "Increase the client timeout", "correct": false, "why": "Longer timeouts reduce how often it happens but cannot eliminate lost responses. Correctness must not depend on network luck." }
+  ],
+  "related": ["idempotency", "payment-system", "retry", "transaction"]
+}

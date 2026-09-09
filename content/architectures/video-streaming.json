@@ -1,0 +1,458 @@
+{
+  "id": "video-streaming",
+  "name": "Video Streaming",
+  "tagline": "Upload, transcode, store in object storage and stream through a CDN",
+  "summary": "Creators upload a raw file that lands in object storage and a transcode job is queued. Workers produce several bitrate renditions cut into short segments plus an HLS/DASH manifest, also in object storage. Viewers fetch the manifest from a playback API and pull segments through a CDN; the player measures bandwidth and switches renditions mid-stream.",
+  "category": "system",
+  "tags": [
+    "Media",
+    "CDN",
+    "Async processing",
+    "Object storage"
+  ],
+  "difficulty": 4,
+  "meta": {
+    "lastReviewed": "2026-09-09",
+    "confidence": "high"
+  },
+  "nodes": [
+    {
+      "id": "uploader",
+      "label": "Creator App",
+      "kind": "client",
+      "x": 0,
+      "y": 0,
+      "ref": "http",
+      "role": "Uploads raw video",
+      "why": "Sends a multi-gigabyte file in resumable chunks so a dropped connection does not restart the upload.",
+      "alternatives": [],
+      "related": [
+        "http",
+        "idempotency"
+      ]
+    },
+    {
+      "id": "upload-api",
+      "label": "Upload API",
+      "kind": "service",
+      "x": 0,
+      "y": 1,
+      "ref": "backend",
+      "role": "Accepts uploads, creates the video record",
+      "why": "Issues a pre-signed URL so bytes go straight to object storage; the API only tracks metadata and enqueues work.",
+      "alternatives": [],
+      "related": [
+        "backend",
+        "s3",
+        "idempotency"
+      ]
+    },
+    {
+      "id": "raw-storage",
+      "label": "Raw Uploads (S3)",
+      "kind": "storage",
+      "x": 0,
+      "y": 2,
+      "ref": "s3",
+      "role": "Original files",
+      "why": "Cheap, durable and effectively unlimited; the original is kept so renditions can be regenerated when codecs change.",
+      "alternatives": [],
+      "related": [
+        "s3"
+      ]
+    },
+    {
+      "id": "transcode-queue",
+      "label": "Transcode Queue",
+      "kind": "queue",
+      "x": 1,
+      "y": 2,
+      "ref": "rabbitmq",
+      "role": "Transcode jobs",
+      "why": "Transcoding takes minutes per video; a work queue absorbs upload bursts and lets workers be scaled independently of the API.",
+      "alternatives": [
+        "kafka"
+      ],
+      "related": [
+        "message-queue",
+        "retry",
+        "dead-letter-queue"
+      ]
+    },
+    {
+      "id": "transcoder",
+      "label": "Transcode Workers",
+      "kind": "worker",
+      "x": 2,
+      "y": 2,
+      "ref": "backend",
+      "role": "FFmpeg renditions + segmenting",
+      "why": "CPU/GPU-bound and stateless: each job reads the raw file, writes 240p–1080p renditions as 2–6 s segments and a manifest, then acknowledges.",
+      "alternatives": [],
+      "related": [
+        "message-queue",
+        "idempotency",
+        "retry"
+      ]
+    },
+    {
+      "id": "segment-storage",
+      "label": "Segments (S3)",
+      "kind": "storage",
+      "x": 3,
+      "y": 2,
+      "ref": "s3",
+      "role": "Renditions, segments, manifests",
+      "why": "Segments are immutable files — the ideal CDN origin. Storage rather than a server serves them so playback scale is not the application's problem.",
+      "alternatives": [],
+      "related": [
+        "s3",
+        "cdn"
+      ]
+    },
+    {
+      "id": "metadata-db",
+      "label": "PostgreSQL",
+      "kind": "db",
+      "x": 1,
+      "y": 3,
+      "ref": "postgresql",
+      "role": "Video metadata and status",
+      "why": "Titles, owners, visibility, available renditions and processing state need durable, consistent, queryable storage.",
+      "alternatives": [
+        "mysql",
+        "mongodb"
+      ],
+      "related": [
+        "database",
+        "transaction"
+      ]
+    },
+    {
+      "id": "redis",
+      "label": "Redis",
+      "kind": "cache",
+      "x": 2,
+      "y": 3,
+      "ref": "redis",
+      "role": "Hot metadata, view counters",
+      "why": "A popular video's metadata is read thousands of times a second; view counts are incremented far more often than they are read.",
+      "alternatives": [
+        "memcached"
+      ],
+      "related": [
+        "cache",
+        "cache-aside",
+        "ttl"
+      ]
+    },
+    {
+      "id": "playback-api",
+      "label": "Playback API",
+      "kind": "service",
+      "x": 4,
+      "y": 2,
+      "ref": "backend",
+      "role": "Manifest URLs, access control",
+      "why": "Checks the viewer may watch, records the view and returns the manifest URL (often signed with a short TTL) — the only per-view request that touches the backend.",
+      "alternatives": [],
+      "related": [
+        "backend",
+        "authentication",
+        "rate-limiting"
+      ]
+    },
+    {
+      "id": "lb",
+      "label": "Load Balancer",
+      "kind": "lb",
+      "x": 4,
+      "y": 1,
+      "ref": "load-balancing",
+      "role": "Distributes API traffic",
+      "why": "The playback API is stateless, so many instances sit behind one address.",
+      "alternatives": [
+        "nginx"
+      ],
+      "related": [
+        "load-balancing"
+      ]
+    },
+    {
+      "id": "cdn",
+      "label": "CDN",
+      "kind": "edge",
+      "x": 5,
+      "y": 1,
+      "ref": "cdn",
+      "role": "Edge cache for segments",
+      "why": "Video is almost all bandwidth. Edge nodes near viewers serve the same segment to thousands of players and pull from the origin only on a miss.",
+      "alternatives": [],
+      "related": [
+        "cdn",
+        "cache",
+        "ttl"
+      ]
+    },
+    {
+      "id": "viewer",
+      "label": "Viewer Player",
+      "kind": "client",
+      "x": 5,
+      "y": 0,
+      "ref": "http",
+      "role": "Adaptive bitrate playback",
+      "why": "Reads the manifest, downloads segments a few seconds ahead and switches rendition based on measured throughput and buffer level.",
+      "alternatives": [],
+      "related": [
+        "http",
+        "cdn"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "uploader",
+      "to": "upload-api",
+      "label": "start upload"
+    },
+    {
+      "from": "upload-api",
+      "to": "raw-storage",
+      "label": "pre-signed PUT (chunks)"
+    },
+    {
+      "from": "upload-api",
+      "to": "metadata-db",
+      "label": "INSERT video (processing)"
+    },
+    {
+      "from": "upload-api",
+      "to": "transcode-queue",
+      "label": "transcode job"
+    },
+    {
+      "from": "transcode-queue",
+      "to": "transcoder",
+      "style": "dashed"
+    },
+    {
+      "from": "transcoder",
+      "to": "raw-storage",
+      "label": "GET original",
+      "style": "dashed"
+    },
+    {
+      "from": "transcoder",
+      "to": "segment-storage",
+      "label": "PUT segments + manifest"
+    },
+    {
+      "from": "transcoder",
+      "to": "metadata-db",
+      "label": "status = ready",
+      "style": "dashed"
+    },
+    {
+      "from": "viewer",
+      "to": "lb",
+      "label": "GET /videos/:id/play"
+    },
+    {
+      "from": "lb",
+      "to": "playback-api"
+    },
+    {
+      "from": "playback-api",
+      "to": "redis",
+      "label": "GET meta · INCR views"
+    },
+    {
+      "from": "playback-api",
+      "to": "metadata-db",
+      "label": "on cache miss",
+      "style": "dashed"
+    },
+    {
+      "from": "viewer",
+      "to": "cdn",
+      "label": "manifest + segments"
+    },
+    {
+      "from": "cdn",
+      "to": "segment-storage",
+      "label": "origin pull on miss",
+      "style": "dashed"
+    }
+  ],
+  "flows": [
+    {
+      "id": "upload-transcode",
+      "name": "Upload and transcode",
+      "path": [
+        "uploader",
+        "upload-api",
+        "raw-storage",
+        "transcode-queue",
+        "transcoder",
+        "segment-storage",
+        "metadata-db"
+      ],
+      "steps": [
+        "The creator picks a 4 GB file; the app splits it into chunks and asks the API to start an upload.",
+        "The upload API creates a video row in 'processing' state and returns pre-signed URLs for each chunk.",
+        "Chunks are PUT directly into the raw bucket; the API is told when the last chunk lands and completes the multipart object.",
+        "A transcode job {videoId, objectKey} is published to the queue; the API responds to the creator immediately.",
+        "A free worker takes the job, streams the original from S3 and runs FFmpeg for each target rendition, cutting 4-second segments.",
+        "Segments and the HLS/DASH manifest are written under /videos/{id}/{rendition}/; the writes are idempotent so a retried job overwrites the same keys.",
+        "The worker marks the video 'ready' with its rendition list and acknowledges the job; only now does it appear in feeds."
+      ]
+    },
+    {
+      "id": "playback",
+      "name": "Watch with adaptive bitrate",
+      "path": [
+        "viewer",
+        "lb",
+        "playback-api",
+        "redis",
+        "cdn",
+        "segment-storage"
+      ],
+      "steps": [
+        "The viewer opens a video; the player asks the backend for permission and a manifest URL.",
+        "The load balancer routes the request to any playback API instance.",
+        "The API checks visibility and viewer entitlement and signs a manifest URL valid for a few minutes.",
+        "Hot metadata comes from Redis (falling back to PostgreSQL on a miss) and the view counter is incremented atomically.",
+        "The player fetches the manifest and the first segments from the CDN edge; it starts at a low rendition for fast first frame, then measures throughput and steps up to 1080p, or down when the buffer shrinks.",
+        "Only segments the edge has never seen are pulled from S3; a popular video's segments stay cached at the edge and the origin sees a tiny fraction of the traffic."
+      ]
+    },
+    {
+      "id": "edge-hit",
+      "name": "Popular video served entirely from the edge",
+      "path": [
+        "viewer",
+        "cdn"
+      ],
+      "steps": [
+        "Thousands of viewers in one region start the same trending video within minutes.",
+        "After the first viewer warmed each segment, every subsequent request is a cache hit at the edge — no request reaches storage or the application for the video bytes."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Pre-transcode every rendition at upload time rather than on demand",
+      "why": "Playback must start in under a second at any quality; transcoding on first request would add minutes of latency and make the first viewer pay for everyone. Storage is cheap compared with viewer CPU or waiting.",
+      "alternatives": [
+        "cdn"
+      ],
+      "tradeoff": "Most uploaded videos are rarely watched, so a large share of transcoding CPU and storage is spent on renditions nobody plays. Just-in-time transcoding of cold content or lazy generation of the highest renditions is the usual optimisation once cost matters."
+    },
+    {
+      "decision": "Object storage as the CDN origin instead of application servers",
+      "why": "Segments are immutable, addressable files; S3-style storage serves them durably at any concurrency with no code. The application stays out of the byte-serving path entirely.",
+      "alternatives": [
+        "nginx"
+      ],
+      "tradeoff": "Access control cannot be enforced per request by the app. Private content relies on signed URLs or CDN token authentication, and a leaked URL is valid until it expires."
+    },
+    {
+      "decision": "A work queue (RabbitMQ) for transcode jobs",
+      "why": "Each job is heavy, must be processed exactly once (or idempotently), and needs acknowledgement, retry with backoff and a dead-letter queue for corrupt files — classic work-queue semantics.",
+      "alternatives": [
+        "kafka"
+      ],
+      "tradeoff": "No replay or fan-out to other consumers. If analytics or content moderation also need every upload event, a Kafka topic alongside (or instead) is the better fit."
+    },
+    {
+      "decision": "Redis in front of PostgreSQL for metadata and counters",
+      "why": "A trending video generates far more metadata reads and view increments than the database should absorb; Redis handles both with sub-millisecond atomic operations.",
+      "alternatives": [
+        "postgresql"
+      ],
+      "tradeoff": "View counts flushed to the database periodically are eventually consistent and can be lost on a Redis restart without persistence; acceptable for a counter, not for entitlements."
+    }
+  ],
+  "versions": [
+    {
+      "version": "v1",
+      "title": "Single server, single file",
+      "summary": "One server accepts uploads onto its disk, stores metadata and serves the original file with HTTP range requests. Works for a handful of users; there is no quality switching and one server's bandwidth is the ceiling.",
+      "nodes": [
+        "uploader",
+        "upload-api",
+        "metadata-db",
+        "viewer"
+      ]
+    },
+    {
+      "version": "v2",
+      "title": "Object storage + CDN",
+      "summary": "Files move to object storage and are served through a CDN. Bandwidth is no longer the application's problem, but every viewer still downloads the same single-quality file.",
+      "nodes": [
+        "uploader",
+        "upload-api",
+        "raw-storage",
+        "metadata-db",
+        "cdn",
+        "viewer"
+      ]
+    },
+    {
+      "version": "v3",
+      "title": "Async transcoding",
+      "summary": "Uploads enqueue a job; workers produce multiple renditions and segments so players can adapt bitrate. Uploads become fast and processing scales independently.",
+      "nodes": [
+        "uploader",
+        "upload-api",
+        "raw-storage",
+        "transcode-queue",
+        "transcoder",
+        "segment-storage",
+        "metadata-db",
+        "cdn",
+        "viewer"
+      ]
+    },
+    {
+      "version": "v4",
+      "title": "Playback API and hot cache",
+      "summary": "A dedicated playback API behind a load balancer handles entitlement, signed URLs and view counting, with Redis absorbing the read and counter load of popular videos.",
+      "nodes": [
+        "uploader",
+        "upload-api",
+        "raw-storage",
+        "transcode-queue",
+        "transcoder",
+        "segment-storage",
+        "metadata-db",
+        "redis",
+        "lb",
+        "playback-api",
+        "cdn",
+        "viewer"
+      ]
+    }
+  ],
+  "textAlternative": "On the left, a creator app uploads to an upload API, which writes the original into a raw S3 bucket, records the video in PostgreSQL and places a job on a transcode queue. Transcode workers in the middle read the original, write renditions, segments and manifests into a second S3 bucket and mark the video ready. On the right, a viewer's player calls a playback API through a load balancer; the API reads hot metadata and view counters from Redis, falling back to PostgreSQL, and returns a signed manifest URL. The player then fetches the manifest and video segments from a CDN at the top right, which pulls from segment storage only on a cache miss.",
+  "related": [
+    {
+      "to": "cdn",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "s3",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "message-queue",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "cache-aside",
+      "rel": "RELATED_TO"
+    }
+  ]
+}

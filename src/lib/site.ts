@@ -9,7 +9,6 @@ export const site = {
 } as const;
 
 export const nav = [
-  { href: "/explore", label: "Explore", key: "e" },
   { href: "/technology", label: "Technologies", key: "t" },
   { href: "/concept", label: "Concepts", key: "c" },
   { href: "/pattern", label: "Patterns", key: "p" },
@@ -17,4 +16,6 @@ export const nav = [
   { href: "/system-design", label: "System Design", key: "s" },
   { href: "/compare", label: "Compare", key: "m" },
   { href: "/roadmap", label: "Roadmaps", key: "r" },
+  { href: "/radar", label: "Radar", key: "d" },
+  { href: "/playground", label: "Playground", key: "y" },
 ] as const;

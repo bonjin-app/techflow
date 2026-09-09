@@ -1,0 +1,141 @@
+{
+  "id": "fullstack-developer",
+  "name": "Fullstack Developer Roadmap",
+  "tagline": "One person, the whole request: from a React click to a database row and back",
+  "summary": "An ordered path for engineers who own both sides of the HTTP boundary. It starts with the browser's languages and Git, adds the typed component stack and the server runtime that shares its language, then works through API design, data, authentication and security before finishing with the delivery and operations concerns — caching, containers, CI/CD, CDNs, observability — that make a feature you built end to end actually shippable.",
+  "category": "career",
+  "tags": ["Fullstack", "Career", "Learning Path", "Web", "TypeScript"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "programming-fundamentals",
+      "label": "Programming fundamentals",
+      "stage": "Foundations",
+      "note": "Variables, control flow, data structures and the event loop are the same on both sides of the stack; everything below assumes them."
+    },
+    {
+      "label": "HTML, CSS & JavaScript",
+      "stage": "Foundations",
+      "note": "Every frontend framework compiles down to these three, and the server you will write later mostly produces or serves them."
+    },
+    {
+      "label": "Git & version control",
+      "stage": "Foundations",
+      "note": "A fullstack change usually touches several directories in one pull request, so branching and reviewing diffs come before the first team project."
+    },
+    {
+      "ref": "http",
+      "label": "HTTP",
+      "stage": "Web",
+      "note": "HTTP is the seam between the two halves you will own; methods, status codes, headers and caching rules explain most frontend-backend disagreements."
+    },
+    {
+      "ref": "typescript",
+      "label": "TypeScript",
+      "stage": "Frontend",
+      "note": "One typed language for browser and server lets you share request/response types across the boundary instead of guessing at JSON shapes."
+    },
+    {
+      "ref": "react",
+      "label": "React",
+      "stage": "Frontend",
+      "note": "With TypeScript in hand, a component model teaches state, rendering and data fetching — the client half of every feature you will build."
+    },
+    {
+      "ref": "nodejs",
+      "label": "Node.js",
+      "stage": "Backend",
+      "note": "Running the language you already know on the server removes a context switch and makes shared validation and types practical."
+    },
+    {
+      "ref": "backend",
+      "label": "Backend framework & structure",
+      "stage": "Backend",
+      "note": "A framework (Express, Fastify, NestJS, Next.js route handlers) turns Node.js into routing, middleware and error handling you can reason about."
+    },
+    {
+      "ref": "rest",
+      "label": "REST API design",
+      "stage": "API",
+      "note": "You are now both the producer and the consumer of the API, which is the best moment to learn resource naming, pagination and error contracts."
+    },
+    {
+      "ref": "graphql",
+      "label": "GraphQL",
+      "stage": "API",
+      "note": "Once REST's over- and under-fetching bite a real UI, GraphQL shows a client-driven alternative — and when its cost is not worth it."
+    },
+    {
+      "ref": "database",
+      "label": "Databases",
+      "stage": "Data",
+      "note": "Every form you built posts to something persistent; understanding indexes, constraints and durability comes before choosing an ORM."
+    },
+    {
+      "ref": "sql",
+      "label": "SQL & PostgreSQL",
+      "stage": "Data",
+      "note": "SQL is how you model relations, write the query the ORM hides, and find the slow one when the page takes three seconds."
+    },
+    {
+      "ref": "transaction",
+      "label": "Transactions",
+      "stage": "Data",
+      "note": "Two users submitting the same form at once is a normal Tuesday; transactions and isolation levels keep the rows consistent."
+    },
+    {
+      "ref": "authentication",
+      "label": "Authentication & sessions",
+      "stage": "Application",
+      "note": "Login touches both halves — cookies or tokens in the browser, sessions or JWT verification on the server — so it is the first truly fullstack feature."
+    },
+    {
+      "ref": "https",
+      "label": "HTTPS & web security",
+      "stage": "Application",
+      "note": "TLS, CORS, CSRF and XSS are where frontend and backend responsibilities overlap; misunderstanding one side causes the bug on the other."
+    },
+    {
+      "ref": "cache",
+      "label": "Caching",
+      "stage": "Scale",
+      "note": "Browser cache headers, a server-side cache and a CDN are the same idea at three layers; learn the invalidation trade-off once and apply it everywhere."
+    },
+    {
+      "ref": "redis",
+      "label": "Redis",
+      "stage": "Scale",
+      "note": "Redis is the tool you will reach for to implement sessions, caches, rate limits and job queues without adding another database."
+    },
+    {
+      "ref": "docker",
+      "label": "Docker",
+      "stage": "Delivery",
+      "note": "Packaging the frontend build, the Node.js server and their dependencies into images makes 'works on my machine' stop being an excuse."
+    },
+    {
+      "label": "CI/CD pipelines",
+      "stage": "Delivery",
+      "note": "Lint, type-check, test and build on every push so a fullstack change can be deployed many times a day with confidence."
+    },
+    {
+      "ref": "cdn",
+      "label": "CDN & static delivery",
+      "stage": "Delivery",
+      "note": "Static assets and cacheable pages belong at the edge; knowing what is safe to cache there is a fullstack decision, not a frontend one."
+    },
+    {
+      "ref": "observability",
+      "label": "Observability",
+      "stage": "Operations",
+      "note": "Logs, metrics and traces that follow a request from the browser to the database are how you debug the systems you now own end to end."
+    },
+    {
+      "ref": "e-commerce",
+      "label": "Design a whole product",
+      "stage": "Design",
+      "note": "Finish by studying a complete e-commerce architecture — catalog, cart, checkout, payments — and tracing how every step above appears in it."
+    }
+  ]
+}

@@ -21,12 +21,21 @@ const columns = [
       { href: "/roadmap", label: "Roadmaps" },
     ],
   },
+  {
+    title: "Practice",
+    links: [
+      { href: "/radar", label: "Technology radar" },
+      { href: "/playground", label: "Developer playground" },
+      { href: "/challenge", label: "Design challenges" },
+      { href: "/search", label: "Search" },
+    ],
+  },
 ];
 
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-border">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div className="max-w-sm">
           <Logo />
           <p className="mt-3 text-sm text-fg-muted">{site.tagline} {site.name} is an interactive developer knowledge graph — every page links to the technologies, concepts and architectures around it.</p>

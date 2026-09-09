@@ -1,0 +1,134 @@
+{
+  "id": "ai-engineer",
+  "name": "AI Engineer Roadmap",
+  "tagline": "From Python and the math behind models to shipping reliable LLM-powered products",
+  "summary": "An ordered path for engineers who turn models into products. It starts with Python, the mathematics and data skills models depend on, moves through machine learning, deep learning and transformers, then into the applied layer — prompting, embeddings, retrieval — and finally into the backend and operations work that makes an AI feature fast, affordable, observable and safe in production.",
+  "category": "career",
+  "tags": ["AI", "Machine Learning", "LLM", "Career", "Learning Path"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "programming-fundamentals",
+      "label": "Python & programming fundamentals",
+      "stage": "Foundations",
+      "note": "Python is the language of every ML library and most serving code; fluency with data structures and packaging comes before any model."
+    },
+    {
+      "label": "Linear algebra, probability & statistics",
+      "stage": "Foundations",
+      "note": "Vectors, matrices, gradients and distributions are what embeddings, loss functions and evaluation metrics are made of."
+    },
+    {
+      "ref": "sql",
+      "label": "Data handling (SQL & pandas)",
+      "stage": "Foundations",
+      "note": "Most of an AI project is finding, cleaning and joining data; SQL and dataframes are how you do that before a single model runs."
+    },
+    {
+      "label": "Machine learning fundamentals",
+      "stage": "Models",
+      "note": "Train/test splits, overfitting, regularisation and metrics are the mental model you will reuse when evaluating LLM outputs."
+    },
+    {
+      "label": "Deep learning & neural networks",
+      "stage": "Models",
+      "note": "Backpropagation, optimisers and GPUs explain why models cost what they cost and why inference latency behaves the way it does."
+    },
+    {
+      "label": "Transformers & large language models",
+      "stage": "Models",
+      "note": "Attention, tokenisation and context windows are the constraints behind every prompt, cost estimate and truncation bug you will meet."
+    },
+    {
+      "label": "Prompt engineering & structured output",
+      "stage": "Applied",
+      "note": "Instructions, few-shot examples, tool schemas and JSON mode are the cheapest levers for quality and the first thing to master in production."
+    },
+    {
+      "label": "Embeddings & vector search",
+      "stage": "Applied",
+      "note": "Turning text into vectors and searching by similarity is the mechanism behind retrieval, deduplication and semantic caching."
+    },
+    {
+      "ref": "elasticsearch",
+      "label": "Search & vector stores",
+      "stage": "Applied",
+      "note": "A search engine with keyword, filter and vector (kNN) queries gives hybrid retrieval; learn one store and its indexing trade-offs."
+    },
+    {
+      "ref": "ai-rag",
+      "label": "Retrieval-augmented generation",
+      "stage": "Applied",
+      "note": "RAG combines everything so far — chunking, embeddings, retrieval, prompting — into the architecture most LLM products actually ship."
+    },
+    {
+      "ref": "http",
+      "label": "HTTP & REST APIs",
+      "stage": "Serving",
+      "note": "Models are consumed over HTTP; request/response contracts, timeouts and status codes decide whether the feature feels reliable."
+    },
+    {
+      "ref": "backend",
+      "label": "Backend service for inference",
+      "stage": "Serving",
+      "note": "A stateless service wraps the model call with validation, auth and retries; this is where an experiment becomes an endpoint."
+    },
+    {
+      "ref": "sse",
+      "label": "Streaming responses (SSE)",
+      "stage": "Serving",
+      "note": "Token-by-token streaming hides multi-second latency from users; Server-Sent Events is the simplest protocol that delivers it."
+    },
+    {
+      "ref": "redis",
+      "label": "Caching & semantic caching",
+      "stage": "Serving",
+      "note": "Model calls are slow and billed per token, so caching identical or semantically similar prompts is the first big cost win."
+    },
+    {
+      "ref": "rate-limiting",
+      "label": "Rate limiting & cost control",
+      "stage": "Serving",
+      "note": "Provider quotas and per-user budgets must be enforced before launch; otherwise one loop or one abusive client drains the bill."
+    },
+    {
+      "ref": "message-queue",
+      "label": "Async pipelines & batch jobs",
+      "stage": "Data",
+      "note": "Embedding millions of documents or re-indexing nightly does not belong in a request; queues and workers make ingestion reliable."
+    },
+    {
+      "ref": "docker",
+      "label": "Docker & model packaging",
+      "stage": "Operations",
+      "note": "Pinning CUDA, library and model versions in an image is the only way inference behaves the same in staging and production."
+    },
+    {
+      "label": "Model serving & GPU infrastructure",
+      "stage": "Operations",
+      "note": "Batching, quantisation and GPU scheduling decide throughput and cost when you host models yourself instead of calling an API."
+    },
+    {
+      "ref": "observability",
+      "label": "LLM observability & evaluation",
+      "stage": "Operations",
+      "note": "Tracing prompts, tokens, latency and quality scores per request is how you catch regressions that unit tests cannot express."
+    },
+    {
+      "label": "Guardrails, safety & privacy",
+      "stage": "Operations",
+      "note": "Input filtering, output validation, PII handling and prompt-injection defences are launch blockers, not polish."
+    },
+    {
+      "label": "Fine-tuning & model adaptation",
+      "stage": "Advanced",
+      "note": "Only after prompting and retrieval plateau does fine-tuning pay off; knowing the evaluation loop first keeps it honest."
+    },
+    {
+      "label": "Agents & tool use",
+      "stage": "Advanced",
+      "note": "Multi-step agents that call tools reuse every skill above — APIs, retries, idempotency, observability — with the model as the planner."
+    }
+  ]
+}

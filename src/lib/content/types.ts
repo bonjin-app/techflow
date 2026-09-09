@@ -212,6 +212,41 @@ export interface BuildGoal {
   learningPath: string[];
 }
 
+/* ── Technology Radar ─────────────────────────────────────── */
+export type RadarRing = "adopt" | "trial" | "assess" | "caution";
+export type RadarQuadrant = "languages-frameworks" | "platforms-infrastructure" | "data-messaging" | "techniques";
+export interface RadarEntry {
+  /** knowledge-graph node id */
+  ref: string;
+  ring: RadarRing;
+  quadrant: RadarQuadrant;
+  /** one sentence: why this ring, as of the assessment date */
+  note: string;
+  /** movement since the previous assessment */
+  moved?: "in" | "out" | "new";
+}
+export interface RadarData {
+  assessedOn: string;
+  method: string;
+  entries: RadarEntry[];
+}
+
+/* ── Daily challenge ──────────────────────────────────────── */
+export interface ChallengeOption {
+  label: string;
+  correct: boolean;
+  why: string;
+  ref?: string;
+}
+export interface Challenge {
+  id: string;
+  question: string;
+  context: string;
+  options: ChallengeOption[];
+  related: string[];
+  difficulty: number;
+}
+
 export type AnyNode =
   | DocNode
   | ArchitectureNode

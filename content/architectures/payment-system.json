@@ -1,0 +1,152 @@
+{
+  "id": "payment-system",
+  "name": "Payment System",
+  "tagline": "Idempotent charges, a resilient provider call, an outbox to the ledger and saga refunds",
+  "summary": "Checkout sends a charge with an idempotency key so retries never double-bill. The payment service calls the card provider behind a timeout, bulkhead and circuit breaker, records the result and an outbox row in one PostgreSQL transaction, and a relay publishes the event to Kafka for the ledger. Provider webhooks confirm asynchronous outcomes, and refunds run as a saga with compensation when a step fails.",
+  "category": "system",
+  "tags": ["Payments", "Idempotency", "Outbox", "Saga", "Reliability"],
+  "difficulty": 5,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "client", "label": "Checkout Client", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Initiates charges and refunds", "why": "Generates an idempotency key per purchase attempt so a network retry after a timeout cannot create a second charge.",
+      "alternatives": [], "related": ["http", "idempotency", "retry"] },
+    { "id": "gateway", "label": "API Gateway", "kind": "edge", "x": 2, "y": 1, "ref": "api-gateway",
+      "role": "TLS · auth · rate limiting · webhook ingress", "why": "One entry point for client calls and provider webhooks; verifies tokens and webhook signatures before anything reaches the payment service.",
+      "alternatives": ["nginx"], "related": ["api-gateway", "tls", "rate-limiting", "authentication"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 0, "y": 2, "ref": "redis",
+      "role": "Idempotency keys · in-flight locks", "why": "Fast SET NX with a TTL rejects duplicate keys while a charge is in flight and returns the stored response for completed ones.",
+      "alternatives": ["postgresql"], "related": ["idempotency", "distributed-lock", "ttl"] },
+    { "id": "payment-svc", "label": "Payment Service", "kind": "service", "x": 2, "y": 2, "ref": "backend",
+      "role": "Charge orchestration", "why": "Owns the state machine of a payment (pending → authorised → captured → refunded) and wraps every provider call in a timeout, bulkhead and circuit breaker.",
+      "alternatives": [], "related": ["backend", "idempotency", "timeout", "circuit-breaker", "bulkhead"] },
+    { "id": "provider", "label": "Payment Provider", "kind": "external", "x": 5, "y": 2,
+      "role": "Card authorisation, capture, refund", "why": "Card data never touches this system; the provider handles PCI scope. Its latency and availability are outside our control, so every call is bounded and retry-safe.",
+      "alternatives": [], "related": ["circuit-breaker", "timeout", "retry", "idempotency"] },
+    { "id": "payments-db", "label": "PostgreSQL (payments)", "kind": "db", "x": 2, "y": 3, "ref": "postgresql",
+      "role": "Payment records · outbox table", "why": "The payment row, its status transition and the outbox event are committed in one ACID transaction, so an event exists exactly when the state change does.",
+      "alternatives": ["mysql"], "related": ["database", "transaction", "acid", "outbox"] },
+    { "id": "outbox-relay", "label": "Outbox Relay", "kind": "worker", "x": 4, "y": 3, "ref": "outbox",
+      "role": "Publish committed events", "why": "Polls the outbox table and publishes to Kafka with at-least-once delivery; a crash between commit and publish only delays the event, never loses it.",
+      "alternatives": [], "related": ["outbox", "message-queue", "idempotency"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 4, "y": 4, "ref": "kafka",
+      "role": "Payment events", "why": "PaymentCaptured, PaymentFailed and RefundCompleted are consumed by the ledger, the order system, notifications and reconciliation at their own pace and with replay.",
+      "alternatives": ["rabbitmq"], "related": ["message-queue", "event-driven-architecture", "saga"] },
+    { "id": "ledger-svc", "label": "Ledger Service", "kind": "worker", "x": 2, "y": 5, "ref": "backend",
+      "role": "Double-entry bookkeeping", "why": "Turns each payment event into balanced debit and credit entries; idempotent on the event id so redelivery from Kafka never double-posts.",
+      "alternatives": [], "related": ["transaction", "acid", "idempotency", "event-driven-architecture"] },
+    { "id": "ledger-db", "label": "PostgreSQL (ledger)", "kind": "db", "x": 2, "y": 6, "ref": "postgresql",
+      "role": "Append-only journal", "why": "Entries are never updated or deleted — a correction is a new reversing entry — which is what auditors and reconciliation require.",
+      "alternatives": [], "related": ["database", "acid", "database-per-service"] },
+    { "id": "refund-saga", "label": "Refund Orchestrator", "kind": "worker", "x": 0, "y": 5, "ref": "saga",
+      "role": "Multi-step refund with compensation", "why": "A refund touches the provider, the payment record and the ledger; when a later step fails the orchestrator runs compensating actions instead of leaving money in limbo.",
+      "alternatives": ["event-driven-architecture"], "related": ["saga", "eventual-consistency", "idempotency"] }
+  ],
+  "edges": [
+    { "from": "client", "to": "gateway", "label": "POST /charges (Idempotency-Key)" },
+    { "from": "provider", "to": "gateway", "label": "webhook (signed)", "style": "dashed" },
+    { "from": "gateway", "to": "payment-svc", "label": "/charges · /webhooks" },
+    { "from": "gateway", "to": "refund-saga", "label": "/refunds" },
+    { "from": "payment-svc", "to": "redis", "label": "SET NX key EX 24h" },
+    { "from": "payment-svc", "to": "provider", "label": "authorize / capture (timeout, breaker)" },
+    { "from": "payment-svc", "to": "payments-db", "label": "payment + outbox row (tx)" },
+    { "from": "refund-saga", "to": "provider", "label": "refund (idempotency key)" },
+    { "from": "refund-saga", "to": "payments-db", "label": "status + outbox row (tx)" },
+    { "from": "outbox-relay", "to": "payments-db", "label": "poll outbox", "style": "dashed" },
+    { "from": "outbox-relay", "to": "kafka", "label": "publish" },
+    { "from": "kafka", "to": "ledger-svc", "style": "dashed" },
+    { "from": "kafka", "to": "refund-saga", "label": "RefundFailed → compensate", "style": "dashed" },
+    { "from": "ledger-svc", "to": "ledger-db", "label": "INSERT entries (idempotent)" }
+  ],
+  "flows": [
+    {
+      "id": "charge",
+      "name": "Charge a card with an idempotency key",
+      "path": ["client", "gateway", "payment-svc", "redis", "provider", "payments-db", "outbox-relay", "kafka", "ledger-svc", "ledger-db"],
+      "steps": [
+        "Checkout sends POST /charges with amount, payment method token and a fresh Idempotency-Key header.",
+        "The gateway checks the caller's token and rate limit and forwards the request unchanged.",
+        "The payment service starts the charge state machine in status PENDING.",
+        "Redis SET NX stores the idempotency key with a 24-hour TTL; if the key already exists the stored response is returned and nothing else runs.",
+        "The provider is asked to authorise and capture, using the same key so the provider also deduplicates; the call has a 3-second timeout, its own bulkhead pool and a circuit breaker.",
+        "One transaction updates the payment row to CAPTURED (or FAILED) and inserts a PaymentCaptured row into the outbox table.",
+        "The relay picks up the committed outbox row.",
+        "Kafka receives PaymentCaptured exactly once per committed payment (consumers still deduplicate on event id).",
+        "The ledger service consumes the event and prepares a debit to receivables and a credit to revenue.",
+        "The append-only ledger database stores the balanced entries, keyed by event id so redelivery is a no-op."
+      ]
+    },
+    {
+      "id": "webhook",
+      "name": "Provider webhook confirms an asynchronous outcome",
+      "path": ["provider", "gateway", "payment-svc", "payments-db", "outbox-relay", "kafka", "ledger-svc"],
+      "steps": [
+        "The provider POSTs a signed event (payment_intent.succeeded, dispute.created) — possibly more than once.",
+        "The gateway verifies the HMAC signature and timestamp, then routes to /webhooks.",
+        "The payment service loads the payment by provider reference and applies the transition only if it is valid from the current state; a duplicate webhook is acknowledged and ignored.",
+        "The status change and an outbox row commit together; the webhook is acknowledged with 200 only after the commit succeeds so the provider will retry on failure.",
+        "The relay publishes the committed event.",
+        "Kafka delivers it to every interested consumer.",
+        "The ledger posts entries if this outcome was not already recorded — a late webhook after a synchronous success changes nothing."
+      ]
+    },
+    {
+      "id": "refund",
+      "name": "Refund as a saga with compensation",
+      "path": ["client", "gateway", "refund-saga", "provider", "payments-db", "outbox-relay", "kafka", "ledger-svc", "ledger-db"],
+      "steps": [
+        "Support or the customer requests a refund for a captured payment, with its own idempotency key.",
+        "The gateway authenticates the request and routes it to the refund orchestrator.",
+        "The orchestrator records a RefundStarted step so the saga can resume after a crash, then executes steps in order.",
+        "Step 1: ask the provider to refund; a timeout with unknown outcome is resolved by querying the provider before deciding to retry.",
+        "Step 2: mark the payment REFUNDED and write a RefundCompleted outbox row in one transaction; if this fails after the provider refunded, the compensating action is to re-capture or open a manual review — money is never silently lost.",
+        "The relay publishes the outcome event.",
+        "Kafka carries RefundCompleted (or RefundFailed, which the orchestrator also consumes to trigger compensation).",
+        "The ledger service reverses the original entries with new entries — never by editing the old ones.",
+        "The ledger database appends the reversal; the books balance again and reconciliation later matches it against the provider's settlement report."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Client-generated idempotency keys stored in Redis",
+      "why": "The most common payment bug is a double charge caused by a retry after a timeout. A key chosen by the client before the first attempt lets every retry be recognised at the edge of the service and by the provider.",
+      "alternatives": ["postgresql"],
+      "tradeoff": "Redis is another dependency on the critical path and keys expire after the TTL; a retry after 24 hours would be treated as new. Storing keys in PostgreSQL is safer but slower and adds write load to the payments database."
+    },
+    {
+      "decision": "Timeout, bulkhead and circuit breaker around every provider call",
+      "why": "The provider is slow far more often than it is down. Without a bound, a provider incident exhausts the payment service's connection pool and takes refunds and webhooks down with it.",
+      "alternatives": ["retry"],
+      "tradeoff": "A timed-out authorisation has an unknown result; the service must reconcile it by querying the provider or waiting for the webhook, which means a customer can briefly see 'processing' instead of a definite answer."
+    },
+    {
+      "decision": "Transactional outbox to the ledger instead of a direct dual write",
+      "why": "Writing the payment row and then posting to the ledger over the network can fail in between, leaving money captured that the books never saw. The outbox row commits with the payment, and the ledger consumes it idempotently.",
+      "alternatives": ["saga", "event-driven-architecture"],
+      "tradeoff": "The ledger lags the payment by the relay interval and delivery is at-least-once; every consumer must deduplicate on event id and reports read from the ledger are eventually consistent."
+    },
+    {
+      "decision": "Orchestrated saga for refunds rather than choreography",
+      "why": "A refund spans three systems and its failure modes matter — a provider refund that succeeded while our record write failed must be compensated deterministically. A central orchestrator with persisted steps makes the state visible and resumable.",
+      "alternatives": ["event-driven-architecture"],
+      "tradeoff": "The orchestrator is a single component that knows about every participant, and each step needs an explicit compensation that is itself idempotent — more code than emitting events and hoping consumers sort it out."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Direct provider call", "summary": "One service calls the provider and writes the result to PostgreSQL. A retry after a timeout can charge twice, and a crash between the two steps loses the record.", "nodes": ["client", "payment-svc", "provider", "payments-db"] },
+    { "version": "v2", "title": "Idempotency and resilience", "summary": "A gateway verifies callers and webhooks, Redis deduplicates idempotency keys, and the provider call gets a timeout, bulkhead and circuit breaker; webhooks confirm asynchronous outcomes.", "nodes": ["client", "gateway", "redis", "payment-svc", "provider", "payments-db"] },
+    { "version": "v3", "title": "Outbox, ledger and saga refunds", "summary": "Payment events leave through an outbox relay to Kafka; a separate ledger keeps append-only double-entry books, and refunds run as an orchestrated saga with compensation.", "nodes": ["client", "gateway", "redis", "payment-svc", "provider", "payments-db", "outbox-relay", "kafka", "ledger-svc", "ledger-db", "refund-saga"] }
+  ],
+  "textAlternative": "A checkout client at the top sends charge requests with an idempotency key through an API gateway to a payment service in the centre. The payment service stores idempotency keys in Redis on the left, calls an external payment provider on the right behind a timeout and circuit breaker, and writes the payment record together with an outbox row to a payments PostgreSQL database. The provider also sends signed webhooks back through the gateway. An outbox relay polls the payments database and publishes events to Kafka; a ledger service consumes them and appends double-entry records to a separate ledger database at the bottom. Refund requests go to a refund orchestrator on the lower left, which runs a saga across the provider and the payments database and compensates on failure.",
+  "related": [
+    { "to": "idempotency", "rel": "RELATED_TO" },
+    { "to": "outbox", "rel": "RELATED_TO" },
+    { "to": "saga", "rel": "RELATED_TO" },
+    { "to": "circuit-breaker", "rel": "RELATED_TO" },
+    { "to": "timeout", "rel": "RELATED_TO" },
+    { "to": "bulkhead", "rel": "RELATED_TO" },
+    { "to": "transaction", "rel": "RELATED_TO" },
+    { "to": "e-commerce", "rel": "RELATED_TO" }
+  ]
+}

@@ -64,6 +64,7 @@ export function Shortcuts() {
       if (pendingG && now - pendingG < 900) {
         const target = nav.find((n) => n.key === e.key.toLowerCase());
         if (e.key.toLowerCase() === "h") router.push("/");
+        else if (e.key.toLowerCase() === "e") router.push("/explore");
         else if (target) router.push(target.href);
         pendingG = 0;
       }

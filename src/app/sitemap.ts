@@ -7,7 +7,7 @@ import { site } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const g = getGraph();
-  const statics = ["", "/explore", "/technology", "/concept", "/pattern", "/architecture", "/compare", "/roadmap", "/system-design", "/search"];
+  const statics = ["", "/explore", "/technology", "/concept", "/pattern", "/architecture", "/compare", "/roadmap", "/system-design", "/search", "/radar", "/playground", "/playground/cache", "/playground/load-balancer", "/playground/jwt", "/challenge"];
   const entries: MetadataRoute.Sitemap = statics.map((p) => ({
     url: `${site.url}${p}`,
     changeFrequency: "weekly",

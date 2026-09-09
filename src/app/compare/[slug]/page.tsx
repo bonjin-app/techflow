@@ -11,6 +11,7 @@ import { NeighborList } from "@/components/detail/NeighborList";
 import { TrackVisit } from "@/components/detail/TrackVisit";
 import { Difficulty, SectionHeading } from "@/components/ui/Badge";
 import { JsonLd } from "@/components/ui/JsonLd";
+import { Battle } from "@/components/detail/Battle";
 
 export const dynamicParams = false;
 
@@ -54,6 +55,10 @@ export default async function Page({ params }: PageProps<"/compare/[slug]">) {
             <p className="mt-1 text-sm text-fg-muted">{sub!.tagline}</p>
           </Link>
         ))}
+      </div>
+
+      <div className="mb-8">
+        <Battle id={node.id} subjects={subjects.map((x) => ({ id: x!.id, name: x!.name }))} />
       </div>
 
       <div className="space-y-12">

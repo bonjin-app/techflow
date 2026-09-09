@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { dailyPick, getArchitectures, getBuilds, getConcepts, getGraph, getNode, getPatterns, getSearchIndex, getTechnologies, getUniverse, summarize } from "@/lib/content/graph";
+import { dailyPick, getArchitectures, getBuilds, getChallenges, getConcepts, getGraph, getNode, getPatterns, getSearchIndex, getTechnologies, getUniverse, summarize } from "@/lib/content/graph";
+import { buildRefMap } from "@/lib/content/refs";
+import { ChallengeCard } from "@/components/home/ChallengeCard";
 import { hrefFor, TYPE_LABEL, type NodeType } from "@/lib/content/types";
 import { site } from "@/lib/site";
 import { todayKey } from "@/lib/local";
@@ -37,6 +39,8 @@ export default function Home() {
   const today = todayKey();
   const dailyConcept = dailyPick(getConcepts(), today, 1);
   const dailyArch = dailyPick(getArchitectures(), today, 2);
+  const dailyChallenge = dailyPick(getChallenges(), today, 3);
+  const challengeRefs = dailyChallenge ? buildRefMap([...dailyChallenge.related, ...dailyChallenge.options.map((o) => o.ref).filter(Boolean) as string[]]) : {};
   const journey = FIRST_JOURNEY.map((id) => getNode(id)).filter(Boolean);
   const randomPool = [...getTechnologies(), ...getConcepts(), ...getPatterns()].map((n) => ({ href: hrefFor(n.type, n.id) }));
 
@@ -206,6 +210,31 @@ export default function Home() {
               </p>
             </Link>
           )}
+        </section>
+
+        {/* Daily challenge + practice */}
+        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          {dailyChallenge && (
+            <div>
+              <div className="mb-3 font-mono text-[11px] uppercase tracking-wider text-fg-faint">Today&apos;s challenge</div>
+              <ChallengeCard challenge={dailyChallenge} refs={challengeRefs} />
+              <Link href="/challenge" className="mt-2 inline-block text-sm text-accent hover:underline">
+                All challenges →
+              </Link>
+            </div>
+          )}
+          <div className="grid gap-4">
+            <Link href="/radar" className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-fg-faint">Technology radar</div>
+              <h3 className="mt-1 text-lg font-semibold group-hover:underline">Adopt · Trial · Assess · Caution</h3>
+              <p className="mt-1 text-sm text-fg-muted">Where we would place each technology for a new project in 2026 — with the reasoning, dated.</p>
+            </Link>
+            <Link href="/playground" className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-fg-faint">Developer playground</div>
+              <h3 className="mt-1 text-lg font-semibold group-hover:underline">Cache · Load balancer · JWT</h3>
+              <p className="mt-1 text-sm text-fg-muted">Simulate eviction policies, balancing algorithms and token structure in your browser.</p>
+            </Link>
+          </div>
         </section>
 
         {/* Most connected */}

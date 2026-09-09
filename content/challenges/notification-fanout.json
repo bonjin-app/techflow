@@ -1,0 +1,13 @@
+{
+  "id": "notification-fanout",
+  "question": "You are designing a notification system that sends push, email and SMS for every order event. Which component should sit between the order service and the delivery workers?",
+  "context": "Order events arrive in bursts (thousands per minute during sales). Each channel has a different rate limit and provider outages happen weekly. Losing a notification is acceptable only if it is retried later.",
+  "difficulty": 3,
+  "options": [
+    { "label": "WebSocket connection to each worker", "correct": false, "why": "WebSocket is for pushing to connected clients in real time. It offers no buffering or durability — a worker outage would drop events.", "ref": "websocket" },
+    { "label": "A message queue / event log", "correct": true, "why": "A queue absorbs bursts, lets each channel consume at its own rate, retries failures and parks poison messages in a dead-letter queue. This is exactly the decoupling the requirements ask for.", "ref": "message-queue" },
+    { "label": "Direct PostgreSQL polling by workers", "correct": false, "why": "Polling a table works at small scale but becomes a hot-spot: locking, wasted queries and no natural back-pressure. Use the database as the source of truth and publish via an outbox instead.", "ref": "postgresql" },
+    { "label": "Redis GET/SET shared state", "correct": false, "why": "Redis is great for counters and rate-limit windows here, but plain keys are not a durable work queue. Redis Streams could work; a dedicated broker is the safer default.", "ref": "redis" }
+  ],
+  "related": ["notification-system", "message-queue", "dead-letter-queue", "rate-limiting", "outbox"]
+}

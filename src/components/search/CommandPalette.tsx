@@ -71,7 +71,8 @@ export function CommandPalette({ index }: { index: NodeSummary[] }) {
         for (const r of recent.slice(0, 5))
           out.push({ id: `recent:${r.id}`, label: r.name, tagline: r.tagline, href: r.href, group: "Recent", type: r.type });
       out.push({ id: "random", label: "Surprise me", hint: "random technology or concept", action: random, group: "Actions" });
-      out.push({ id: "explore", label: "Explore the knowledge graph", href: "/explore", group: "Actions" });
+      out.push({ id: "explore", label: "Explore the knowledge graph", href: "/explore", group: "Actions", hint: "G then E" });
+      out.push({ id: "challenge", label: "Today's design challenge", href: "/challenge", group: "Actions" });
       for (const n of nav) out.push({ id: `nav:${n.href}`, label: n.label, href: n.href, group: "Go to", hint: `G then ${n.key.toUpperCase()}` });
       return out;
     }

@@ -1,0 +1,13 @@
+{
+  "id": "realtime-dashboard",
+  "question": "A monitoring dashboard needs live metric updates from the server every second. The browser never sends data back except on page load. Which transport fits best?",
+  "context": "Thousands of browsers, one-directional stream, must work through corporate proxies and reconnect automatically after network blips.",
+  "difficulty": 2,
+  "options": [
+    { "label": "WebSocket", "correct": false, "why": "Works, but you pay for bidirectional plumbing you do not use, and reconnection/last-event replay must be built by hand.", "ref": "websocket" },
+    { "label": "Server-Sent Events (SSE)", "correct": true, "why": "SSE is plain HTTP, streams server → client, reconnects automatically with Last-Event-ID and passes through proxies that block WebSocket upgrades. It is the simplest correct tool for one-directional updates.", "ref": "sse" },
+    { "label": "Short polling every second", "correct": false, "why": "Thousands of clients × 1 request/second is heavy load for mostly empty responses, and latency is bounded by the poll interval.", "ref": "http" },
+    { "label": "gRPC streaming to the browser", "correct": false, "why": "gRPC streaming needs a gRPC-Web proxy in browsers and adds a toolchain for a problem SSE solves natively.", "ref": "grpc" }
+  ],
+  "related": ["websocket-vs-sse", "sse", "websocket", "observability"]
+}

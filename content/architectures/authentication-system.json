@@ -1,0 +1,131 @@
+{
+  "id": "authentication-system",
+  "name": "Authentication System",
+  "tagline": "Password and OAuth login, short-lived tokens, refresh rotation and audit events",
+  "summary": "Clients authenticate through an API gateway to a dedicated auth service that verifies password hashes in PostgreSQL or delegates to an external identity provider. Successful logins produce a short-lived access token plus a refresh token stored in Redis with a TTL, so resource services can validate requests locally while the auth service keeps the ability to revoke. Every login, refresh and failure is emitted to Kafka for audit and anomaly detection.",
+  "category": "system",
+  "tags": ["Security", "Authentication", "Session", "OAuth", "JWT"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "client", "label": "Browser / App", "kind": "client", "x": 2, "y": 0, "ref": "https",
+      "role": "User agent", "why": "Holds the session cookie or tokens; everything it sends must be assumed forgeable until verified server-side.",
+      "alternatives": [], "related": ["https", "tls", "session"] },
+    { "id": "idp", "label": "Identity Provider", "kind": "external", "x": 5, "y": 1,
+      "role": "Third-party login (OAuth 2.0 / OIDC)", "why": "Lets users sign in with an account they already have; the provider handles their credentials, MFA and recovery.",
+      "alternatives": [], "related": ["authentication", "https"] },
+    { "id": "gateway", "label": "API Gateway", "kind": "edge", "x": 2, "y": 1, "ref": "api-gateway",
+      "role": "TLS termination · rate limiting · routing", "why": "Login endpoints are the favourite target for credential stuffing; the gateway throttles per IP and account before traffic reaches the auth service.",
+      "alternatives": ["nginx"], "related": ["api-gateway", "rate-limiting", "tls", "nginx"] },
+    { "id": "auth-svc", "label": "Auth Service", "kind": "service", "x": 1, "y": 2, "ref": "authentication",
+      "role": "Verify credentials · issue and rotate tokens", "why": "One place owns password hashing, token signing, refresh rotation and the OAuth code exchange, so security fixes land once.",
+      "alternatives": [], "related": ["authentication", "session", "backend"] },
+    { "id": "resource-svc", "label": "Resource API", "kind": "service", "x": 3, "y": 2, "ref": "backend",
+      "role": "Business endpoints", "why": "Validates the access token's signature and expiry locally on every request; only consults Redis for revocation of sensitive actions.",
+      "alternatives": [], "related": ["backend", "rest", "authentication"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 1, "y": 3, "ref": "redis",
+      "role": "Refresh tokens · sessions · revocation list", "why": "Refresh tokens and server sessions need fast lookup, a TTL that matches their lifetime, and instant deletion on logout or compromise.",
+      "alternatives": ["memcached", "postgresql"], "related": ["session", "ttl", "cache"] },
+    { "id": "users-db", "label": "PostgreSQL (users)", "kind": "db", "x": 1, "y": 4, "ref": "postgresql",
+      "role": "Accounts · password hashes · linked identities", "why": "Durable source of truth for who exists and which external identities map to which account; written rarely, read on every login.",
+      "alternatives": ["mysql"], "related": ["database", "sql", "transaction"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 3, "y": 4, "ref": "kafka",
+      "role": "Security event stream", "why": "LoginSucceeded, LoginFailed, TokenRefreshed and PasswordChanged events feed audit, alerting and anomaly detection without slowing the login path.",
+      "alternatives": ["rabbitmq"], "related": ["message-queue", "event-driven-architecture", "observability"] },
+    { "id": "audit-svc", "label": "Audit & Anomaly", "kind": "worker", "x": 3, "y": 5, "ref": "backend",
+      "role": "Consume security events", "why": "Stores an immutable login history and flags impossible travel or brute-force patterns; a later consumer can trigger a forced logout via Redis.",
+      "alternatives": [], "related": ["observability", "event-driven-architecture"] }
+  ],
+  "edges": [
+    { "from": "client", "to": "gateway", "label": "HTTPS" },
+    { "from": "client", "to": "idp", "label": "redirect → authorisation code", "style": "dashed" },
+    { "from": "gateway", "to": "auth-svc", "label": "/auth/*" },
+    { "from": "gateway", "to": "resource-svc", "label": "/api/* (Bearer token)" },
+    { "from": "auth-svc", "to": "idp", "label": "exchange code, fetch profile" },
+    { "from": "auth-svc", "to": "users-db", "label": "SELECT hash · INSERT identity" },
+    { "from": "auth-svc", "to": "redis", "label": "SET refresh:<id> EX" },
+    { "from": "resource-svc", "to": "redis", "label": "revocation check", "style": "dashed" },
+    { "from": "auth-svc", "to": "kafka", "label": "security events", "style": "dashed" },
+    { "from": "kafka", "to": "audit-svc", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "password-login",
+      "name": "Login with password → access token + refresh token",
+      "path": ["client", "gateway", "auth-svc", "users-db", "redis", "kafka"],
+      "steps": [
+        "The user submits email and password over HTTPS.",
+        "The gateway terminates TLS and applies per-IP and per-account rate limits to blunt credential stuffing.",
+        "The auth service looks up the account and compares the password against its stored slow hash (argon2 or bcrypt).",
+        "PostgreSQL returns the account row; a mismatch is answered with the same generic error and timing as an unknown user.",
+        "On success the service signs a short-lived access token (JWT, ~15 min) and stores a random refresh token in Redis with a TTL matching its lifetime.",
+        "A LoginSucceeded (or LoginFailed) event is published to Kafka for audit; the tokens return to the client as HttpOnly, Secure cookies."
+      ]
+    },
+    {
+      "id": "token-refresh",
+      "name": "Access a protected API, then refresh with rotation",
+      "path": ["client", "gateway", "resource-svc", "auth-svc", "redis"],
+      "steps": [
+        "The client calls the resource API with its access token; when the token expires it sends the refresh token to /auth/refresh instead.",
+        "The gateway forwards API calls with a Bearer token and routes refresh requests to the auth service.",
+        "The resource API validates the token's signature and expiry locally — no network call — and serves the request.",
+        "For a refresh, the auth service looks the refresh token up, issues a new access token and a new refresh token, and invalidates the old one.",
+        "Redis deletes the old refresh token and stores the new one; reuse of the old token is detected and revokes the whole session family."
+      ]
+    },
+    {
+      "id": "oauth-login",
+      "name": "Third-party login (OAuth 2.0 authorisation code)",
+      "path": ["client", "idp", "gateway", "auth-svc", "users-db", "redis"],
+      "steps": [
+        "The user clicks 'Continue with provider'; the client is redirected to the identity provider with a state value and PKCE challenge.",
+        "The identity provider authenticates the user (its own password, MFA) and redirects back with a one-time authorisation code.",
+        "The gateway routes the callback URL to the auth service.",
+        "The auth service verifies the state, exchanges the code for tokens server-to-server and validates the ID token's signature and issuer.",
+        "PostgreSQL links the external identity to an existing account or creates a new one in a single transaction.",
+        "The service issues its own access and refresh tokens, stored in Redis exactly as for a password login — the rest of the system never sees provider tokens."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Short-lived JWT access tokens plus server-side refresh tokens",
+      "why": "Resource services can verify a signed token locally on every request, which removes the auth service from the hot path. Keeping refresh tokens server-side in Redis preserves the ability to log a user out or revoke a stolen session.",
+      "alternatives": ["session"],
+      "tradeoff": "An access token stays valid until it expires even after logout; sensitive actions must check the revocation list, and the 15-minute window is a deliberate trade between revocation latency and load on Redis."
+    },
+    {
+      "decision": "Refresh token rotation with reuse detection",
+      "why": "A refresh token stolen from a device is otherwise valid for weeks. Rotating on every use and treating reuse of an old token as compromise limits the damage to a single request.",
+      "alternatives": [],
+      "tradeoff": "Clients that retry a refresh after a dropped response will trip reuse detection and be logged out; the client must handle that path gracefully."
+    },
+    {
+      "decision": "Delegate third-party login to an external identity provider",
+      "why": "Users already have accounts elsewhere and the provider handles MFA, recovery and breached-password checks. Storing fewer passwords shrinks the blast radius of a database leak.",
+      "alternatives": ["authentication"],
+      "tradeoff": "A dependency on a provider's availability and policy changes, and account linking rules (same email, different provider) become a permanent source of edge cases."
+    },
+    {
+      "decision": "Publish security events to Kafka instead of writing audit rows inline",
+      "why": "Audit storage, alerting and anomaly detection are separate concerns with separate consumers; the login path should not wait on any of them.",
+      "alternatives": ["rabbitmq", "postgresql"],
+      "tradeoff": "Audit is eventually consistent and the pipeline is one more system to run; a regulator asking for synchronous, guaranteed audit writes would push this back into the database transaction."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Sessions in one app", "summary": "One application checks passwords against PostgreSQL and keeps sessions in memory or a sessions table; a cookie carries the session id.", "nodes": ["client", "auth-svc", "users-db"] },
+    { "version": "v2", "title": "Gateway, Redis and tokens", "summary": "A gateway rate-limits login, refresh tokens move to Redis with TTLs, and resource services validate short-lived access tokens locally so auth is no longer on every request.", "nodes": ["client", "gateway", "auth-svc", "resource-svc", "redis", "users-db"] },
+    { "version": "v3", "title": "External identity and audit", "summary": "Third-party login is added through an OAuth code exchange, and every security event flows to Kafka for audit and anomaly detection.", "nodes": ["client", "idp", "gateway", "auth-svc", "resource-svc", "redis", "users-db", "kafka", "audit-svc"] }
+  ],
+  "textAlternative": "A browser or app at the top talks over HTTPS to an API gateway that rate-limits and routes traffic. Login and refresh requests go to an auth service on the left, which reads password hashes and linked identities from a PostgreSQL users database and stores refresh tokens and sessions in Redis with TTLs. API requests go to a resource service on the right, which validates access tokens locally and only checks Redis for revocation. For third-party login the client is redirected to an external identity provider and the auth service exchanges the returned code for tokens. The auth service publishes security events to Kafka, consumed by an audit and anomaly service.",
+  "related": [
+    { "to": "authentication", "rel": "RELATED_TO" },
+    { "to": "session", "rel": "RELATED_TO" },
+    { "to": "rate-limiting", "rel": "RELATED_TO" },
+    { "to": "tls", "rel": "RELATED_TO" },
+    { "to": "api-gateway", "rel": "RELATED_TO" },
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" }
+  ]
+}

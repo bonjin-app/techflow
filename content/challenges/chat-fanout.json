@@ -1,0 +1,13 @@
+{
+  "id": "chat-fanout",
+  "question": "Your chat app now runs on four servers. A user on server A sends a message to a friend connected to server C, and it never arrives. What is missing?",
+  "context": "Each server keeps its WebSocket connections in memory and writes messages to PostgreSQL. Single-server deployments worked perfectly.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Sticky sessions so friends land on the same server", "correct": false, "why": "You cannot guarantee two arbitrary users share a server, and sticky routing defeats load balancing. It papers over the real gap.", "ref": "load-balancing" },
+    { "label": "A shared Pub/Sub channel (e.g. Redis) every server subscribes to", "correct": true, "why": "Server A publishes the message; every server receives it and delivers to recipients it holds connections for. This is the standard fan-out layer between stateful WebSocket servers.", "ref": "pub-sub" },
+    { "label": "Poll PostgreSQL every second on each server", "correct": false, "why": "Works badly: latency of up to a second, heavy read load and no ordering guarantees. The database is the history store, not the real-time bus.", "ref": "postgresql" },
+    { "label": "Switch WebSocket to SSE", "correct": false, "why": "The transport is not the problem — SSE servers would have exactly the same isolated in-memory connection tables.", "ref": "sse" }
+  ],
+  "related": ["chat-system", "pub-sub", "redis", "websocket", "kafka"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "read-heavy-product-page",
+  "question": "A product page is read 500 times for every write and the database CPU is at 90%. What is the first change you should make?",
+  "context": "Latency is dominated by the same SELECT for popular products. Prices change a few times a day and a minute of staleness is acceptable.",
+  "difficulty": 2,
+  "options": [
+    { "label": "Shard the database by product id", "correct": false, "why": "Sharding solves write or data-volume limits and costs a lot of complexity. The problem here is repeated identical reads, which a cache removes almost for free.", "ref": "sharding" },
+    { "label": "Add Redis with Cache Aside and a 60-second TTL", "correct": true, "why": "Read-heavy, repeated, staleness-tolerant data is the textbook cache case. Cache Aside is low risk (the app falls back to the database) and the TTL bounds staleness to the accepted minute.", "ref": "cache-aside" },
+    { "label": "Move to microservices", "correct": false, "why": "Splitting services does nothing for a hot read path; every service would still hit the same database.", "ref": "microservices" },
+    { "label": "Switch to MongoDB", "correct": false, "why": "Changing the database engine does not change the access pattern. The same 500:1 reads would land on the new store.", "ref": "mongodb" }
+  ],
+  "related": ["cache", "cache-aside", "redis", "ttl", "e-commerce"]
+}

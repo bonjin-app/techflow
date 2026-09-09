@@ -30,3 +30,31 @@ url-shortener
 
 ## builds/ (build goal — not graph nodes)
 real-time-chat · e-commerce · ai-application · saas · notification
+
+---
+
+# Wave 2 (in progress)
+
+## technologies/
+nginx · graphql · grpc · nodejs · react · typescript · mysql · dynamodb · s3 · prometheus
+
+## concepts/
+tcp · udp · dns · tls · https · rpc · serialization · concurrency · consistency · availability · api-gateway · observability
+
+## patterns/
+mvc · layered-architecture · clean-architecture · hexagonal-architecture · modular-monolith · bulkhead · timeout · database-per-service
+
+## architectures/
+authentication-system · payment-system · video-streaming · search-system · social-feed
+
+## comparisons/
+rest-vs-graphql · rest-vs-grpc · modular-monolith-vs-microservices · mysql-vs-postgresql
+
+## roadmaps/
+fullstack-developer · devops-engineer · ai-engineer
+
+## system-designs/
+rate-limiter · news-feed
+
+## builds/
+video-platform · search-engine

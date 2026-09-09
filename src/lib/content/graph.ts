@@ -5,11 +5,13 @@ import {
   type AnyNode,
   type ArchitectureNode,
   type BuildGoal,
+  type Challenge,
   type ComparisonNode,
   type DocNode,
   type Edge,
   type NodeSummary,
   type NodeType,
+  type RadarData,
   type Relation,
   type RoadmapNode,
   type SystemDesignNode,
@@ -21,6 +23,8 @@ export interface KnowledgeGraph {
   /** adjacency: node id → edges touching it (both directions) */
   adjacency: Map<string, Edge[]>;
   builds: BuildGoal[];
+  radar: RadarData;
+  challenges: Challenge[];
   problems: string[];
 }
 
@@ -36,7 +40,7 @@ function edgeKey(e: Edge) {
 
 /** Build the graph (edges + adjacency) from raw content. Pure & deterministic. */
 export function buildGraph(): KnowledgeGraph {
-  const { nodes: list, builds } = loadAllContent();
+  const { nodes: list, builds, radar, challenges } = loadAllContent();
   const nodes = new Map<string, AnyNode>(list.map((n) => [n.id, n]));
   const problems: string[] = [];
   const edgeSet = new Map<string, Edge>();
@@ -130,6 +134,12 @@ export function buildGraph(): KnowledgeGraph {
       if (id && !nodes.has(id)) problems.push(`build '${b.id}': unknown node '${id}'`);
   }
 
+  for (const e of radar.entries) if (!nodes.has(e.ref)) problems.push(`radar: entry ref '${e.ref}' unknown`);
+  for (const c of challenges) {
+    for (const id of c.related) if (!nodes.has(id)) problems.push(`challenge '${c.id}': related '${id}' unknown`);
+    for (const o of c.options) if (o.ref && !nodes.has(o.ref)) problems.push(`challenge '${c.id}': option ref '${o.ref}' unknown`);
+  }
+
   // Symmetric relations get their inverse so neighbourhoods are consistent.
   for (const e of [...edgeSet.values()]) {
     const inv = INVERSE[e.rel];
@@ -148,7 +158,7 @@ export function buildGraph(): KnowledgeGraph {
     adjacency.get(e.from)!.push(e);
     adjacency.get(e.to)!.push(e);
   }
-  return { nodes, edges, adjacency, builds, problems };
+  return { nodes, edges, adjacency, builds, radar, challenges, problems };
 }
 
 /** Memoised per request/build. */
@@ -187,6 +197,8 @@ export const getComparisons = () => getNodesByType("comparison") as ComparisonNo
 export const getRoadmaps = () => getNodesByType("roadmap") as RoadmapNode[];
 export const getSystemDesigns = () => getNodesByType("system-design") as SystemDesignNode[];
 export const getBuilds = () => getGraph().builds;
+export const getRadar = () => getGraph().radar;
+export const getChallenges = () => getGraph().challenges;
 
 export interface Neighbor {
   node: NodeSummary;

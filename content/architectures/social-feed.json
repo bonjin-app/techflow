@@ -1,0 +1,147 @@
+{
+  "id": "social-feed",
+  "name": "Social Feed",
+  "tagline": "Fan-out on write into Redis timelines for most users, fan-out on read for celebrities",
+  "summary": "A new post is stored, then a fan-out worker pushes its id onto the Redis timeline of every follower. Reading a feed is a single list read plus a hydration step from a post cache. Accounts with millions of followers are excluded from the write fan-out; their recent posts are merged in at read time instead.",
+  "category": "system",
+  "tags": ["Feed", "Fan-out", "Caching", "Timelines"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "app", "label": "Mobile / Web App", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Posts and scrolls", "why": "Writes are rare and reads are constant: a user posts a few times a day and refreshes the feed dozens of times.",
+      "alternatives": [], "related": ["http", "rest"] },
+    { "id": "lb", "label": "Load Balancer", "kind": "lb", "x": 2, "y": 1, "ref": "load-balancing",
+      "role": "Routes writes and reads", "why": "Post and feed services scale very differently; routing by path lets each pool grow on its own.",
+      "alternatives": ["nginx"], "related": ["load-balancing", "api-gateway"] },
+    { "id": "post-svc", "label": "Post Service", "kind": "service", "x": 0, "y": 2, "ref": "backend",
+      "role": "Create post, store media", "why": "Validates and persists the post, uploads media, then emits an event — it never touches followers' timelines directly.",
+      "alternatives": [], "related": ["backend", "idempotency", "outbox"] },
+    { "id": "feed-svc", "label": "Feed Service", "kind": "service", "x": 4, "y": 2, "ref": "backend",
+      "role": "Assemble a user's feed", "why": "Reads the precomputed timeline, merges celebrity posts, hydrates ids into full posts and applies ranking — the hot read path.",
+      "alternatives": [], "related": ["backend", "cache-aside", "rate-limiting"] },
+    { "id": "posts-db", "label": "Posts DB (PostgreSQL)", "kind": "db", "x": 0, "y": 4, "ref": "postgresql",
+      "role": "Post content, sharded by author", "why": "Posts must be durable and queryable by author; sharding by author id keeps a profile page on one shard.",
+      "alternatives": ["mongodb", "dynamodb"], "related": ["database", "sharding", "replication"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 1, "y": 3, "ref": "kafka",
+      "role": "PostCreated events", "why": "Fan-out to a hundred thousand followers cannot happen inside the request; the event lets workers do it asynchronously and replay if they crash.",
+      "alternatives": ["rabbitmq"], "related": ["message-queue", "event-driven-architecture"] },
+    { "id": "fanout-worker", "label": "Fan-out Workers", "kind": "worker", "x": 2, "y": 4, "ref": "backend",
+      "role": "Push post id to follower timelines", "why": "Looks up the author's followers and appends the post id to each active follower's Redis list — thousands of small writes per post, done off the request path.",
+      "alternatives": [], "related": ["pub-sub", "idempotency", "retry"] },
+    { "id": "follow-store", "label": "Social Graph (DynamoDB)", "kind": "db", "x": 2, "y": 5, "ref": "dynamodb",
+      "role": "Followers / following lists", "why": "Key-value access by user id at very high read volume with predictable latency; the follower list of one account is the one query fan-out needs.",
+      "alternatives": ["postgresql", "redis"], "related": ["database", "sharding", "eventual-consistency"] },
+    { "id": "timeline-cache", "label": "Timelines (Redis)", "kind": "cache", "x": 3, "y": 4, "ref": "redis",
+      "role": "Per-user list of recent post ids", "why": "A feed read becomes one LRANGE over a few hundred ids — no joins, no fan-in query across followed accounts.",
+      "alternatives": ["memcached"], "related": ["cache", "ttl", "eventual-consistency"] },
+    { "id": "post-cache", "label": "Post Cache (Memcached)", "kind": "cache", "x": 4, "y": 3, "ref": "memcached",
+      "role": "Hydrate ids into post objects", "why": "Timelines hold ids only; the same hot posts are fetched by millions of feeds, so a simple multi-get cache in front of the database absorbs almost all of them.",
+      "alternatives": ["redis"], "related": ["cache", "cache-aside"] },
+    { "id": "media-storage", "label": "Media (S3)", "kind": "storage", "x": 5, "y": 3, "ref": "s3",
+      "role": "Images and video", "why": "Large binary content belongs in object storage, referenced from the post by URL, not in the database.",
+      "alternatives": [], "related": ["s3", "cdn"] },
+    { "id": "cdn", "label": "CDN", "kind": "edge", "x": 5, "y": 1, "ref": "cdn",
+      "role": "Serves media at the edge", "why": "The bulk of feed bandwidth is images; caching them close to users removes that load from the origin entirely.",
+      "alternatives": [], "related": ["cdn", "cache"] }
+  ],
+  "edges": [
+    { "from": "app", "to": "lb", "label": "HTTPS" },
+    { "from": "lb", "to": "post-svc", "label": "POST /posts" },
+    { "from": "lb", "to": "feed-svc", "label": "GET /feed" },
+    { "from": "post-svc", "to": "posts-db", "label": "INSERT post" },
+    { "from": "post-svc", "to": "media-storage", "label": "PUT media", "style": "dashed" },
+    { "from": "post-svc", "to": "kafka", "label": "PostCreated" },
+    { "from": "kafka", "to": "fanout-worker", "style": "dashed" },
+    { "from": "fanout-worker", "to": "follow-store", "label": "followers(author)" },
+    { "from": "fanout-worker", "to": "timeline-cache", "label": "LPUSH timeline:{follower}" },
+    { "from": "feed-svc", "to": "timeline-cache", "label": "LRANGE timeline:{user}" },
+    { "from": "feed-svc", "to": "follow-store", "label": "celebrities followed", "style": "dashed" },
+    { "from": "feed-svc", "to": "post-cache", "label": "multi-get post ids" },
+    { "from": "post-cache", "to": "posts-db", "label": "fill on miss", "style": "dashed" },
+    { "from": "feed-svc", "to": "posts-db", "label": "recent posts of celebrities", "style": "dashed" },
+    { "from": "app", "to": "cdn", "label": "media URLs" },
+    { "from": "cdn", "to": "media-storage", "label": "origin pull", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "post-fanout-write",
+      "name": "Post → fan-out on write",
+      "path": ["app", "lb", "post-svc", "posts-db", "kafka", "fanout-worker", "follow-store", "timeline-cache"],
+      "steps": [
+        "A user with 2,000 followers publishes a photo with a caption.",
+        "The load balancer routes the write to the post service pool.",
+        "The post service uploads the image to S3, validates the text and assigns a post id.",
+        "The post row is inserted into the author's shard; the request returns 201 as soon as this and the event are committed.",
+        "PostCreated{postId, authorId, createdAt} is published to Kafka, keyed by author so a user's posts are fanned out in order.",
+        "A fan-out worker consumes the event and checks the author is below the celebrity threshold — they are, so write fan-out applies.",
+        "The worker reads the author's follower ids from the social graph store, in pages.",
+        "For each follower it LPUSHes the post id onto timeline:{followerId} and trims the list to the newest ~800 ids; followers inactive for weeks are skipped to save memory."
+      ]
+    },
+    {
+      "id": "read-feed",
+      "name": "Read a feed (with fan-out on read for celebrities)",
+      "path": ["app", "lb", "feed-svc", "timeline-cache", "follow-store", "posts-db", "post-cache"],
+      "steps": [
+        "The user opens the app and pulls to refresh.",
+        "The balancer routes the read to the feed service pool.",
+        "The feed service starts assembling a page of ~30 items for this user.",
+        "It reads the user's precomputed timeline from Redis: one LRANGE returns the newest few hundred post ids from everyone they follow — except celebrities.",
+        "It looks up which celebrity accounts this user follows (a short list, cached in-process for a few minutes).",
+        "For those accounts it fetches the latest post ids directly from the posts database by author and merges them into the timeline by time — this is the fan-out-on-read half of the hybrid.",
+        "The merged ids are hydrated with one multi-get from the post cache (misses fill from the database), ranked, and returned; media URLs point at the CDN."
+      ]
+    },
+    {
+      "id": "media",
+      "name": "Load images through the CDN",
+      "path": ["app", "cdn", "media-storage"],
+      "steps": [
+        "The app renders the feed page and requests each image URL.",
+        "The CDN edge serves cached images in a few milliseconds; a viral photo is fetched once per edge and served millions of times.",
+        "Only the first request for a new image reaches S3."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Hybrid fan-out: on write for normal users, on read for celebrities",
+      "why": "Pure fan-out on write makes reads trivial but a post from an account with 50 million followers means 50 million Redis writes, which is slow, expensive and delays everyone's timeline behind it. Pure fan-out on read makes every refresh a query across hundreds of followed accounts. Splitting by follower count gets cheap reads for the common case and bounded write cost for the rare one.",
+      "alternatives": ["pub-sub", "cqrs"],
+      "tradeoff": "Two code paths to keep correct, a threshold to tune, and feed assembly must merge two sources by time. Accounts crossing the threshold need a migration of behaviour."
+    },
+    {
+      "decision": "Timelines store post ids only, hydrated from a separate cache",
+      "why": "Storing full post objects in every follower's timeline multiplies memory by the follower count and makes edits and deletions a fan-out problem of their own. Ids are tiny and a deleted or edited post is fixed in one place.",
+      "alternatives": ["redis"],
+      "tradeoff": "Every feed read needs a second round trip to hydrate — a multi-get to Memcached, with database fills on a miss. Acceptable because hot posts have a very high hit rate."
+    },
+    {
+      "decision": "Asynchronous fan-out through Kafka rather than in the request",
+      "why": "The poster should get a response in milliseconds regardless of follower count, and a crashed worker must be able to resume. A durable log gives both, plus ordering per author.",
+      "alternatives": ["rabbitmq"],
+      "tradeoff": "Followers see the post a second or two later than the author does — eventual consistency that is invisible for a feed but would be wrong for a direct message. Consumer lag must be monitored."
+    },
+    {
+      "decision": "Redis timelines are a cache, not the source of truth",
+      "why": "If a timeline is missing (eviction, inactive user, cold restart) the feed service can rebuild it from the social graph and the posts database on demand, so Redis can be sized for active users only.",
+      "alternatives": ["postgresql"],
+      "tradeoff": "A rebuild is an expensive fan-in query; a mass eviction after a Redis failure causes a burst of them. Replicas and gradual warm-up limit the blast radius."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Feed as a JOIN", "summary": "One service, one database: the feed is SELECT posts WHERE author IN (following) ORDER BY created_at. Simple and correct; collapses once users follow hundreds of accounts and the table is large.", "nodes": ["app", "lb", "post-svc", "feed-svc", "posts-db", "follow-store"] },
+    { "version": "v2", "title": "Precomputed timelines", "summary": "Creating a post pushes its id onto each follower's Redis list synchronously in the request. Reads become one list read; posting slows down as follower counts grow.", "nodes": ["app", "lb", "post-svc", "feed-svc", "posts-db", "follow-store", "timeline-cache"] },
+    { "version": "v3", "title": "Async fan-out and hydration cache", "summary": "Fan-out moves behind Kafka into workers; timelines hold ids that are hydrated from a Memcached post cache. Posting is fast again and the database is shielded from feed reads.", "nodes": ["app", "lb", "post-svc", "feed-svc", "posts-db", "kafka", "fanout-worker", "follow-store", "timeline-cache", "post-cache"] },
+    { "version": "v4", "title": "Celebrity path and media CDN", "summary": "High-follower accounts are excluded from write fan-out and merged at read time; media moves to object storage behind a CDN.", "nodes": ["app", "lb", "post-svc", "feed-svc", "posts-db", "kafka", "fanout-worker", "follow-store", "timeline-cache", "post-cache", "media-storage", "cdn"] }
+  ],
+  "textAlternative": "An app at the top talks through a load balancer to a post service on the left and a feed service on the right. The post service writes posts to a sharded PostgreSQL database, uploads media to S3 and publishes a PostCreated event to Kafka. Fan-out workers in the centre consume the event, read follower lists from a DynamoDB social-graph store below them and push post ids onto per-user Redis timelines. The feed service reads a user's Redis timeline, merges recent posts from followed celebrity accounts fetched directly from the posts database, hydrates ids through a Memcached post cache, and returns the feed. Images are served to the app from a CDN at the top right that pulls from S3.",
+  "related": [
+    { "to": "cache-aside", "rel": "RELATED_TO" },
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" },
+    { "to": "eventual-consistency", "rel": "RELATED_TO" },
+    { "to": "sharding", "rel": "RELATED_TO" },
+    { "to": "news-feed", "rel": "RELATED_TO" }
+  ]
+}

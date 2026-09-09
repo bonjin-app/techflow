@@ -1,0 +1,426 @@
+{
+  "id": "search-system",
+  "name": "Search System",
+  "tagline": "Ingest pipeline, inverted index and cached queries behind a search box",
+  "summary": "The catalogue service remains the source of truth in PostgreSQL and publishes change events to Kafka. An indexer consumes them, enriches each document and bulk-writes it into Elasticsearch. A search API answers queries with a short-TTL Redis cache in front of Elasticsearch, and a separate autocomplete service serves prefix suggestions from cached completion results.",
+  "category": "system",
+  "tags": [
+    "Search",
+    "Indexing",
+    "Event pipeline",
+    "Caching"
+  ],
+  "difficulty": 4,
+  "meta": {
+    "lastReviewed": "2026-09-09",
+    "confidence": "high"
+  },
+  "nodes": [
+    {
+      "id": "browser",
+      "label": "Browser / App",
+      "kind": "client",
+      "x": 2,
+      "y": 0,
+      "ref": "http",
+      "role": "Search box",
+      "why": "Fires an autocomplete request on every keystroke and a full search on submit — two very different latency budgets from the same input.",
+      "alternatives": [],
+      "related": [
+        "http",
+        "rest"
+      ]
+    },
+    {
+      "id": "lb",
+      "label": "Load Balancer",
+      "kind": "lb",
+      "x": 2,
+      "y": 1,
+      "ref": "load-balancing",
+      "role": "Routes /search and /suggest",
+      "why": "Both services are stateless and horizontally scaled; the balancer also lets autocomplete be scaled independently of search.",
+      "alternatives": [
+        "nginx"
+      ],
+      "related": [
+        "load-balancing",
+        "api-gateway"
+      ]
+    },
+    {
+      "id": "search-api",
+      "label": "Search API",
+      "kind": "service",
+      "x": 1,
+      "y": 2,
+      "ref": "backend",
+      "role": "Query parsing, ranking, facets",
+      "why": "Turns a user string into an Elasticsearch query (filters, boosts, pagination), normalises it for caching and shapes the response.",
+      "alternatives": [],
+      "related": [
+        "backend",
+        "cache-aside",
+        "rate-limiting"
+      ]
+    },
+    {
+      "id": "autocomplete-svc",
+      "label": "Autocomplete Service",
+      "kind": "service",
+      "x": 3,
+      "y": 2,
+      "ref": "backend",
+      "role": "Prefix suggestions",
+      "why": "Must answer in tens of milliseconds per keystroke; isolated so a slow full-text query never delays typing.",
+      "alternatives": [],
+      "related": [
+        "backend",
+        "cache"
+      ]
+    },
+    {
+      "id": "redis",
+      "label": "Redis",
+      "kind": "cache",
+      "x": 2,
+      "y": 3,
+      "ref": "redis",
+      "role": "Query result cache · prefix cache",
+      "why": "Popular queries and short prefixes repeat constantly; serving them from memory removes most load from the cluster and cuts p50 latency to about a millisecond.",
+      "alternatives": [
+        "memcached"
+      ],
+      "related": [
+        "cache",
+        "cache-aside",
+        "ttl",
+        "cache-invalidation"
+      ]
+    },
+    {
+      "id": "elasticsearch",
+      "label": "Elasticsearch",
+      "kind": "db",
+      "x": 2,
+      "y": 4,
+      "ref": "elasticsearch",
+      "role": "Inverted index, relevance, suggesters",
+      "why": "Tokenisation, stemming, BM25 relevance, aggregations for facets and a completion suggester — none of which a relational LIKE query provides at scale.",
+      "alternatives": [
+        "postgresql"
+      ],
+      "related": [
+        "sharding",
+        "replication",
+        "eventual-consistency"
+      ]
+    },
+    {
+      "id": "catalog-svc",
+      "label": "Catalogue Service",
+      "kind": "service",
+      "x": 5,
+      "y": 1,
+      "ref": "backend",
+      "role": "Owns products / documents",
+      "why": "The system of record for what is being searched. It writes to its database and emits an event; it does not know the index exists.",
+      "alternatives": [],
+      "related": [
+        "backend",
+        "outbox",
+        "event-driven-architecture"
+      ]
+    },
+    {
+      "id": "source-db",
+      "label": "PostgreSQL",
+      "kind": "db",
+      "x": 5,
+      "y": 2,
+      "ref": "postgresql",
+      "role": "Source of truth",
+      "why": "Relational, transactional storage for the catalogue; the search index is a derived, rebuildable view of this data.",
+      "alternatives": [
+        "mysql"
+      ],
+      "related": [
+        "database",
+        "transaction",
+        "outbox"
+      ]
+    },
+    {
+      "id": "kafka",
+      "label": "Kafka",
+      "kind": "queue",
+      "x": 5,
+      "y": 3,
+      "ref": "kafka",
+      "role": "Change events (ProductChanged)",
+      "why": "Decouples the catalogue from indexing, buffers bulk imports, preserves per-key order and lets a full reindex replay history.",
+      "alternatives": [
+        "rabbitmq"
+      ],
+      "related": [
+        "message-queue",
+        "event-driven-architecture",
+        "eventual-consistency"
+      ]
+    },
+    {
+      "id": "indexer",
+      "label": "Indexer",
+      "kind": "worker",
+      "x": 4,
+      "y": 4,
+      "ref": "backend",
+      "role": "Transform + bulk index",
+      "why": "Denormalises each event into a search document (joins category names, prices, availability) and writes in batches; idempotent by document id so replays are safe.",
+      "alternatives": [],
+      "related": [
+        "idempotency",
+        "retry",
+        "dead-letter-queue"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "browser",
+      "to": "lb",
+      "label": "GET /search · GET /suggest"
+    },
+    {
+      "from": "lb",
+      "to": "search-api",
+      "label": "/search?q="
+    },
+    {
+      "from": "lb",
+      "to": "autocomplete-svc",
+      "label": "/suggest?q="
+    },
+    {
+      "from": "search-api",
+      "to": "redis",
+      "label": "GET hash(query)"
+    },
+    {
+      "from": "search-api",
+      "to": "elasticsearch",
+      "label": "_search on miss"
+    },
+    {
+      "from": "autocomplete-svc",
+      "to": "redis",
+      "label": "GET prefix:*"
+    },
+    {
+      "from": "autocomplete-svc",
+      "to": "elasticsearch",
+      "label": "completion suggester",
+      "style": "dashed"
+    },
+    {
+      "from": "search-api",
+      "to": "kafka",
+      "label": "search log",
+      "style": "dashed"
+    },
+    {
+      "from": "catalog-svc",
+      "to": "source-db",
+      "label": "INSERT / UPDATE + outbox"
+    },
+    {
+      "from": "catalog-svc",
+      "to": "kafka",
+      "label": "ProductChanged"
+    },
+    {
+      "from": "kafka",
+      "to": "indexer",
+      "style": "dashed"
+    },
+    {
+      "from": "indexer",
+      "to": "source-db",
+      "label": "enrich",
+      "style": "dashed"
+    },
+    {
+      "from": "indexer",
+      "to": "elasticsearch",
+      "label": "_bulk upsert"
+    }
+  ],
+  "flows": [
+    {
+      "id": "index",
+      "name": "Index a changed product",
+      "path": [
+        "catalog-svc",
+        "source-db",
+        "kafka",
+        "indexer",
+        "elasticsearch"
+      ],
+      "steps": [
+        "A merchant changes a product's price and title in the catalogue service.",
+        "The row and an outbox record are committed in one PostgreSQL transaction, so the event cannot be lost or emitted without the write.",
+        "The outbox relay publishes ProductChanged{id, version} to Kafka, keyed by product id so updates to one product stay ordered.",
+        "The indexer consumes a batch, fetches the full rows it needs from PostgreSQL and builds denormalised search documents.",
+        "Documents are upserted with a _bulk request; the new version is searchable after the next refresh, typically within a second or two."
+      ]
+    },
+    {
+      "id": "query",
+      "name": "Full-text search with result cache",
+      "path": [
+        "browser",
+        "lb",
+        "search-api",
+        "redis",
+        "elasticsearch"
+      ],
+      "steps": [
+        "The user submits \"wireless headphones\" with a price filter and page 1.",
+        "The load balancer sends the request to a search API instance.",
+        "The API normalises the query (lower-case, sorted filters, page) and hashes it into a cache key.",
+        "Redis is checked first; a hit returns the cached JSON in about a millisecond. This request misses.",
+        "Elasticsearch runs a multi_match query with boosts and aggregations for facets; the API stores the response in Redis with a 30–60 s TTL and returns it."
+      ]
+    },
+    {
+      "id": "autocomplete",
+      "name": "Autocomplete on every keystroke",
+      "path": [
+        "browser",
+        "lb",
+        "autocomplete-svc",
+        "redis",
+        "elasticsearch"
+      ],
+      "steps": [
+        "The user has typed \"wire\"; the browser debounces for ~100 ms then requests suggestions.",
+        "The balancer routes to the autocomplete service, scaled separately from search.",
+        "The service normalises the prefix and rejects anything under two characters.",
+        "Short prefixes are almost always cached in Redis as a ready-made suggestion list; a hit ends here.",
+        "On a miss the completion suggester in Elasticsearch returns the top titles by popularity weight, which is then cached for minutes."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Keep PostgreSQL as the source of truth; Elasticsearch is a derived index",
+      "why": "Search engines are excellent at retrieval and weak at transactions, constraints and joins. Treating the index as rebuildable from the database means it can be dropped and recreated after a mapping change without data loss.",
+      "alternatives": [
+        "postgresql"
+      ],
+      "tradeoff": "Two stores must be kept in sync, and the index is eventually consistent — a product updated a second ago may briefly show its old price. Postgres full-text search alone avoids this and is enough for small catalogues."
+    },
+    {
+      "decision": "Feed the index through Kafka instead of dual-writing from the catalogue service",
+      "why": "Writing to the database and the index in the same request fails in exactly the wrong way: one succeeds, the other times out, and the index silently diverges. An outbox plus a log gives at-least-once delivery, ordering per key and the ability to replay for a full reindex.",
+      "alternatives": [
+        "rabbitmq"
+      ],
+      "tradeoff": "Indexing latency is measured in seconds, not milliseconds, and the pipeline itself needs monitoring for lag and dead-lettered events."
+    },
+    {
+      "decision": "Cache search results in Redis with a short TTL",
+      "why": "Query popularity follows a steep power law: a small set of queries makes up most of the traffic, and repeating them against the cluster wastes its capacity.",
+      "alternatives": [
+        "memcached"
+      ],
+      "tradeoff": "The long tail of unique queries never hits the cache, and any personalisation in the ranking must be excluded from the cache key or the hit rate collapses. Results can also lag index updates by the TTL."
+    },
+    {
+      "decision": "Autocomplete as its own service backed by cached completion results",
+      "why": "Suggestions run per keystroke with a much tighter latency target than search and a far smaller, more repetitive input space, so they cache extremely well and deserve independent scaling.",
+      "alternatives": [
+        "redis"
+      ],
+      "tradeoff": "A second service and a second index type to maintain. Redis sorted sets keyed by prefix are a simpler alternative when the vocabulary is small enough to fit in memory."
+    }
+  ],
+  "versions": [
+    {
+      "version": "v1",
+      "title": "SQL LIKE / full-text in PostgreSQL",
+      "summary": "The search API queries the catalogue database directly with full-text indexes. Fine for tens of thousands of rows; relevance and typo tolerance are limited.",
+      "nodes": [
+        "browser",
+        "lb",
+        "search-api",
+        "source-db",
+        "catalog-svc"
+      ]
+    },
+    {
+      "version": "v2",
+      "title": "Elasticsearch with dual writes",
+      "summary": "The catalogue service writes to PostgreSQL and Elasticsearch in the same request. Relevance improves; consistency problems appear whenever one write fails.",
+      "nodes": [
+        "browser",
+        "lb",
+        "search-api",
+        "elasticsearch",
+        "source-db",
+        "catalog-svc"
+      ]
+    },
+    {
+      "version": "v3",
+      "title": "Event-driven indexing",
+      "summary": "Changes flow through an outbox and Kafka to an indexer; the index becomes rebuildable and the catalogue service no longer knows about search.",
+      "nodes": [
+        "browser",
+        "lb",
+        "search-api",
+        "elasticsearch",
+        "source-db",
+        "catalog-svc",
+        "kafka",
+        "indexer"
+      ]
+    },
+    {
+      "version": "v4",
+      "title": "Caching and autocomplete",
+      "summary": "Redis caches hot queries and prefixes, and a dedicated autocomplete service handles per-keystroke traffic without touching the search path.",
+      "nodes": [
+        "browser",
+        "lb",
+        "search-api",
+        "autocomplete-svc",
+        "redis",
+        "elasticsearch",
+        "source-db",
+        "catalog-svc",
+        "kafka",
+        "indexer"
+      ]
+    }
+  ],
+  "textAlternative": "At the top a browser sends search and suggestion requests through a load balancer to two services: a search API on the left and an autocomplete service on the right. Both check Redis in the middle first and fall through to an Elasticsearch cluster below it. On the right-hand column, a catalogue service writes to PostgreSQL and publishes change events to Kafka; an indexer worker consumes those events, enriches them from PostgreSQL and bulk-writes documents into Elasticsearch. The search API also logs queries to Kafka.",
+  "related": [
+    {
+      "to": "elasticsearch",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "outbox",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "cache-aside",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "eventual-consistency",
+      "rel": "RELATED_TO"
+    }
+  ]
+}

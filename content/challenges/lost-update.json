@@ -1,0 +1,13 @@
+{
+  "id": "lost-update",
+  "question": "Two requests read an account balance of 100, one subtracts 50 and the other 80, and the final balance is 20 instead of a rejection. What went wrong and what fixes it?",
+  "context": "Both handlers do: read balance → check ≥ amount → write new balance. They ran at the same time on different app servers against the same PostgreSQL row.",
+  "difficulty": 3,
+  "options": [
+    { "label": "A race condition — fix with a single atomic UPDATE ... WHERE balance >= amount, or SELECT ... FOR UPDATE", "correct": true, "why": "The read-check-write sequence is not atomic, so both saw 100. Pushing the check into one atomic statement (or locking the row for the transaction) makes the second writer see the first writer's result.", "ref": "race-condition" },
+    { "label": "A cache invalidation bug — clear Redis", "correct": false, "why": "No cache is involved; both reads hit the database. Adding or clearing a cache does not make read-then-write atomic.", "ref": "cache-invalidation" },
+    { "label": "Eventual consistency — wait longer", "correct": false, "why": "This is a single primary database, not replicas converging. Waiting does not restore the missing 50 or 80.", "ref": "eventual-consistency" },
+    { "label": "Deadlock — add retry", "correct": false, "why": "A deadlock would have errored one transaction. Here both succeeded silently, which is the signature of a lost update, not a deadlock.", "ref": "deadlock" }
+  ],
+  "related": ["race-condition", "transaction", "acid", "distributed-lock", "postgresql"]
+}

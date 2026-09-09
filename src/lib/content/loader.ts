@@ -5,9 +5,11 @@ import type {
   AnyNode,
   ArchitectureNode,
   BuildGoal,
+  Challenge,
   ComparisonNode,
   ContentMeta,
   DocNode,
+  RadarData,
   Relation,
   RoadmapNode,
   SystemDesignNode,
@@ -269,9 +271,39 @@ function loadBuilds(): BuildGoal[] {
   });
 }
 
+function loadRadar(): RadarData {
+  const file = path.join(CONTENT_ROOT, "radar.json");
+  if (!fs.existsSync(file)) return { assessedOn: "", method: "", entries: [] };
+  const d = readJson<Record<string, unknown>>(file);
+  requireFields(d, ["assessedOn", "method", "entries"], "radar.json");
+  return { assessedOn: String(d.assessedOn), method: String(d.method), entries: d.entries as RadarData["entries"] };
+}
+
+function loadChallenges(): Challenge[] {
+  return listFiles("challenges", ".json").map((file) => {
+    const rel = path.relative(CONTENT_ROOT, file);
+    const d = readJson<Record<string, unknown>>(file);
+    requireFields(d, ["id", "question", "context", "options"], rel);
+    if (path.basename(file, ".json") !== d.id) throw new Error(`${rel}: filename must match id '${d.id}'`);
+    const options = d.options as Challenge["options"];
+    if (!Array.isArray(options) || options.length < 2) throw new Error(`${rel}: need ≥ 2 options`);
+    if (!options.some((o) => o.correct)) throw new Error(`${rel}: no option marked correct`);
+    return {
+      id: String(d.id),
+      question: String(d.question),
+      context: String(d.context),
+      options,
+      related: asStringArray(d.related),
+      difficulty: Number(d.difficulty ?? 3),
+    };
+  });
+}
+
 export interface RawContent {
   nodes: AnyNode[];
   builds: BuildGoal[];
+  radar: RadarData;
+  challenges: Challenge[];
 }
 
 /** Read every content file from disk. No validation beyond shape. */
@@ -288,5 +320,5 @@ export function loadAllContent(): RawContent {
     if (seen.has(n.id)) throw new Error(`duplicate node id '${n.id}'`);
     seen.add(n.id);
   }
-  return { nodes, builds: loadBuilds() };
+  return { nodes, builds: loadBuilds(), radar: loadRadar(), challenges: loadChallenges() };
 }
