@@ -1,0 +1,132 @@
+{
+  "id": "notification-system",
+  "name": "Notification System",
+  "tagline": "Events in, rate-limited fan-out to push, email and SMS workers, failures dead-lettered",
+  "summary": "Any service publishes a notification event to Kafka. A dispatcher applies user preferences, deduplicates and rate-limits with Redis, then places a job on a per-channel RabbitMQ queue. Push, email and SMS workers call providers with retries; messages that keep failing land in a dead-letter queue instead of blocking the channel.",
+  "category": "system",
+  "tags": ["Messaging", "Fan-out", "Rate limiting", "Reliability"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "producers", "label": "Producing Services", "kind": "service", "x": 2, "y": 0, "ref": "backend",
+      "role": "Emit notification events", "why": "Orders, chat, billing — any service publishes 'notify user X about Y' and never learns how delivery works.",
+      "alternatives": [], "related": ["event-driven-architecture", "backend"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 2, "y": 1, "ref": "kafka",
+      "role": "Ingest topic", "why": "Absorbs bursts (a marketing blast, a flash sale) durably and lets the dispatcher fall behind without producers noticing.",
+      "alternatives": ["rabbitmq"], "related": ["message-queue", "pub-sub"] },
+    { "id": "dispatcher", "label": "Dispatcher", "kind": "service", "x": 2, "y": 2, "ref": "backend",
+      "role": "Preferences, dedupe, rate limit, routing", "why": "Decides whether, how and when a user is notified: honours opt-outs, drops duplicates, throttles noisy senders and picks channels.",
+      "alternatives": [], "related": ["rate-limiting", "idempotency", "backend"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 0, "y": 3, "ref": "redis",
+      "role": "Rate-limit counters and dedupe keys", "why": "Sliding-window counters per user and per template, plus short-TTL keys of recently sent event ids, need atomic sub-millisecond operations.",
+      "alternatives": ["memcached"], "related": ["rate-limiting", "idempotency", "ttl", "cache"] },
+    { "id": "rabbitmq", "label": "RabbitMQ", "kind": "queue", "x": 2, "y": 3, "ref": "rabbitmq",
+      "role": "Per-channel work queues", "why": "One queue per channel with acknowledgements, retry delays and dead-letter exchanges — exactly the work-queue semantics channel workers need.",
+      "alternatives": ["kafka"], "related": ["message-queue", "retry", "dead-letter-queue"] },
+    { "id": "prefs-db", "label": "PostgreSQL", "kind": "db", "x": 4, "y": 3, "ref": "postgresql",
+      "role": "Preferences, templates, delivery log", "why": "Opt-outs, quiet hours, device tokens and a record of what was sent must be durable and queryable.",
+      "alternatives": ["mongodb"], "related": ["database", "sql"] },
+    { "id": "push-worker", "label": "Push Worker", "kind": "worker", "x": 1, "y": 4, "ref": "backend",
+      "role": "APNs / FCM", "why": "Handles device-token errors and provider rate limits independently of email and SMS.",
+      "alternatives": [], "related": ["retry", "circuit-breaker"] },
+    { "id": "email-worker", "label": "Email Worker", "kind": "worker", "x": 2, "y": 4, "ref": "backend",
+      "role": "Email provider", "why": "Renders templates and submits to the provider; bounces and throttling are handled here.",
+      "alternatives": [], "related": ["retry", "circuit-breaker"] },
+    { "id": "sms-worker", "label": "SMS Worker", "kind": "worker", "x": 3, "y": 4, "ref": "backend",
+      "role": "SMS gateway", "why": "The most expensive channel, so it is rate-limited most strictly and scaled separately.",
+      "alternatives": [], "related": ["retry", "rate-limiting"] },
+    { "id": "providers", "label": "Delivery Providers", "kind": "external", "x": 2, "y": 5,
+      "role": "APNs, FCM, email and SMS APIs", "why": "Third-party services with their own quotas, outages and error codes; every call is a candidate for retry, backoff and circuit breaking.",
+      "alternatives": [], "related": ["circuit-breaker", "retry", "rate-limiting"] },
+    { "id": "dlq", "label": "Dead Letter Queue", "kind": "queue", "x": 5, "y": 4, "ref": "dead-letter-queue",
+      "role": "Messages that exhausted retries", "why": "An invalid device token or a permanently bouncing address must not be retried forever; parking it keeps the channel queue flowing and gives operators something to inspect.",
+      "alternatives": [], "related": ["dead-letter-queue", "retry", "message-queue"] }
+  ],
+  "edges": [
+    { "from": "producers", "to": "kafka", "label": "NotificationRequested" },
+    { "from": "kafka", "to": "dispatcher", "style": "dashed" },
+    { "from": "dispatcher", "to": "redis", "label": "INCR / SETNX" },
+    { "from": "dispatcher", "to": "prefs-db", "label": "preferences" },
+    { "from": "dispatcher", "to": "rabbitmq", "label": "channel jobs" },
+    { "from": "rabbitmq", "to": "push-worker", "style": "dashed" },
+    { "from": "rabbitmq", "to": "email-worker", "style": "dashed" },
+    { "from": "rabbitmq", "to": "sms-worker", "style": "dashed" },
+    { "from": "push-worker", "to": "providers", "label": "APNs / FCM" },
+    { "from": "email-worker", "to": "providers", "label": "SMTP / API" },
+    { "from": "sms-worker", "to": "providers", "label": "SMS API" },
+    { "from": "email-worker", "to": "dlq", "label": "after N retries", "style": "dashed" },
+    { "from": "sms-worker", "to": "dlq", "style": "dashed" },
+    { "from": "push-worker", "to": "prefs-db", "label": "delivery log", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "send",
+      "name": "Send a notification",
+      "path": ["producers", "kafka", "dispatcher", "prefs-db", "redis", "rabbitmq", "push-worker", "providers"],
+      "steps": [
+        "The order service publishes NotificationRequested { userId, template, payload, eventId }.",
+        "Kafka stores it in the notifications topic; the producer is done.",
+        "The dispatcher consumes it and starts the routing decision.",
+        "Preferences and device tokens are loaded from PostgreSQL — the user allows push but has opted out of SMS.",
+        "Redis checks the eventId was not seen before and increments the user's hourly counter; both pass.",
+        "A push job is placed on the push queue in RabbitMQ.",
+        "The push worker takes the job and builds the provider request.",
+        "APNs or FCM accepts the message and the worker acknowledges the job."
+      ]
+    },
+    {
+      "id": "failure",
+      "name": "Provider failure and dead-lettering",
+      "path": ["rabbitmq", "email-worker", "providers", "dlq"],
+      "steps": [
+        "An email job is delivered to the email worker.",
+        "The worker submits it and receives a 5xx; it rejects the job so RabbitMQ redelivers after a backoff delay.",
+        "The provider keeps failing for this address across three attempts.",
+        "RabbitMQ moves the job to the dead-letter queue; operators inspect it later while other emails keep flowing."
+      ]
+    },
+    {
+      "id": "throttle",
+      "name": "Rate limit a noisy sender",
+      "path": ["kafka", "dispatcher", "redis"],
+      "steps": [
+        "A bug makes a service publish the same alert 500 times in a minute.",
+        "The dispatcher processes each event as usual.",
+        "Redis reports the eventId as already seen, or the per-user window as exhausted; the dispatcher drops or delays the extras and records the decision."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Kafka for ingest, RabbitMQ for channel work queues",
+      "why": "Ingest needs to absorb huge bursts durably and let several consumers (dispatcher, analytics) read the same stream. Channel delivery needs per-message acknowledgement, delayed retries and dead-letter routing, which RabbitMQ provides natively.",
+      "alternatives": ["kafka", "rabbitmq"],
+      "tradeoff": "Two brokers to operate and reason about. A smaller system would pick one — RabbitMQ end to end is perfectly adequate below tens of thousands of notifications per minute."
+    },
+    {
+      "decision": "Rate limiting and deduplication in Redis",
+      "why": "Every notification requires an atomic counter increment and a set-if-not-exists check; these must be fast and shared across dispatcher instances.",
+      "alternatives": ["postgresql"],
+      "tradeoff": "Counters are lost if Redis is not persisted, so a restart briefly allows over-sending. Doing this in PostgreSQL is durable but adds write load to every event."
+    },
+    {
+      "decision": "Dead-letter after a bounded number of retries",
+      "why": "Some failures are permanent (bad token, unsubscribed address). Retrying them forever burns provider quota and blocks healthy messages behind them.",
+      "alternatives": ["retry"],
+      "tradeoff": "Dead-lettered messages need an owner and a process — a DLQ nobody watches is just a slower way of losing messages."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Direct calls", "summary": "Each service calls the email and push providers itself. Simple until a provider outage slows every service down.", "nodes": ["producers", "providers"] },
+    { "version": "v2", "title": "Queue and workers", "summary": "Producers publish events; a dispatcher routes them to per-channel queues and workers call providers.", "nodes": ["producers", "kafka", "dispatcher", "rabbitmq", "push-worker", "email-worker", "sms-worker", "providers"] },
+    { "version": "v3", "title": "Preferences, limits and DLQ", "summary": "Preferences and templates move to PostgreSQL, Redis rate-limits and deduplicates, and a dead-letter queue catches messages that keep failing.", "nodes": ["producers", "kafka", "dispatcher", "redis", "rabbitmq", "prefs-db", "push-worker", "email-worker", "sms-worker", "providers", "dlq"] }
+  ],
+  "textAlternative": "Producing services at the top publish notification events to Kafka. A dispatcher below it consumes them, reads preferences from PostgreSQL on the right, checks deduplication and rate-limit counters in Redis on the left, and places channel jobs on RabbitMQ. Three workers beneath RabbitMQ — push, email and SMS — take jobs and call external delivery providers at the bottom. Jobs that exhaust their retries are moved to a dead-letter queue on the right.",
+  "related": [
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" },
+    { "to": "dead-letter-queue", "rel": "RELATED_TO" },
+    { "to": "retry", "rel": "RELATED_TO" },
+    { "to": "rate-limiting", "rel": "RELATED_TO" },
+    { "to": "message-queue", "rel": "RELATED_TO" }
+  ]
+}

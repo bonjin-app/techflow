@@ -1,0 +1,114 @@
+{
+  "id": "chat-system",
+  "name": "Chat System",
+  "tagline": "Real-time messaging with WebSocket fan-out across many servers",
+  "summary": "Clients hold a persistent WebSocket to one of many chat servers. Redis Pub/Sub fans a message out to every server that has a recipient connected, Kafka records the event durably for asynchronous consumers, and PostgreSQL stores history.",
+  "category": "system",
+  "tags": ["Real-time", "Messaging", "WebSocket", "Pub/Sub"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "websocket",
+      "role": "Client", "why": "Holds one persistent WebSocket connection so the server can push messages instantly.",
+      "alternatives": ["sse"], "related": ["websocket", "http"] },
+    { "id": "lb", "label": "Load Balancer", "kind": "lb", "x": 2, "y": 1, "ref": "load-balancing",
+      "role": "Connection distribution", "why": "Spreads long-lived connections across chat servers and hides individual server failures.",
+      "alternatives": [], "related": ["load-balancing"] },
+    { "id": "chat-1", "label": "Chat Server A", "kind": "service", "x": 1, "y": 2, "ref": "backend",
+      "role": "WebSocket endpoint", "why": "Stateless apart from its open sockets; any number can run in parallel.",
+      "alternatives": [], "related": ["websocket", "backend"] },
+    { "id": "chat-2", "label": "Chat Server B", "kind": "service", "x": 3, "y": 2, "ref": "backend",
+      "role": "WebSocket endpoint", "why": "A user's friends may be connected here — servers must share events.",
+      "alternatives": [], "related": ["websocket", "backend"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 2, "y": 3, "ref": "redis",
+      "role": "Pub/Sub · presence · session", "why": "Fast shared state: which user is on which server, and a channel every server subscribes to for fan-out.",
+      "alternatives": ["kafka", "rabbitmq"], "related": ["pub-sub", "session", "cache"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 2, "y": 4, "ref": "kafka",
+      "role": "Durable event log", "why": "Messages become events that several downstream services consume independently and can replay.",
+      "alternatives": ["rabbitmq"], "related": ["message-queue", "event-driven-architecture"] },
+    { "id": "message-svc", "label": "Message Service", "kind": "worker", "x": 0, "y": 5, "ref": "backend",
+      "role": "Persist history", "why": "Writes messages to the database off the hot path so sending stays fast.",
+      "alternatives": [], "related": ["message-queue"] },
+    { "id": "notification-svc", "label": "Notification Service", "kind": "worker", "x": 2, "y": 5, "ref": "backend",
+      "role": "Push to offline users", "why": "Consumes the same events to send mobile push / email when the recipient is not connected.",
+      "alternatives": [], "related": ["pub-sub"] },
+    { "id": "analytics", "label": "Analytics", "kind": "worker", "x": 4, "y": 5,
+      "role": "Metrics", "why": "A third consumer of the same stream — adding it required no change to the chat servers.",
+      "alternatives": [], "related": ["event-driven-architecture"] },
+    { "id": "db", "label": "PostgreSQL", "kind": "db", "x": 0, "y": 6, "ref": "postgresql",
+      "role": "Message history", "why": "Durable, queryable store for conversations and search.",
+      "alternatives": ["mongodb"], "related": ["database", "transaction"] }
+  ],
+  "edges": [
+    { "from": "browser", "to": "lb", "label": "WebSocket" },
+    { "from": "lb", "to": "chat-1" },
+    { "from": "lb", "to": "chat-2" },
+    { "from": "chat-1", "to": "redis", "label": "PUBLISH / SUBSCRIBE" },
+    { "from": "chat-2", "to": "redis", "label": "SUBSCRIBE" },
+    { "from": "redis", "to": "kafka", "label": "event", "style": "dashed" },
+    { "from": "kafka", "to": "message-svc", "style": "dashed" },
+    { "from": "kafka", "to": "notification-svc", "style": "dashed" },
+    { "from": "kafka", "to": "analytics", "style": "dashed" },
+    { "from": "message-svc", "to": "db", "label": "INSERT" }
+  ],
+  "flows": [
+    {
+      "id": "send-message",
+      "name": "Send a message",
+      "path": ["browser", "lb", "chat-1", "redis", "chat-2", "kafka", "notification-svc"],
+      "steps": [
+        "The sender's browser pushes the message over its open WebSocket.",
+        "The load balancer routes it to the chat server that owns this connection.",
+        "Chat Server A validates it and PUBLISHes to the room channel.",
+        "Redis fans the message out to every server subscribed to that channel.",
+        "Chat Server B delivers it to recipients connected there over WebSocket.",
+        "The message is also appended to Kafka as an event.",
+        "The notification service pushes to recipients who are offline."
+      ]
+    },
+    {
+      "id": "persist-history",
+      "name": "Persist history",
+      "path": ["chat-1", "kafka", "message-svc", "db"],
+      "steps": [
+        "Chat Server A publishes the message event.",
+        "Kafka stores it durably in the messages topic.",
+        "The message service consumes at its own pace.",
+        "History is written to PostgreSQL for search and reload."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Use Redis Pub/Sub for real-time fan-out",
+      "why": "Delivery to online users needs millisecond latency and every chat server must see every message for its rooms. Redis Pub/Sub is fast and simple; losing a message on a rare broker restart is acceptable because Kafka keeps the durable copy.",
+      "alternatives": ["kafka", "rabbitmq"],
+      "tradeoff": "Redis Pub/Sub is fire-and-forget — no persistence, no replay. It cannot be the only path for anything that must not be lost."
+    },
+    {
+      "decision": "Use Kafka as the event log",
+      "why": "History, notifications and analytics all need the same events, at different speeds, with the ability to replay after a bug fix. A durable partitioned log decouples them from the chat servers.",
+      "alternatives": ["rabbitmq"],
+      "tradeoff": "Kafka is heavy to operate. For a small chat app a single queue (or even direct database writes) would be simpler."
+    },
+    {
+      "decision": "Use PostgreSQL for message history",
+      "why": "Conversations need ordering, pagination and search with strong consistency; a relational store with indexes handles this well at moderate scale.",
+      "alternatives": ["mongodb"],
+      "tradeoff": "Very high write volume eventually requires partitioning by conversation or moving hot history to a wide-column store."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Single server", "summary": "One server holds all WebSockets and writes straight to the database. Works until one process cannot hold every connection.", "nodes": ["browser", "chat-1", "db"] },
+    { "version": "v2", "title": "Many servers + Redis", "summary": "A load balancer spreads connections; Redis Pub/Sub lets servers exchange messages so users on different servers can talk.", "nodes": ["browser", "lb", "chat-1", "chat-2", "redis", "db"] },
+    { "version": "v3", "title": "Event log", "summary": "Kafka records every message as an event; persistence moves off the hot path into a consumer.", "nodes": ["browser", "lb", "chat-1", "chat-2", "redis", "kafka", "message-svc", "db"] },
+    { "version": "v4", "title": "More consumers", "summary": "Notifications and analytics consume the same stream without touching the chat servers.", "nodes": ["browser", "lb", "chat-1", "chat-2", "redis", "kafka", "message-svc", "notification-svc", "analytics", "db"] }
+  ],
+  "textAlternative": "Browsers connect over WebSocket to a load balancer, which distributes connections across two chat servers. Both chat servers publish and subscribe to Redis so a message received on one server reaches recipients connected to the other. Messages are also written as events to Kafka. Three consumers read from Kafka: a message service that stores history in PostgreSQL, a notification service that pushes to offline users, and an analytics service.",
+  "related": [
+    { "to": "pub-sub", "rel": "RELATED_TO" },
+    { "to": "websocket", "rel": "RELATED_TO" },
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" },
+    { "to": "message-queue", "rel": "RELATED_TO" }
+  ]
+}

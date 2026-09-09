@@ -1,0 +1,134 @@
+{
+  "id": "backend-developer",
+  "name": "Backend Developer Roadmap",
+  "tagline": "From a first program to designing systems that survive millions of users",
+  "summary": "An ordered path through the skills a backend engineer relies on every day. It starts with the fundamentals every server touches (a language, Git, the shell, HTTP), moves into storing and protecting data, then into the caching and messaging layers that let a service scale, the tooling that ships and runs it, and finally the distributed-systems thinking behind system design.",
+  "category": "career",
+  "tags": ["Backend", "Career", "Learning Path", "System Design"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "programming-fundamentals",
+      "label": "Programming fundamentals",
+      "stage": "Foundations",
+      "note": "Every later topic assumes you can read and write code fluently in at least one language, so this comes before anything server-specific."
+    },
+    {
+      "label": "Git & version control",
+      "stage": "Foundations",
+      "note": "You will collaborate through branches, reviews and history from your very first project, so learn Git before the code gets big."
+    },
+    {
+      "label": "Linux & the terminal",
+      "stage": "Foundations",
+      "note": "Servers, containers and CI runners are Linux; knowing processes, permissions, ports and logs saves hours of debugging later."
+    },
+    {
+      "ref": "http",
+      "label": "HTTP",
+      "stage": "Web",
+      "note": "HTTP is the contract between every client and your server — methods, status codes and headers explain most 'why does the API do that' questions."
+    },
+    {
+      "ref": "rest",
+      "label": "REST API design",
+      "stage": "Web",
+      "note": "Once HTTP makes sense, REST gives you conventions for shaping resources and URLs that other developers can predict."
+    },
+    {
+      "ref": "database",
+      "label": "Databases",
+      "stage": "Data",
+      "note": "Almost every API exists to read or write persistent data, so understanding what a database guarantees comes before picking a framework."
+    },
+    {
+      "ref": "sql",
+      "label": "SQL",
+      "stage": "Data",
+      "note": "SQL is how you talk to relational databases and how you spot the slow query an ORM hides from you."
+    },
+    {
+      "ref": "transaction",
+      "label": "Transactions",
+      "stage": "Data",
+      "note": "Concurrent requests touching the same rows is where correctness bugs live; transactions and isolation levels are the fix."
+    },
+    {
+      "ref": "backend",
+      "label": "Backend framework",
+      "stage": "Application",
+      "note": "With HTTP and data in hand, a framework (Spring, Express, FastAPI, Rails, ...) stops being magic and becomes glue you understand."
+    },
+    {
+      "ref": "authentication",
+      "label": "Authentication & authorization",
+      "stage": "Application",
+      "note": "The first real feature most services need is knowing who is calling; sessions, tokens and OAuth build on the framework you just learned."
+    },
+    {
+      "ref": "cache",
+      "label": "Caching",
+      "stage": "Scale",
+      "note": "When the database becomes the bottleneck, a cache is the cheapest speed-up — and the first place you meet invalidation problems."
+    },
+    {
+      "ref": "redis",
+      "label": "Redis",
+      "stage": "Scale",
+      "note": "Redis is the tool you will most often reach for to implement caching, sessions, rate limits and locks in practice."
+    },
+    {
+      "ref": "message-queue",
+      "label": "Message queues & async work",
+      "stage": "Scale",
+      "note": "Slow or unreliable work (email, payments, image processing) must leave the request path; queues make that decoupling explicit."
+    },
+    {
+      "ref": "kafka",
+      "label": "Kafka",
+      "stage": "Scale",
+      "note": "Once you need many consumers reading the same events with replay, a durable log like Kafka becomes the right shape."
+    },
+    {
+      "ref": "rabbitmq",
+      "label": "RabbitMQ",
+      "stage": "Scale",
+      "note": "Learning a classic broker beside Kafka shows that 'message queue' is a spectrum — routing and per-message acks versus a partitioned log."
+    },
+    {
+      "ref": "docker",
+      "label": "Docker",
+      "stage": "Operations",
+      "note": "Packaging your service and its dependencies into an image is the prerequisite for reproducible deployments and everything below."
+    },
+    {
+      "label": "CI/CD pipelines",
+      "stage": "Operations",
+      "note": "Automated tests and builds on every push turn Docker images into something you can ship many times a day without fear."
+    },
+    {
+      "ref": "kubernetes",
+      "label": "Kubernetes",
+      "stage": "Operations",
+      "note": "When you run many containers across many machines, an orchestrator handles scheduling, health checks and rollouts for you."
+    },
+    {
+      "label": "Cloud platforms (AWS / GCP / Azure)",
+      "stage": "Operations",
+      "note": "Managed databases, queues, load balancers and object storage are the building blocks you will actually deploy on; learn one provider well."
+    },
+    {
+      "ref": "distributed-system",
+      "label": "Distributed systems",
+      "stage": "Design",
+      "note": "Multiple servers, replicas and queues introduce partial failure, consistency trade-offs and consensus — the theory behind every scaling decision so far."
+    },
+    {
+      "ref": "url-shortener",
+      "label": "System design practice",
+      "stage": "Design",
+      "note": "Finish by designing a whole system step by step; the URL shortener walks from one server to sharded storage using everything above."
+    }
+  ]
+}

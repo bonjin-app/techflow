@@ -1,0 +1,98 @@
+{
+  "id": "simple-web-app",
+  "name": "Simple Web App",
+  "tagline": "A monolith, a database and a cache — the starting point for most products",
+  "summary": "A browser talks over HTTPS to a single backend application that reads and writes PostgreSQL. Redis stores sessions and hot lookups, and a CDN serves static assets so the application only handles dynamic requests.",
+  "category": "system",
+  "tags": ["Monolith", "Web", "REST", "Caching"],
+  "difficulty": 1,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Client", "why": "Sends HTTPS requests for pages and JSON; nothing is pushed to it, so plain request/response is enough.",
+      "alternatives": ["websocket"], "related": ["http", "rest"] },
+    { "id": "cdn", "label": "CDN", "kind": "edge", "x": 0, "y": 1, "ref": "cdn",
+      "role": "Static assets", "why": "JavaScript, CSS and images are served from edge locations close to the user and never reach the application server.",
+      "alternatives": [], "related": ["cdn", "cache", "ttl"] },
+    { "id": "app", "label": "Web Application", "kind": "service", "x": 2, "y": 2, "ref": "backend",
+      "role": "Monolith: routing, business logic, templates", "why": "One deployable unit is the fastest way to ship and debug while the team and traffic are small.",
+      "alternatives": [], "related": ["backend", "rest", "authentication"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 4, "y": 3, "ref": "redis",
+      "role": "Sessions and Cache Aside", "why": "Keeps login sessions out of the application's memory so any instance can serve any user, and caches hot reads with a TTL.",
+      "alternatives": ["memcached"], "related": ["session", "cache", "cache-aside", "ttl"] },
+    { "id": "db", "label": "PostgreSQL", "kind": "db", "x": 2, "y": 4, "ref": "postgresql",
+      "role": "Source of truth", "why": "Relational data with constraints and transactions covers almost every early product; it is well understood and easy to host.",
+      "alternatives": ["mongodb"], "related": ["database", "sql", "transaction"] }
+  ],
+  "edges": [
+    { "from": "browser", "to": "cdn", "label": "static assets" },
+    { "from": "browser", "to": "app", "label": "HTTPS / REST" },
+    { "from": "app", "to": "redis", "label": "GET / SET" },
+    { "from": "app", "to": "db", "label": "SQL" }
+  ],
+  "flows": [
+    {
+      "id": "page-load",
+      "name": "Load a page",
+      "path": ["browser", "app", "redis", "db"],
+      "steps": [
+        "The browser requests /products/42 over HTTPS.",
+        "The application checks the session cookie and looks up the product.",
+        "Redis is asked first; on a miss the application falls back to the database.",
+        "PostgreSQL returns the row, which is cached in Redis with a TTL and rendered."
+      ]
+    },
+    {
+      "id": "static-assets",
+      "name": "Fetch static assets",
+      "path": ["browser", "cdn"],
+      "steps": [
+        "The rendered page references /app.js and /styles.css.",
+        "The CDN serves them from the nearest edge; the origin is contacted only on a cache miss."
+      ]
+    },
+    {
+      "id": "login",
+      "name": "Log in",
+      "path": ["browser", "app", "db", "redis"],
+      "steps": [
+        "The browser POSTs credentials over HTTPS.",
+        "The application verifies the password hash.",
+        "PostgreSQL returns the user record.",
+        "A session is stored in Redis and its id is set as a cookie."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Start with one monolithic application",
+      "why": "One codebase, one deployment and one database transaction boundary keep a small team fast. Most products never outgrow this.",
+      "alternatives": ["microservices"],
+      "tradeoff": "Everything scales together and a bug anywhere can take the whole app down. Splitting later requires discipline about module boundaries now."
+    },
+    {
+      "decision": "Keep sessions in Redis instead of application memory",
+      "why": "Any application instance can serve any request, so instances can restart or be added behind a load balancer without logging users out.",
+      "alternatives": ["postgresql"],
+      "tradeoff": "One more service to run and a hard dependency: if Redis is down, nobody is logged in. Storing sessions in PostgreSQL avoids the extra service but adds database load on every request."
+    },
+    {
+      "decision": "PostgreSQL as the only database",
+      "why": "Constraints, joins and transactions catch data errors early; JSONB covers semi-structured needs without a second store.",
+      "alternatives": ["mongodb"],
+      "tradeoff": "Schema changes need migrations and horizontal write scaling is hard — acceptable long before it becomes a real limit."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "App + database", "summary": "The browser talks to one server that owns everything. Fine for a prototype and low traffic.", "nodes": ["browser", "app", "db"] },
+    { "version": "v2", "title": "Add Redis", "summary": "Sessions move out of process and hot reads are cached, so the app can run as several identical instances.", "nodes": ["browser", "app", "redis", "db"] },
+    { "version": "v3", "title": "Add a CDN", "summary": "Static assets leave the application server; the origin only sees dynamic requests.", "nodes": ["browser", "cdn", "app", "redis", "db"] }
+  ],
+  "textAlternative": "A browser at the top sends HTTPS requests to a single web application in the middle and fetches static assets from a CDN on the left. The application reads and writes a PostgreSQL database at the bottom and uses Redis, to the right, for sessions and cached lookups.",
+  "related": [
+    { "to": "backend", "rel": "RELATED_TO" },
+    { "to": "rest", "rel": "RELATED_TO" },
+    { "to": "cache-aside", "rel": "RELATED_TO" },
+    { "to": "session", "rel": "RELATED_TO" }
+  ]
+}

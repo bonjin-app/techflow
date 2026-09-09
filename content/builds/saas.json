@@ -1,0 +1,10 @@
+{
+  "id": "saas",
+  "name": "SaaS Product",
+  "tagline": "Multi-tenant subscription software built as independently deployable services",
+  "architecture": "microservices",
+  "technologies": ["postgresql", "redis", "kafka", "docker", "kubernetes"],
+  "concepts": ["authentication", "session", "rate-limiting", "distributed-system", "eventual-consistency", "load-balancing"],
+  "patterns": ["circuit-breaker", "saga", "outbox", "cqrs", "event-driven-architecture"],
+  "learningPath": ["rest", "authentication", "database", "docker", "message-queue", "distributed-system", "kubernetes", "microservices"]
+}

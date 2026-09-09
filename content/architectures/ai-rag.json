@@ -1,0 +1,132 @@
+{
+  "id": "ai-rag",
+  "name": "AI RAG Application",
+  "tagline": "Embed documents into a vector store, retrieve the relevant chunks, and ground the LLM",
+  "summary": "Documents are chunked and embedded offline into a vector store. At query time the user's question is embedded, the nearest chunks are retrieved and passed to the LLM as context, so answers are grounded in your data instead of the model's memory. A gateway rate-limits calls and Redis caches repeated questions to control cost.",
+  "category": "system",
+  "tags": ["AI", "RAG", "Vector Search", "LLM"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Chat UI", "why": "Sends the question and streams the answer back token by token.",
+      "alternatives": ["websocket"], "related": ["http", "sse"] },
+    { "id": "gateway", "label": "API Gateway", "kind": "edge", "x": 2, "y": 1, "ref": "rate-limiting",
+      "role": "Auth and rate limiting", "why": "Every request costs real money at the LLM provider; per-user limits and authentication stop abuse before it reaches the model.",
+      "alternatives": ["load-balancing"], "related": ["rate-limiting", "authentication"] },
+    { "id": "api", "label": "RAG Orchestrator", "kind": "service", "x": 2, "y": 2, "ref": "backend",
+      "role": "Embed → retrieve → prompt → answer", "why": "Owns the pipeline: builds the prompt from retrieved chunks, calls the model, streams the result and logs the conversation.",
+      "alternatives": [], "related": ["backend", "rest"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 0, "y": 2, "ref": "redis",
+      "role": "Response cache and rate-limit counters", "why": "Identical or near-identical questions are common; returning a cached answer skips an embedding call, a vector search and an LLM call.",
+      "alternatives": ["memcached"], "related": ["cache", "cache-aside", "ttl", "rate-limiting"] },
+    { "id": "storage", "label": "Object Storage", "kind": "storage", "x": 5, "y": 1,
+      "role": "Source documents", "why": "PDFs, wiki exports and tickets land here; an upload triggers the ingestion pipeline.",
+      "alternatives": [], "related": ["database"] },
+    { "id": "ingest-worker", "label": "Ingestion Worker", "kind": "worker", "x": 5, "y": 2, "ref": "backend",
+      "role": "Chunk, embed, upsert", "why": "Runs offline and in bulk so re-indexing a corpus never competes with user queries.",
+      "alternatives": [], "related": ["message-queue", "idempotency"] },
+    { "id": "embedder", "label": "Embedding Model", "kind": "external", "x": 1, "y": 3,
+      "role": "Text → vector", "why": "The same model must embed both documents and queries so that distances in vector space are comparable.",
+      "alternatives": [], "related": ["retry", "circuit-breaker"] },
+    { "id": "llm", "label": "LLM", "kind": "external", "x": 3, "y": 3,
+      "role": "Generate grounded answer", "why": "Receives the question plus retrieved chunks and is instructed to answer only from them, citing sources.",
+      "alternatives": [], "related": ["retry", "circuit-breaker", "rate-limiting"] },
+    { "id": "vector-db", "label": "Vector Store", "kind": "db", "x": 1, "y": 4,
+      "role": "Embeddings and chunk metadata", "why": "Approximate nearest-neighbour search over millions of vectors with metadata filters (tenant, document, date).",
+      "alternatives": ["postgresql", "elasticsearch"], "related": ["database", "sharding"] },
+    { "id": "postgres", "label": "PostgreSQL", "kind": "db", "x": 3, "y": 4, "ref": "postgresql",
+      "role": "Conversations, users, feedback", "why": "Chat history, thumbs-up/down and document ownership are relational data that needs transactions and reporting.",
+      "alternatives": ["mongodb"], "related": ["database", "sql"] }
+  ],
+  "edges": [
+    { "from": "browser", "to": "gateway", "label": "HTTPS" },
+    { "from": "gateway", "to": "api" },
+    { "from": "api", "to": "redis", "label": "cache lookup" },
+    { "from": "api", "to": "embedder", "label": "embed question" },
+    { "from": "api", "to": "vector-db", "label": "kNN search" },
+    { "from": "api", "to": "llm", "label": "prompt + chunks" },
+    { "from": "api", "to": "postgres", "label": "history" },
+    { "from": "storage", "to": "ingest-worker", "label": "new document", "style": "dashed" },
+    { "from": "ingest-worker", "to": "embedder", "label": "embed chunks" },
+    { "from": "ingest-worker", "to": "vector-db", "label": "upsert vectors" }
+  ],
+  "flows": [
+    {
+      "id": "ingest",
+      "name": "Ingest a document",
+      "path": ["storage", "ingest-worker", "embedder", "vector-db"],
+      "steps": [
+        "A new PDF is uploaded to object storage and an event fires.",
+        "The worker extracts text and splits it into overlapping chunks of a few hundred tokens.",
+        "Each chunk is embedded in batches by the embedding model.",
+        "Vectors are upserted with metadata (document id, page, tenant); re-uploading the same document overwrites its chunks."
+      ]
+    },
+    {
+      "id": "query",
+      "name": "Answer a question",
+      "path": ["browser", "gateway", "api", "redis", "embedder", "vector-db", "llm", "postgres"],
+      "steps": [
+        "The user asks 'What is our refund policy for digital goods?'",
+        "The gateway checks the token and the user's per-minute quota.",
+        "The orchestrator normalises the question and starts the pipeline.",
+        "Redis has no cached answer for this question, so the pipeline continues.",
+        "The question is embedded with the same model used at ingestion.",
+        "The vector store returns the top-k chunks closest to the question, filtered to the user's tenant.",
+        "The LLM receives the question and the chunks and streams an answer that cites them.",
+        "Question, answer and cited chunks are logged to PostgreSQL for history and evaluation; the answer is also cached in Redis."
+      ]
+    },
+    {
+      "id": "cache-hit",
+      "name": "Repeated question served from cache",
+      "path": ["browser", "gateway", "api", "redis"],
+      "steps": [
+        "Another user asks the same question minutes later.",
+        "The gateway admits the request.",
+        "The orchestrator hashes the normalised question.",
+        "Redis returns the cached answer; no embedding, retrieval or LLM call is made."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "A dedicated vector store rather than pgvector in PostgreSQL",
+      "why": "The corpus is expected to reach tens of millions of chunks with tenant filters, where a purpose-built ANN index and horizontal scaling matter.",
+      "alternatives": ["postgresql", "elasticsearch"],
+      "tradeoff": "One more database to operate and keep in sync. Below a few million vectors, pgvector inside the existing PostgreSQL is simpler and removes a whole component."
+    },
+    {
+      "decision": "Rate limiting and authentication at the gateway",
+      "why": "LLM calls are metered by the provider; an unauthenticated or runaway client can create a large bill in minutes.",
+      "alternatives": ["load-balancing"],
+      "tradeoff": "Legitimate bursts get 429s and the gateway's limits must be tuned per plan; a plain load balancer has no such protection."
+    },
+    {
+      "decision": "Cache answers in Redis with a TTL",
+      "why": "Many questions repeat almost verbatim; a cache hit costs microseconds instead of seconds and dollars.",
+      "alternatives": ["memcached"],
+      "tradeoff": "Cached answers go stale when documents change, so the TTL is short and the cache is flushed per tenant on re-ingestion. Semantic caching (matching similar questions) increases hit rate but risks returning a subtly wrong answer."
+    },
+    {
+      "decision": "Run ingestion as a separate worker",
+      "why": "Embedding a large corpus is bursty and slow; isolating it keeps query latency stable and lets it be retried and resumed.",
+      "alternatives": ["backend"],
+      "tradeoff": "Newly uploaded documents are not searchable until the worker finishes — users need a visible 'indexing' state."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Plain chat", "summary": "The browser sends a question to the API, which forwards it to the LLM. Answers come from the model's training data only.", "nodes": ["browser", "api", "llm"] },
+    { "version": "v2", "title": "Retrieval", "summary": "Documents are embedded into a vector store by a worker; queries retrieve the nearest chunks and include them in the prompt.", "nodes": ["browser", "api", "storage", "ingest-worker", "embedder", "vector-db", "llm"] },
+    { "version": "v3", "title": "Production hardening", "summary": "A gateway authenticates and rate-limits, Redis caches repeated answers, and PostgreSQL stores conversations and feedback for evaluation.", "nodes": ["browser", "gateway", "api", "redis", "storage", "ingest-worker", "embedder", "vector-db", "llm", "postgres"] }
+  ],
+  "textAlternative": "A browser at the top sends questions through an API gateway to a RAG orchestrator service. The orchestrator first checks Redis on the left for a cached answer, then sends the question to an embedding model, searches a vector store beneath it for the nearest document chunks, sends the question and chunks to an external LLM, and records the conversation in PostgreSQL at the bottom right. On the right side, documents in object storage are picked up by an ingestion worker that embeds their chunks with the same embedding model and writes the vectors into the vector store.",
+  "related": [
+    { "to": "rate-limiting", "rel": "RELATED_TO" },
+    { "to": "cache", "rel": "RELATED_TO" },
+    { "to": "cache-aside", "rel": "RELATED_TO" },
+    { "to": "postgresql", "rel": "RELATED_TO" },
+    { "to": "elasticsearch", "rel": "RELATED_TO" }
+  ]
+}

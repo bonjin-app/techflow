@@ -1,0 +1,10 @@
+{
+  "id": "real-time-chat",
+  "name": "Real-time Chat",
+  "tagline": "Instant messaging with presence, history and push to offline users",
+  "architecture": "chat-system",
+  "technologies": ["websocket", "redis", "kafka", "postgresql", "sse"],
+  "concepts": ["pub-sub", "session", "load-balancing", "message-queue", "http", "distributed-system"],
+  "patterns": ["event-driven-architecture", "retry", "dead-letter-queue", "circuit-breaker"],
+  "learningPath": ["http", "websocket", "backend", "pub-sub", "redis", "load-balancing", "kafka", "chat-system"]
+}

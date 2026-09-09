@@ -1,0 +1,71 @@
+# TechFlow
+
+**Understand technology. See how it connects.**
+
+TechFlow is an interactive developer knowledge graph. Technologies, concepts, patterns,
+architectures, comparisons, roadmaps and system designs are nodes in one graph; every page
+links to the nodes around it, and the diagrams are live (force graphs, animated request
+flows, interactive decision trees) rather than pictures.
+
+## Stack
+
+- Next.js 16 (App Router, `output: "export"` — plain static HTML in `out/`), React 19, TypeScript
+- Tailwind CSS v4 with CSS-variable design tokens (dark default, follows OS, manual toggle)
+- Content as Markdown + JSON in `content/` — no database, no backend
+- `d3-force` for graph layout; everything else is hand-written SVG
+- Geist Sans / Geist Mono
+
+## Getting started
+
+```bash
+pnpm install
+pnpm dev          # http://localhost:3000
+pnpm validate     # checks every content file + graph links (also runs before build)
+pnpm build        # static production build
+pnpm lint && pnpm typecheck
+```
+
+## Project layout
+
+```
+content/                 all content — see content/README.md for the authoring guide
+  technologies/ concepts/ patterns/     Markdown nodes (frontmatter + H2 sections)
+  architectures/ system-designs/        JSON diagrams (nodes, edges, flows, decisions, versions)
+  comparisons/ roadmaps/ builds/        comparisons (md), roadmaps + "I want to build" goals (json)
+  NODES.md                             master list of node ids
+scripts/validate-content.ts            content validator (broken links fail the build)
+src/lib/content/                       loader → knowledge graph (edges, neighbours, ego graphs, search index)
+src/lib/fences.ts                      parsers for the visual code fences (steps / sequence / compare / decision / timeline)
+src/components/md/                     Markdown renderer + fence components
+src/components/graph/                  RelationshipGraph (force layout) + lazy loader
+src/components/canvas/                 ArchitectureCanvas (zoom/pan, ▶ Run, inspector, versions), StepJourney
+src/components/detail/                 shared detail-page building blocks (levels, learning path, neighbours, TOC)
+src/app/                               routes: /technology /concept /pattern /architecture /compare /roadmap /system-design /build /search /explore
+```
+
+## Adding content
+
+1. Pick an id from `content/NODES.md` (or add one there).
+2. Copy the closest existing file (`content/technologies/redis.md` is the reference) and follow `content/README.md`.
+3. Run `pnpm validate` — it fails on unknown ids, missing required sections and unknown fences.
+
+Edges are declared in frontmatter (`related`) and derived automatically from `usedFor`,
+`prerequisites`, `learningPath`, architecture node `ref`s, comparison `subjects` and roadmap steps.
+
+## Keyboard
+
+`/` or `⌘K` search · `G` then `T/C/P/A/S/M/R` jump to a section · `⌘⇧D` developer mode ·
+on a diagram: `space` run, `→` step, `f` fit.
+
+## Deployment
+
+The site is 100% static. `pnpm build` writes `out/`, which any static host can serve.
+`.github/workflows/deploy.yml` builds on every push to `main` and publishes to GitHub Pages
+(enable **Settings → Pages → Source: GitHub Actions** once). For a sub-path host it sets
+`NEXT_PUBLIC_BASE_PATH=/<repo>`; on a custom domain remove that variable and set
+`NEXT_PUBLIC_SITE_URL` to the domain so canonical / sitemap URLs are right.
+
+## Personal state
+
+There are no accounts and no backend. Learning-path checkboxes, recently viewed, streak and
+theme live in the visitor's `localStorage` only.

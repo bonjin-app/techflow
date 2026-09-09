@@ -1,0 +1,139 @@
+{
+  "id": "microservices",
+  "name": "Microservices",
+  "tagline": "An API gateway, independently deployable services with their own data, and async events",
+  "summary": "Clients reach every service through one API gateway that authenticates, rate-limits and routes. Each service owns its database and never reads another service's tables; state changes are shared as events over RabbitMQ so services stay decoupled and can be deployed independently.",
+  "category": "system",
+  "tags": ["Microservices", "API Gateway", "Messaging", "Distributed System"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "client", "label": "Web / Mobile Client", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Client", "why": "Talks to one public hostname; it does not know how many services exist behind it.",
+      "alternatives": [], "related": ["http", "rest"] },
+    { "id": "gateway", "label": "API Gateway", "kind": "edge", "x": 2, "y": 1, "ref": "rate-limiting",
+      "role": "Auth, rate limiting, routing", "why": "Cross-cutting concerns live in one place: verify the JWT, enforce per-client limits, route /orders and /inventory to the right service.",
+      "alternatives": ["load-balancing"], "related": ["rate-limiting", "authentication", "load-balancing", "rest"] },
+    { "id": "auth-svc", "label": "Auth Service", "kind": "service", "x": 0, "y": 2, "ref": "authentication",
+      "role": "Login, tokens", "why": "Issues and validates tokens so other services never handle passwords.",
+      "alternatives": [], "related": ["authentication", "session"] },
+    { "id": "order-svc", "label": "Order Service", "kind": "service", "x": 2, "y": 2, "ref": "backend",
+      "role": "Orders", "why": "Owns the order lifecycle and its database; publishes OrderCreated instead of calling inventory directly.",
+      "alternatives": [], "related": ["backend", "outbox", "saga"] },
+    { "id": "inventory-svc", "label": "Inventory Service", "kind": "service", "x": 4, "y": 2, "ref": "backend",
+      "role": "Stock levels", "why": "Reserves stock in response to order events and exposes stock queries; can be scaled and deployed without touching orders.",
+      "alternatives": [], "related": ["backend", "idempotency"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 1, "y": 3, "ref": "redis",
+      "role": "Token cache, rate-limit counters", "why": "The gateway and auth service need sub-millisecond lookups for revoked tokens and request counters.",
+      "alternatives": ["memcached"], "related": ["cache", "rate-limiting", "session", "ttl"] },
+    { "id": "rabbitmq", "label": "RabbitMQ", "kind": "queue", "x": 5, "y": 3, "ref": "rabbitmq",
+      "role": "Inter-service events", "why": "Routes OrderCreated, StockReserved and PaymentFailed to the services that subscribe, with acknowledgements and dead-letter queues built in.",
+      "alternatives": ["kafka", "redis"], "related": ["message-queue", "event-driven-architecture", "dead-letter-queue"] },
+    { "id": "auth-db", "label": "PostgreSQL (auth)", "kind": "db", "x": 0, "y": 4, "ref": "postgresql",
+      "role": "Users, credentials", "why": "Private to the auth service; no other service can read password hashes.",
+      "alternatives": [], "related": ["database", "authentication"] },
+    { "id": "order-db", "label": "PostgreSQL (orders)", "kind": "db", "x": 2, "y": 4, "ref": "postgresql",
+      "role": "Orders and outbox", "why": "Relational integrity for orders and lines; the outbox table lets events be published only for committed orders.",
+      "alternatives": ["mongodb"], "related": ["database", "transaction", "outbox"] },
+    { "id": "inventory-db", "label": "MongoDB (inventory)", "kind": "db", "x": 4, "y": 4, "ref": "mongodb",
+      "role": "Stock documents", "why": "Stock per SKU per warehouse is a flat, high-write document; the team chose a document store and can change it without affecting anyone else.",
+      "alternatives": ["postgresql"], "related": ["database", "sharding"] },
+    { "id": "notification-worker", "label": "Notification Worker", "kind": "worker", "x": 5, "y": 4, "ref": "backend",
+      "role": "Emails and push", "why": "Subscribes to order events and calls providers; retries and dead-letters failures without involving the order service.",
+      "alternatives": [], "related": ["retry", "dead-letter-queue", "notification-system"] }
+  ],
+  "edges": [
+    { "from": "client", "to": "gateway", "label": "HTTPS + JWT" },
+    { "from": "gateway", "to": "auth-svc", "label": "login / verify" },
+    { "from": "gateway", "to": "order-svc", "label": "/orders" },
+    { "from": "gateway", "to": "inventory-svc", "label": "/inventory" },
+    { "from": "gateway", "to": "redis", "label": "rate-limit counters", "style": "dashed" },
+    { "from": "auth-svc", "to": "redis", "label": "token cache" },
+    { "from": "auth-svc", "to": "auth-db" },
+    { "from": "order-svc", "to": "order-db", "label": "order + outbox (tx)" },
+    { "from": "order-svc", "to": "rabbitmq", "label": "OrderCreated", "style": "dashed" },
+    { "from": "rabbitmq", "to": "inventory-svc", "label": "OrderCreated", "style": "dashed" },
+    { "from": "inventory-svc", "to": "inventory-db" },
+    { "from": "inventory-svc", "to": "rabbitmq", "label": "StockReserved", "style": "dashed" },
+    { "from": "rabbitmq", "to": "notification-worker", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "place-order",
+      "name": "Place an order",
+      "path": ["client", "gateway", "order-svc", "order-db", "rabbitmq", "inventory-svc", "inventory-db"],
+      "steps": [
+        "The client POSTs /orders with its JWT.",
+        "The gateway verifies the token, checks the rate limit and routes to the order service.",
+        "The order service validates the request and creates the order as PENDING.",
+        "Order and OrderCreated outbox row are committed in one transaction; the client gets 202 Accepted.",
+        "RabbitMQ delivers OrderCreated to every subscribed queue.",
+        "The inventory service consumes it idempotently and reserves stock.",
+        "The reservation is written to MongoDB and StockReserved is published back for the order service to confirm the order."
+      ]
+    },
+    {
+      "id": "login",
+      "name": "Log in and cache the token",
+      "path": ["client", "gateway", "auth-svc", "auth-db", "redis"],
+      "steps": [
+        "The client submits credentials.",
+        "The gateway forwards to the auth service without needing a token.",
+        "The auth service verifies the password hash.",
+        "PostgreSQL returns the user record.",
+        "Token metadata is cached in Redis so later requests are verified at the gateway without hitting the auth database."
+      ]
+    },
+    {
+      "id": "notify",
+      "name": "Notify without coupling",
+      "path": ["order-svc", "rabbitmq", "notification-worker"],
+      "steps": [
+        "The order service publishes OrderConfirmed — it has no idea who listens.",
+        "RabbitMQ routes a copy to the notifications queue.",
+        "The worker sends the email; on provider failure it retries with backoff and finally dead-letters the message."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "One API gateway in front of all services",
+      "why": "Authentication, rate limiting, TLS and routing are implemented once instead of in every service, and clients see a single stable API.",
+      "alternatives": ["load-balancing"],
+      "tradeoff": "The gateway is a single point of failure and a shared deploy; a plain load balancer per service is simpler but pushes auth and limits into every codebase."
+    },
+    {
+      "decision": "Database per service",
+      "why": "A service can change its schema, scale its store or switch database technology without coordinating with other teams. Inventory chose MongoDB; orders stayed on PostgreSQL.",
+      "alternatives": ["postgresql"],
+      "tradeoff": "No cross-service joins or transactions: reports need data copied via events, and multi-service operations need a saga. A single shared PostgreSQL is far simpler while the team is small."
+    },
+    {
+      "decision": "Asynchronous events over synchronous REST chains",
+      "why": "If the order service called inventory, then payment, then notifications in sequence, every downstream outage would fail order placement. Events let each consumer fail and recover on its own.",
+      "alternatives": ["rest", "http"],
+      "tradeoff": "Eventual consistency and harder debugging: an order is PENDING until inventory reacts, and a request no longer has a single call stack to trace."
+    },
+    {
+      "decision": "RabbitMQ rather than Kafka",
+      "why": "Traffic is moderate, routing keys map cleanly onto per-service queues, and built-in acknowledgements and dead-letter exchanges cover the failure handling needed.",
+      "alternatives": ["kafka"],
+      "tradeoff": "No long-term replay: a new service cannot rebuild its state from history. If event volume grows or replay becomes important, Kafka is the natural move."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Monolith", "summary": "One application with one database handles users, orders and stock.", "nodes": ["client", "order-svc", "order-db"] },
+    { "version": "v2", "title": "Gateway and auth extracted", "summary": "Authentication becomes its own service with a private database; a gateway verifies tokens and rate-limits using Redis.", "nodes": ["client", "gateway", "auth-svc", "order-svc", "redis", "auth-db", "order-db"] },
+    { "version": "v3", "title": "Inventory extracted", "summary": "Inventory gets its own service and a document store chosen for its access pattern.", "nodes": ["client", "gateway", "auth-svc", "order-svc", "inventory-svc", "redis", "auth-db", "order-db", "inventory-db"] },
+    { "version": "v4", "title": "Async events", "summary": "Services stop calling each other synchronously; RabbitMQ carries events and a notification worker consumes them.", "nodes": ["client", "gateway", "auth-svc", "order-svc", "inventory-svc", "redis", "rabbitmq", "auth-db", "order-db", "inventory-db", "notification-worker"] }
+  ],
+  "textAlternative": "A client at the top sends HTTPS requests with a JWT to an API gateway. The gateway routes to three services in a row below it: an auth service on the left, an order service in the middle and an inventory service on the right. Each service has its own database at the bottom: PostgreSQL for auth, PostgreSQL for orders and MongoDB for inventory. Redis, below the auth service, caches tokens and rate-limit counters. RabbitMQ on the right receives events from the order and inventory services and delivers them to the inventory service and a notification worker.",
+  "related": [
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" },
+    { "to": "saga", "rel": "RELATED_TO" },
+    { "to": "outbox", "rel": "RELATED_TO" },
+    { "to": "distributed-system", "rel": "RELATED_TO" },
+    { "to": "kubernetes", "rel": "RELATED_TO" },
+    { "to": "docker", "rel": "RELATED_TO" }
+  ]
+}

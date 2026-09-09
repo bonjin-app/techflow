@@ -1,0 +1,10 @@
+{
+  "id": "notification",
+  "name": "Notification Service",
+  "tagline": "Reliable email, SMS and push delivery with retries, throttling and no duplicates",
+  "architecture": "notification-system",
+  "technologies": ["kafka", "rabbitmq", "redis", "postgresql", "sse"],
+  "concepts": ["message-queue", "pub-sub", "idempotency", "rate-limiting", "ttl"],
+  "patterns": ["dead-letter-queue", "retry", "outbox", "event-driven-architecture"],
+  "learningPath": ["message-queue", "pub-sub", "rabbitmq", "kafka", "idempotency", "retry", "dead-letter-queue", "notification-system"]
+}

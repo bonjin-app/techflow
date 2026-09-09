@@ -1,0 +1,10 @@
+{
+  "id": "ai-application",
+  "name": "AI Application (RAG)",
+  "tagline": "Retrieval-augmented generation over your own documents with streaming answers",
+  "architecture": "ai-rag",
+  "technologies": ["elasticsearch", "postgresql", "redis", "sse", "docker"],
+  "concepts": ["rest", "cache", "rate-limiting", "ttl", "idempotency", "http"],
+  "patterns": ["cache-aside", "retry", "circuit-breaker", "event-driven-architecture"],
+  "learningPath": ["http", "rest", "backend", "Embeddings & vector search", "elasticsearch", "cache", "rate-limiting", "sse", "ai-rag"]
+}

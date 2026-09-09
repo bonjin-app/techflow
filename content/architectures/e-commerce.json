@@ -1,0 +1,140 @@
+{
+  "id": "e-commerce",
+  "name": "E-commerce",
+  "tagline": "Cached catalogue reads, transactional checkout and an outbox for downstream events",
+  "summary": "Catalogue traffic is read-heavy and tolerates staleness, so the catalog service uses Cache Aside with Redis in front of PostgreSQL. Checkout bypasses the cache, writes the order and an outbox event in one transaction, and a relay publishes it to Kafka for inventory, payment follow-up and notifications.",
+  "category": "system",
+  "tags": ["E-commerce", "Caching", "Transactions", "Event-driven"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "nodes": [
+    { "id": "browser", "label": "Browser / App", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Shopper", "why": "Browses the catalogue and places orders over HTTPS; most sessions never reach checkout.",
+      "alternatives": [], "related": ["http", "rest"] },
+    { "id": "cdn", "label": "CDN", "kind": "edge", "x": 0, "y": 1, "ref": "cdn",
+      "role": "Images and static assets", "why": "Product images dominate bytes transferred; serving them from the edge keeps origin bandwidth and latency low.",
+      "alternatives": [], "related": ["cdn", "cache"] },
+    { "id": "lb", "label": "Load Balancer", "kind": "lb", "x": 2, "y": 1, "ref": "load-balancing",
+      "role": "Routing and TLS termination", "why": "Routes /catalog and /checkout to different service pools so a traffic spike on browsing does not starve checkout.",
+      "alternatives": [], "related": ["load-balancing", "rate-limiting"] },
+    { "id": "catalog-svc", "label": "Catalog Service", "kind": "service", "x": 1, "y": 2, "ref": "backend",
+      "role": "Product pages, listings, search", "why": "Read-heavy and stateless; scales horizontally and can serve slightly stale data.",
+      "alternatives": [], "related": ["backend", "cache-aside", "rest"] },
+    { "id": "checkout-svc", "label": "Checkout Service", "kind": "service", "x": 3, "y": 2, "ref": "backend",
+      "role": "Cart, order placement, payment", "why": "Separate pool with its own database so pricing and stock are read fresh and orders are written transactionally.",
+      "alternatives": [], "related": ["backend", "transaction", "idempotency", "saga"] },
+    { "id": "payment", "label": "Payment Provider", "kind": "external", "x": 5, "y": 2,
+      "role": "Card authorisation", "why": "Card handling is outsourced for compliance; the call is slow and can fail, so it is wrapped in a circuit breaker and an idempotency key.",
+      "alternatives": [], "related": ["circuit-breaker", "retry", "idempotency"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 0, "y": 3, "ref": "redis",
+      "role": "Cache Aside for catalogue", "why": "Product and category pages are read thousands of times per write; a TTL cache absorbs most reads and shields PostgreSQL.",
+      "alternatives": ["memcached"], "related": ["cache", "cache-aside", "ttl", "cache-invalidation"] },
+    { "id": "outbox-relay", "label": "Outbox Relay", "kind": "worker", "x": 4, "y": 3, "ref": "outbox",
+      "role": "Publish committed events", "why": "Polls the outbox table and publishes each row to Kafka, so an event is sent only for orders that were actually committed.",
+      "alternatives": [], "related": ["outbox", "transaction", "message-queue"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 5, "y": 3, "ref": "kafka",
+      "role": "Order events", "why": "OrderPlaced, PaymentCaptured and OrderCancelled events feed several consumers that must not slow down checkout.",
+      "alternatives": ["rabbitmq"], "related": ["message-queue", "event-driven-architecture", "saga"] },
+    { "id": "catalog-db", "label": "PostgreSQL (catalog)", "kind": "db", "x": 1, "y": 4, "ref": "postgresql",
+      "role": "Products, prices, categories", "why": "Source of truth for the catalogue; only cache misses and writes reach it.",
+      "alternatives": ["mongodb", "elasticsearch"], "related": ["database", "sql"] },
+    { "id": "orders-db", "label": "PostgreSQL (orders)", "kind": "db", "x": 3, "y": 4, "ref": "postgresql",
+      "role": "Orders, stock, outbox table", "why": "Order, stock decrement and outbox row are written in one ACID transaction — either all exist or none do.",
+      "alternatives": [], "related": ["database", "transaction", "acid", "outbox"] },
+    { "id": "notification-svc", "label": "Notification Service", "kind": "worker", "x": 5, "y": 4, "ref": "backend",
+      "role": "Order emails and push", "why": "Consumes order events and sends confirmations without checkout waiting on an email provider.",
+      "alternatives": [], "related": ["event-driven-architecture", "notification-system"] }
+  ],
+  "edges": [
+    { "from": "browser", "to": "cdn", "label": "images, assets" },
+    { "from": "browser", "to": "lb", "label": "HTTPS" },
+    { "from": "lb", "to": "catalog-svc", "label": "/catalog" },
+    { "from": "lb", "to": "checkout-svc", "label": "/checkout" },
+    { "from": "catalog-svc", "to": "redis", "label": "GET / SET (TTL)" },
+    { "from": "catalog-svc", "to": "catalog-db", "label": "SELECT on miss" },
+    { "from": "checkout-svc", "to": "payment", "label": "authorize (idempotency key)" },
+    { "from": "checkout-svc", "to": "orders-db", "label": "order + outbox row (tx)" },
+    { "from": "outbox-relay", "to": "orders-db", "label": "poll outbox", "style": "dashed" },
+    { "from": "outbox-relay", "to": "kafka", "label": "publish" },
+    { "from": "kafka", "to": "notification-svc", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "browse-catalog",
+      "name": "Browse the catalogue (Cache Aside)",
+      "path": ["browser", "lb", "catalog-svc", "redis", "catalog-db"],
+      "steps": [
+        "The shopper opens a product page.",
+        "The load balancer routes the request to the catalog pool.",
+        "The catalog service looks the product up in the cache first.",
+        "Redis returns a HIT for hot products; on a MISS the service continues to the database.",
+        "PostgreSQL returns the row, the service writes it to Redis with a 5-minute TTL and renders the page."
+      ]
+    },
+    {
+      "id": "checkout",
+      "name": "Place an order (bypasses cache, transaction + outbox)",
+      "path": ["browser", "lb", "checkout-svc", "payment", "orders-db", "outbox-relay", "kafka", "notification-svc"],
+      "steps": [
+        "The shopper submits the cart with an idempotency key.",
+        "The load balancer routes to the checkout pool.",
+        "Checkout reads current price and stock straight from the database — never from the cache.",
+        "The payment provider authorises the card; a failure here aborts before anything is written.",
+        "One transaction inserts the order, decrements stock and inserts an OrderPlaced row into the outbox table.",
+        "The relay picks up the committed outbox row.",
+        "Kafka receives OrderPlaced exactly for orders that exist in the database.",
+        "The notification service sends the confirmation email asynchronously."
+      ]
+    },
+    {
+      "id": "price-change",
+      "name": "Change a price (invalidate, not update)",
+      "path": ["catalog-svc", "catalog-db", "redis"],
+      "steps": [
+        "An admin request updates the price through the catalog service.",
+        "PostgreSQL is updated first — it is the source of truth.",
+        "The cached product key is deleted so the next read repopulates it with the new price."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Cache Aside for catalogue reads",
+      "why": "Catalogue reads outnumber writes by orders of magnitude and a product page that is a few minutes stale is harmless. Lazy loading caches only what shoppers actually view.",
+      "alternatives": ["write-through", "write-behind"],
+      "tradeoff": "The first read of every product is a miss and a missed invalidation can show an old price until the TTL expires. Write Through would keep prices exact but adds latency to every catalogue write."
+    },
+    {
+      "decision": "Checkout reads from the database and never from the cache",
+      "why": "Stock and price at the moment of purchase must be exact; selling a discontinued item at a stale price is worse than a slower checkout request.",
+      "alternatives": ["cache-aside"],
+      "tradeoff": "Checkout load hits PostgreSQL directly, so the orders database needs its own capacity planning and the checkout pool is sized separately."
+    },
+    {
+      "decision": "Transactional Outbox instead of publishing directly to Kafka",
+      "why": "Writing the order and then publishing is a dual write: a crash between the two leaves an order nobody ships, or an event for an order that was rolled back. The outbox row commits with the order.",
+      "alternatives": ["event-driven-architecture", "saga"],
+      "tradeoff": "A relay process and an outbox table to maintain, plus at-least-once delivery — every consumer must be idempotent."
+    },
+    {
+      "decision": "Kafka for order events",
+      "why": "Notifications, analytics, fraud checks and the warehouse all want the same events at different speeds, with replay after a consumer bug.",
+      "alternatives": ["rabbitmq"],
+      "tradeoff": "Heavier to operate than a simple queue; for a shop with one consumer RabbitMQ or even a database job table would do."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Monolith", "summary": "One application serves catalogue and checkout from one database.", "nodes": ["browser", "catalog-svc", "catalog-db"] },
+    { "version": "v2", "title": "Cache and CDN", "summary": "Redis absorbs catalogue reads with Cache Aside; images move to a CDN; a load balancer fronts several instances.", "nodes": ["browser", "cdn", "lb", "catalog-svc", "redis", "catalog-db"] },
+    { "version": "v3", "title": "Separate checkout", "summary": "Checkout gets its own service pool and database so browsing spikes cannot slow order placement, and payment is called with idempotency keys.", "nodes": ["browser", "cdn", "lb", "catalog-svc", "checkout-svc", "payment", "redis", "catalog-db", "orders-db"] },
+    { "version": "v4", "title": "Outbox and events", "summary": "Orders emit events through an outbox relay to Kafka; notifications and other consumers react asynchronously.", "nodes": ["browser", "cdn", "lb", "catalog-svc", "checkout-svc", "payment", "redis", "outbox-relay", "kafka", "catalog-db", "orders-db", "notification-svc"] }
+  ],
+  "textAlternative": "A shopper's browser at the top loads images from a CDN and sends requests through a load balancer to two service pools: a catalog service on the left and a checkout service on the right. The catalog service reads Redis first and falls back to a catalogue PostgreSQL database on a miss. The checkout service calls an external payment provider and writes the order, stock change and an outbox row to an orders PostgreSQL database in one transaction. An outbox relay polls that table and publishes events to Kafka, from which a notification service sends confirmations.",
+  "related": [
+    { "to": "cache-aside", "rel": "RELATED_TO" },
+    { "to": "outbox", "rel": "RELATED_TO" },
+    { "to": "transaction", "rel": "RELATED_TO" },
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" },
+    { "to": "saga", "rel": "RELATED_TO" }
+  ]
+}
