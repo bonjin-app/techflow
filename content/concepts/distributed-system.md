@@ -9,8 +9,8 @@ prerequisites: [http, backend, database]
 learningPath:
   - backend
   - database
-  - replication
   - distributed-system
+  - replication
   - cap-theorem
   - eventual-consistency
   - sharding

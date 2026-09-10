@@ -58,7 +58,7 @@ Command Handler -> Event Store: append OrderCancelled (expectedVersion 7)
 Event Store --> Command Handler: OK (now v8)
 Event Store -> Bus: OrderCancelled
 Bus -> Projector: OrderCancelled
-Projector -> Projector: update read model / [materialized-view](/pattern/materialized-view)
+Projector -> Projector: update the read model
 ```
 
 The append carries an **expected version**. If another writer got there first the append
@@ -107,7 +107,9 @@ function apply(s: Order, e: Event): Order {
 
 Streams that grow long need **snapshots**: persist the folded state at version 500 and
 replay only events after it. Reads almost never go through the aggregate; they use
-projections maintained by [CQRS](/pattern/cqrs) projectors.
+projections maintained by [CQRS](/pattern/cqrs) projectors — each one a
+[materialized view](/pattern/materialized-view) whose refresh trigger is an event rather
+than a schedule.
 
 ## Advantages
 

@@ -52,6 +52,37 @@ function main() {
     }
   }
 
+  // A cycle in REQUIRES edges means a learning path that can never be started.
+  {
+    const requires = new Map<string, string[]>();
+    for (const e of g.edges) {
+      if (e.rel !== "REQUIRES") continue;
+      if (!requires.has(e.from)) requires.set(e.from, []);
+      requires.get(e.from)!.push(e.to);
+    }
+    const state = new Map<string, 0 | 1 | 2>(); // unvisited | on stack | done
+    const stack: string[] = [];
+    const reported = new Set<string>();
+    const walk = (id: string) => {
+      if (state.get(id) === 2) return;
+      if (state.get(id) === 1) {
+        const cycle = [...stack.slice(stack.indexOf(id)), id];
+        const key = [...cycle].sort().join("|");
+        if (!reported.has(key)) {
+          reported.add(key);
+          problems.push(`prerequisite cycle: ${cycle.join(" → ")}`);
+        }
+        return;
+      }
+      state.set(id, 1);
+      stack.push(id);
+      for (const next of requires.get(id) ?? []) walk(next);
+      stack.pop();
+      state.set(id, 2);
+    };
+    for (const id of g.nodes.keys()) walk(id);
+  }
+
   // A roadmap step or stack item written as plain text when a node of that name
   // exists is a missed link — the graph should absorb it.
   const byName = new Map<string, string>();

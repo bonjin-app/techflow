@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getStacks } from "@/lib/content/graph";
+import { getNode, getStacks } from "@/lib/content/graph";
 import { pageMetadata } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
 
@@ -35,11 +35,14 @@ export default function Page() {
               <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-fg-faint">{s.layers.length} layers</span>
             </div>
             <div className="mt-4 flex flex-wrap gap-1.5 text-[11px] text-fg-muted">
-              {s.layers.flatMap((l) => l.items).slice(0, 9).map((it, i) => (
-                <span key={i} className="rounded border border-border px-1.5 py-0.5">
-                  {it.label ?? it.ref}
-                </span>
-              ))}
+              {s.layers
+                .flatMap((l) => l.items)
+                .slice(0, 9)
+                .map((it, i) => (
+                  <span key={i} className="rounded border border-border px-1.5 py-0.5">
+                    {(it.ref ? getNode(it.ref)?.name : undefined) ?? it.label ?? it.ref}
+                  </span>
+                ))}
               <span className="text-fg-faint">…</span>
             </div>
           </Link>

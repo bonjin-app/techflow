@@ -64,9 +64,15 @@ export function buildGraph(): KnowledgeGraph {
     if (n.type === "technology" || n.type === "concept" || n.type === "pattern") {
       for (const c of n.usedFor) add({ from: n.id, to: c, rel: "RELATED_TO", derived: true });
       for (const p of n.prerequisites) add({ from: n.id, to: p, rel: "REQUIRES", derived: true });
-      for (const p of n.learningPath) {
-        if (nodes.has(p) && p !== n.id) add({ from: n.id, to: p, rel: "REQUIRES", derived: true });
-      }
+      // A learning path runs *through* this node: entries before it are
+      // prerequisites, entries after it are where to go next. Deriving REQUIRES
+      // from the whole list would create cycles between neighbouring topics.
+      const selfAt = n.learningPath.indexOf(n.id);
+      n.learningPath.forEach((p, i) => {
+        if (!nodes.has(p) || p === n.id) return;
+        const before = selfAt === -1 || i < selfAt;
+        add({ from: n.id, to: p, rel: before ? "REQUIRES" : "RELATED_TO", derived: true });
+      });
     }
     if (n.type === "architecture") {
       for (const an of n.nodes) {
