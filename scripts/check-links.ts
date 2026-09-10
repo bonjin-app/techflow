@@ -11,7 +11,23 @@ import fs from "node:fs";
 import path from "node:path";
 
 const OUT = path.join(process.cwd(), "out");
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
+
+/**
+ * A sub-path build prefixes every link with the base path (e.g. "/techflow"),
+ * while the files still live at out/. Detect the prefix from the asset URLs in
+ * the generated HTML rather than trusting an environment variable, so the check
+ * works the same locally and in CI.
+ */
+function detectBasePath(): string {
+  const env = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "");
+  if (env) return env;
+  const index = path.join(OUT, "index.html");
+  if (!fs.existsSync(index)) return "";
+  const m = /(?:href|src)="([^"]*)\/_next\//.exec(fs.readFileSync(index, "utf8"));
+  return m?.[1] ?? "";
+}
+
+const BASE = detectBasePath();
 
 function walk(dir: string, acc: string[] = []): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -38,6 +54,7 @@ function main() {
     process.exit(1);
   }
   const pages = walk(OUT);
+  if (BASE) console.log(`base path: ${BASE}`);
   const broken = new Map<string, Set<string>>(); // href → pages that link to it
   const linkedTo = new Set<string>();
   let checked = 0;
@@ -48,7 +65,10 @@ function main() {
     for (const m of html.matchAll(/href="([^"]+)"/g)) {
       let href = m[1];
       if (!href.startsWith("/")) continue; // external, anchors, mailto
-      if (BASE && href.startsWith(BASE + "/")) href = href.slice(BASE.length) || "/";
+      // Strip the base path: "/techflow", "/techflow/x", "/techflow#frag", "/techflow?q=1"
+      if (BASE && (href === BASE || /^[/#?]/.test(href.slice(BASE.length)))) {
+        if (href === BASE || href.startsWith(BASE)) href = href.slice(BASE.length) || "/";
+      }
       if (/^\/_next\//.test(href) || /\.(json|xml|txt|ico|png|svg|webmanifest|js|css)$/.test(href)) continue;
       checked++;
       linkedTo.add(href.replace(/[?#].*$/, ""));

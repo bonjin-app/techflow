@@ -20,6 +20,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # GitHub Pages serves project sites under /<repo>. Remove both for a custom domain.
+      NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+      NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -34,10 +38,6 @@ jobs:
           pnpm lint
           pnpm exec next typegen && pnpm typecheck
       - name: Build static site
-        env:
-          # GitHub Pages serves project sites under /<repo>. Remove both lines for a custom domain.
-          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
-          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: pnpm build
       - name: Check every internal link resolves
         run: pnpm check:links
