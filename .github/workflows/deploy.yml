@@ -25,6 +25,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          # Turns Pages on for this repository if it is not enabled yet, so no
+          # manual Settings change is needed. Requires the `pages: write` permission.
+          enablement: true
       - name: Validate content, lint, typecheck
         run: |
           pnpm validate

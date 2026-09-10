@@ -37,6 +37,20 @@ export const PLAYGROUNDS: PlaygroundMeta[] = [
     ],
   },
   {
+    slug: "http",
+    title: "HTTP Anatomy",
+    blurb: "Compose a request, pick the response, and read what every line tells the client.",
+    icon: "🌐",
+    description:
+      "Status codes are instructions, not decoration. Build a request with or without auth, ETags and an idempotency key, choose what the server answers, and see line by line what the client is being told to do — including whether the call is safe to retry.",
+    concepts: [
+      { label: "HTTP", href: "/concept/http" },
+      { label: "REST", href: "/concept/rest" },
+      { label: "Idempotency", href: "/concept/idempotency" },
+      { label: "Cache", href: "/concept/cache" },
+    ],
+  },
+  {
     slug: "rate-limiter",
     title: "Rate Limiter Simulator",
     blurb: "Fixed window, sliding window, token bucket, leaky bucket — against the same burst.",

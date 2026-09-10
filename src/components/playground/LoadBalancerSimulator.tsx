@@ -69,6 +69,10 @@ export function LoadBalancerSimulator() {
     [algo],
   );
 
+  const toggleHealth = useCallback((id: number) => {
+    setServers((prev) => prev.map((p) => (p.id === id ? { ...p, healthy: !p.healthy } : p)));
+  }, []);
+
   const send = useCallback(() => {
     const client = Math.floor(Math.random() * 6);
     const target = choose(serversRef.current, client);
@@ -167,7 +171,22 @@ export function LoadBalancerSimulator() {
             const x = 360 + (i - (n - 1) / 2) * (600 / Math.max(3, n));
             const share = (s.total / total) * 100;
             return (
-              <g key={s.id} transform={`translate(${x} 270)`} onClick={() => setServers((prev) => prev.map((p) => (p.id === s.id ? { ...p, healthy: !p.healthy } : p)))} style={{ cursor: "pointer" }} role="button" aria-label={`Server ${s.id + 1} ${s.healthy ? "healthy" : "down"}`}>
+              <g
+                key={s.id}
+                transform={`translate(${x} 270)`}
+                onClick={() => toggleHealth(s.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleHealth(s.id);
+                  }
+                }}
+                style={{ cursor: "pointer" }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={!s.healthy}
+                aria-label={`Server ${s.id + 1}, currently ${s.healthy ? "healthy" : "down"}. Activate to toggle.`}
+              >
                 <line x1={360 - x} y1={-120} x2={0} y2={-32} stroke={s.healthy ? "var(--border-strong)" : "var(--danger)"} strokeDasharray={s.healthy ? undefined : "4 4"} />
                 <rect x={-46} y={-30} width={92} height={60} rx={8} fill={s.healthy ? "var(--surface-2)" : "var(--danger)"} fillOpacity={s.healthy ? 1 : 0.12} stroke={s.healthy ? "var(--c-technology)" : "var(--danger)"} strokeWidth={1.5} />
                 <text textAnchor="middle" y={-12} style={{ fontSize: 11, fontWeight: 600 }} fill="var(--fg)">

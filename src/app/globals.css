@@ -128,6 +128,20 @@ body {
   border-radius: 4px;
 }
 
+/* SVG cannot take an outline reliably across browsers — draw the ring instead. */
+svg a:focus-visible,
+svg [role="button"]:focus-visible,
+svg [role="link"]:focus-visible {
+  outline: none;
+}
+svg a:focus-visible circle,
+svg a:focus-visible rect,
+svg [role="button"]:focus-visible rect,
+svg [role="link"]:focus-visible circle {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
 code,
 kbd,
 pre,

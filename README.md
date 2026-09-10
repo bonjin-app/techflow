@@ -41,7 +41,7 @@ src/components/graph/                  RelationshipGraph (force layout) + lazy l
 src/components/canvas/                 ArchitectureCanvas (zoom/pan, ▶ Run, inspector, versions), StepJourney
 src/components/detail/                 shared detail-page building blocks (levels, learning path, neighbours, TOC)
 src/components/radar/                  Technology Radar chart
-src/components/playground/             browser-only simulators (cache, rate limiter, load balancer, transports, JWT)
+src/components/playground/             browser-only simulators (HTTP, cache, rate limiter, load balancer, transports, JWT)
 src/app/                               routes: /technology /concept /pattern /architecture /compare /roadmap
                                        /system-design /build /stack /radar /playground /challenge /search /explore
 ```
@@ -67,7 +67,7 @@ Edges are declared in frontmatter (`related`) and derived automatically from `us
 | Roadmaps | `/roadmap` | Ordered learning paths with local progress tracking |
 | Real-world stacks | `/stack` | Which technologies get combined in practice, layer by layer, with the costs |
 | Technology Radar | `/radar` | Adopt / Trial / Assess / Caution with dated, sourced reasoning |
-| Playground | `/playground` | Cache, rate limiter, load balancer, real-time transports, JWT — all client-side |
+| Playground | `/playground` | HTTP anatomy, cache, rate limiter, load balancer, real-time transports, JWT — all client-side |
 | Design challenges | `/challenge` | Multiple-choice design questions that explain every option |
 
 ## Keyboard
@@ -78,8 +78,9 @@ on a diagram: `space` run, `→` step, `f` fit.
 ## Deployment
 
 The site is 100% static. `pnpm build` writes `out/`, which any static host can serve.
-`.github/workflows/deploy.yml` builds on every push to `main` and publishes to GitHub Pages
-(enable **Settings → Pages → Source: GitHub Actions** once). For a sub-path host it sets
+`.github/workflows/deploy.yml` builds on every push to `main` and publishes to GitHub Pages.
+It tries to enable Pages itself; if the repository blocks that, set
+**Settings → Pages → Source: GitHub Actions** once and re-run the workflow. For a sub-path host it sets
 `NEXT_PUBLIC_BASE_PATH=/<repo>`; on a custom domain remove that variable and set
 `NEXT_PUBLIC_SITE_URL` to the domain so canonical / sitemap URLs are right.
 

@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/detail/PageHeader";
 import { CacheSimulator } from "@/components/playground/CacheSimulator";
 import { LoadBalancerSimulator } from "@/components/playground/LoadBalancerSimulator";
 import { JwtDecoder } from "@/components/playground/JwtDecoder";
+import { HttpPlayground } from "@/components/playground/HttpPlayground";
 import { RateLimiterSimulator } from "@/components/playground/RateLimiterSimulator";
 import { TransportSimulator } from "@/components/playground/TransportSimulator";
 import { PLAYGROUNDS } from "../registry";
@@ -47,6 +48,7 @@ export default async function Page({ params }: PageProps<"/playground/[slug]">) 
       </header>
       {slug === "cache" && <CacheSimulator />}
       {slug === "load-balancer" && <LoadBalancerSimulator />}
+      {slug === "http" && <HttpPlayground />}
       {slug === "rate-limiter" && <RateLimiterSimulator />}
       {slug === "transport" && <TransportSimulator />}
       {slug === "jwt" && <JwtDecoder />}
