@@ -380,6 +380,76 @@
       "quadrant": "data-messaging",
       "note": "A similarity threshold is a correctness knob: near-miss questions can return the wrong answer.",
       "moved": "new"
+    },
+    {
+      "ref": "serverless",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "Excellent for spiky, short, stateless work; cold starts and execution limits decide it.",
+      "moved": "new"
+    },
+    {
+      "ref": "testing",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "A suite that is fast and trusted; a slow flaky one is worse than none.",
+      "moved": "new"
+    },
+    {
+      "ref": "contract-testing",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Replaces the shared integration environment once several teams own services.",
+      "moved": "new"
+    },
+    {
+      "ref": "accessibility",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Semantics and keyboard support cost little up front and a fortune to retrofit.",
+      "moved": "new"
+    },
+    {
+      "ref": "web-performance",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Budgets beat heroics; the levers are few and well known.",
+      "moved": "new"
+    },
+    {
+      "ref": "rendering-strategies",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Pick per route, not per project — most apps need more than one.",
+      "moved": "new"
+    },
+    {
+      "ref": "prompt-engineering",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "A prompt is code: version it, structure the output, and test it.",
+      "moved": "new"
+    },
+    {
+      "ref": "model-serving",
+      "ring": "assess",
+      "quadrant": "platforms-delivery",
+      "note": "Self-hosting pays off at steady high volume; a hosted API wins until then.",
+      "moved": "new"
+    },
+    {
+      "ref": "incident-response",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Mitigate before diagnosing; the blameless postmortem is the product.",
+      "moved": "new"
+    },
+    {
+      "ref": "optimistic-ui",
+      "ring": "trial",
+      "quadrant": "languages-interfaces",
+      "note": "Great for reversible actions, wrong for money and anything irreversible.",
+      "moved": "new"
     }
   ]
 }

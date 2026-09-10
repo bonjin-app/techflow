@@ -4,9 +4,18 @@
   "tagline": "From one native platform to offline-capable, push-enabled apps that pass review",
   "summary": "An ordered path for building production mobile applications. It starts with one platform learned properly — the language, its declarative UI toolkit and the lifecycle the operating system imposes — then adds the networking layer, because a mobile app is mostly a client for someone else's API on an unreliable connection. From there it moves through on-device storage and offline sync, the identity flows that differ from the web, live features such as push and sockets, and finally the release machinery: crash reporting, CI/CD and store review.",
   "category": "career",
-  "tags": ["Mobile", "Career", "Learning Path", "iOS", "Android"],
+  "tags": [
+    "Mobile",
+    "Career",
+    "Learning Path",
+    "iOS",
+    "Android"
+  ],
   "difficulty": 3,
-  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-10",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "programming-fundamentals",
@@ -28,7 +37,8 @@
     {
       "label": "Declarative UI, navigation & app state",
       "stage": "One platform first",
-      "note": "SwiftUI and Jetpack Compose both re-render from state, so learning that model plus the platform's navigation stack and lifecycle callbacks unlocks most of the SDK."
+      "note": "SwiftUI and Jetpack Compose both re-render from state, so learning that model plus the platform's navigation stack and lifecycle callbacks unlocks most of the SDK.",
+      "ref": "state-management"
     },
     {
       "label": "React Native or Flutter",
@@ -73,7 +83,8 @@
     {
       "label": "Offline-first & sync",
       "stage": "Data on device",
-      "note": "The hardest mobile problem, and it only makes sense after storage and caching: queueing local writes, resolving conflicts on reconnect and keeping the UI honest about what has not synced yet."
+      "note": "The hardest mobile problem, and it only makes sense after storage and caching: queueing local writes, resolving conflicts on reconnect and keeping the UI honest about what has not synced yet.",
+      "ref": "offline-first"
     },
     {
       "ref": "authentication",

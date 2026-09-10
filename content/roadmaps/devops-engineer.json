@@ -139,7 +139,8 @@
     {
       "label": "Incident response & postmortems",
       "stage": "Reliability",
-      "note": "On-call rotations, runbooks and blameless postmortems convert outages into fixes; this is where the previous steps prove their worth."
+      "note": "On-call rotations, runbooks and blameless postmortems convert outages into fixes; this is where the previous steps prove their worth.",
+      "ref": "incident-response"
     },
     {
       "ref": "microservices",

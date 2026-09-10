@@ -4,9 +4,18 @@
   "tagline": "From Linux and DNS to reproducible, observable, cost-aware cloud infrastructure",
   "summary": "An ordered path for engineers who build and run infrastructure on a public cloud. It begins below the cloud — Linux, networking, certificates — because every managed service is an abstraction over those, then covers the four primitives every provider sells under different names: identity, network, compute and storage. The second half is what separates a working account from an operable platform: describing everything as code, automating delivery, handling secrets, measuring reliability against an SLO, and keeping the bill proportional to the traffic.",
   "category": "career",
-  "tags": ["Cloud", "Infrastructure", "Career", "Learning Path", "DevOps"],
+  "tags": [
+    "Cloud",
+    "Infrastructure",
+    "Career",
+    "Learning Path",
+    "DevOps"
+  ],
   "difficulty": 3,
-  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-10",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "linux",
@@ -75,7 +84,8 @@
     {
       "label": "Serverless",
       "stage": "Compute & storage",
-      "note": "The other end of the spectrum from a cluster you operate: study it next to Kubernetes so the choice becomes a trade-off about cold starts, limits and cost rather than a preference."
+      "note": "The other end of the spectrum from a cluster you operate: study it next to Kubernetes so the choice becomes a trade-off about cold starts, limits and cost rather than a preference.",
+      "ref": "serverless"
     },
     {
       "ref": "infrastructure-as-code",

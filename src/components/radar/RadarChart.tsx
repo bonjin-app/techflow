@@ -87,12 +87,12 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
   const positions = useMemo(() => place(items), [items]);
   const hovered = hover ? items.find((i) => i.ref === hover) : undefined;
   const visible = quad ? items.filter((i) => i.quadrant === quad) : items;
-  /** A crowded quadrant only shows labels once it is focused — the list on the right always has them. */
-  const crowded = useMemo(() => {
-    const counts = new Map<RadarQuadrant, number>();
-    for (const i of items) counts.set(i.quadrant, (counts.get(i.quadrant) ?? 0) + 1);
-    return new Set([...counts.entries()].filter(([, n]) => n > 16).map(([q]) => q));
-  }, [items]);
+  /**
+   * Past ~40 entries every wedge is too tight to label at once, so labels appear
+   * for the focused quadrant only (and for whatever is hovered). Applying the rule
+   * to the whole chart rather than per quadrant keeps it from looking half-labelled.
+   */
+  const dense = items.length > 40;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -124,7 +124,7 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
             const p = positions.get(it.ref)!;
             const dim = quad && it.quadrant !== quad;
             const active = hover === it.ref;
-            const showLabel = active || quad === it.quadrant || !crowded.has(it.quadrant);
+            const showLabel = active || quad === it.quadrant || !dense;
             return (
               <g
                 key={it.ref}
@@ -169,9 +169,10 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
       </div>
 
       <aside className="space-y-4">
-        {crowded.size > 0 && (
+        {dense && (
           <p className="text-xs text-fg-faint">
-            Busy quadrants show their labels once you focus them — pick a quadrant below, or hover any dot.
+            {items.length} entries is too many to label at once. Pick a quadrant to label it, hover any dot for its reasoning, or read the full list
+            below.
           </p>
         )}
         <div className="flex flex-wrap gap-1.5 text-xs">

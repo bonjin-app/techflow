@@ -54,32 +54,38 @@
     {
       "label": "State management",
       "stage": "Framework",
-      "note": "As apps grow, deciding what is local, shared, or server state (and caching server responses) becomes the main source of complexity."
+      "note": "As apps grow, deciding what is local, shared, or server state (and caching server responses) becomes the main source of complexity.",
+      "ref": "state-management"
     },
     {
       "label": "Routing",
       "stage": "Framework",
-      "note": "Client-side routing, nested layouts and URL-as-state turn a page into an application without full reloads."
+      "note": "Client-side routing, nested layouts and URL-as-state turn a page into an application without full reloads.",
+      "ref": "routing"
     },
     {
       "label": "Testing",
       "stage": "Quality",
-      "note": "Unit tests for logic, component tests for behaviour and a few end-to-end tests let you refactor the framework code you just wrote with confidence."
+      "note": "Unit tests for logic, component tests for behaviour and a few end-to-end tests let you refactor the framework code you just wrote with confidence.",
+      "ref": "testing"
     },
     {
       "label": "Build tools & bundlers",
       "stage": "Quality",
-      "note": "Knowing what Vite, esbuild or webpack do to your code (bundling, tree-shaking, code splitting) is the prerequisite for measuring performance."
+      "note": "Knowing what Vite, esbuild or webpack do to your code (bundling, tree-shaking, code splitting) is the prerequisite for measuring performance.",
+      "ref": "bundling"
     },
     {
       "label": "Web performance",
       "stage": "Quality",
-      "note": "Core Web Vitals, lazy loading and bundle size directly affect users and search ranking; measure before you optimise."
+      "note": "Core Web Vitals, lazy loading and bundle size directly affect users and search ranking; measure before you optimise.",
+      "ref": "web-performance"
     },
     {
       "label": "Accessibility (a11y)",
       "stage": "Quality",
-      "note": "Keyboard navigation, ARIA and contrast are cheapest to get right while components are being built, not retrofitted later."
+      "note": "Keyboard navigation, ARIA and contrast are cheapest to get right while components are being built, not retrofitted later.",
+      "ref": "accessibility"
     },
     {
       "ref": "cache",
@@ -96,7 +102,8 @@
     {
       "label": "SSR / SSG & rendering strategies",
       "stage": "Delivery",
-      "note": "Choosing between client rendering, server rendering and static generation is a trade-off of performance, freshness and infrastructure cost."
+      "note": "Choosing between client rendering, server rendering and static generation is a trade-off of performance, freshness and infrastructure cost.",
+      "ref": "rendering-strategies"
     },
     {
       "ref": "authentication",

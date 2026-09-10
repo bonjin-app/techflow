@@ -53,7 +53,8 @@
     {
       "label": "Prompt engineering & structured output",
       "stage": "Applied",
-      "note": "Instructions, few-shot examples, tool schemas and JSON mode are the cheapest levers for quality and the first thing to master in production."
+      "note": "Instructions, few-shot examples, tool schemas and JSON mode are the cheapest levers for quality and the first thing to master in production.",
+      "ref": "prompt-engineering"
     },
     {
       "label": "Embeddings & vector search",
@@ -118,7 +119,8 @@
     {
       "label": "Model serving & GPU infrastructure",
       "stage": "Operations",
-      "note": "Batching, quantisation and GPU scheduling decide throughput and cost when you host models yourself instead of calling an API."
+      "note": "Batching, quantisation and GPU scheduling decide throughput and cost when you host models yourself instead of calling an API.",
+      "ref": "model-serving"
     },
     {
       "ref": "observability",
