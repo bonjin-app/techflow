@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "validate": "tsx scripts/validate-content.ts",
-    "gen:index": "tsx scripts/gen-search-index.ts"
+    "gen:index": "tsx scripts/gen-search-index.ts",
+    "check:links": "tsx scripts/check-links.ts",
+    "link:labels": "tsx scripts/link-labels.ts"
   },
   "dependencies": {
     "d3-force": "^3.0.0",

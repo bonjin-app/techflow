@@ -52,6 +52,28 @@ function main() {
     }
   }
 
+  // A roadmap step or stack item written as plain text when a node of that name
+  // exists is a missed link — the graph should absorb it.
+  const byName = new Map<string, string>();
+  for (const n of g.nodes.values()) byName.set(n.name.toLowerCase(), n.id);
+  for (const n of g.nodes.values()) {
+    if (n.type !== "roadmap") continue;
+    for (const step of n.steps) {
+      if (step.ref) continue;
+      const hit = byName.get(step.label.toLowerCase());
+      if (hit) warnings.push(`${n.id}: step '${step.label}' has no ref but node '${hit}' exists`);
+    }
+  }
+  for (const st of g.stacks) {
+    for (const layer of st.layers) {
+      for (const item of layer.items) {
+        if (item.ref || !item.label) continue;
+        const hit = byName.get(item.label.toLowerCase());
+        if (hit) warnings.push(`stack '${st.id}': item '${item.label}' has no ref but node '${hit}' exists`);
+      }
+    }
+  }
+
   for (const w of warnings) console.warn(`  ⚠ ${w}`);
   for (const p of problems) console.error(`  ✖ ${p}`);
 

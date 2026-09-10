@@ -61,7 +61,7 @@ video-platform · search-engine
 
 ---
 
-# Wave 3 (in progress)
+# Wave 3 (done)
 
 ## technologies/
 go · python · rust · terraform · opentelemetry · cassandra · clickhouse · github-actions
@@ -88,3 +88,31 @@ job-scheduler · distributed-cache
 
 ## builds/
 data-platform · iot-product
+
+---
+
+# Wave 4 (in progress)
+
+Fills the plain-text steps that roadmaps could not link to yet.
+
+## technologies/
+git · linux · airflow · spark · vault · java · nextjs · sqlite
+
+## concepts/
+secrets-management · schema-migration · graceful-shutdown · load-testing · http2 ·
+service-mesh · dimensional-modeling · threat-modeling · capacity-planning · chaos-engineering
+
+## patterns/
+event-sourcing · materialized-view · two-phase-commit · anti-corruption-layer · health-check
+
+## architectures/
+observability-stack · file-storage-service
+
+## comparisons/
+rest-vs-webhook · http1-vs-http2 · materialized-view-vs-cache
+
+## roadmaps/
+mobile-developer · cloud-engineer
+
+## system-designs/
+search-autocomplete · image-pipeline

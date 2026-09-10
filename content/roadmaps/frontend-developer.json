@@ -4,9 +4,17 @@
   "tagline": "From HTML and CSS to fast, accessible, real-time web applications",
   "summary": "An ordered path for building modern web frontends. It begins with the three languages of the browser and the protocols that connect it to a server, moves into a typed component framework with state, routing and testing, and ends with the delivery concerns — performance, accessibility, rendering strategy, CDNs, authentication and real-time updates — that separate a demo from a product.",
   "category": "career",
-  "tags": ["Frontend", "Career", "Learning Path", "Web"],
+  "tags": [
+    "Frontend",
+    "Career",
+    "Learning Path",
+    "Web"
+  ],
   "difficulty": 2,
-  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-09",
+    "confidence": "high"
+  },
   "steps": [
     {
       "label": "HTML, CSS & JavaScript",
@@ -33,7 +41,8 @@
     {
       "label": "TypeScript",
       "stage": "Language",
-      "note": "Types catch a large class of bugs at compile time and make component props and API responses self-documenting as the codebase grows."
+      "note": "Types catch a large class of bugs at compile time and make component props and API responses self-documenting as the codebase grows.",
+      "ref": "typescript"
     },
     {
       "label": "React (or another component framework)",

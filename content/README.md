@@ -195,6 +195,8 @@ fence), `## When X`, `## When Y`, `## Deep Dive`.
 ## Roadmaps (`roadmaps/*.json`)
 
 `{ id, name, tagline, summary, steps: [{ ref?, label, note?, stage? }] }` — ordered.
+Always set `ref` when a node for that step exists; `pnpm validate` warns when a step's
+label matches a node name but has no `ref`, because that is a link the graph is missing.
 
 ## System designs (`system-designs/*.json`)
 
