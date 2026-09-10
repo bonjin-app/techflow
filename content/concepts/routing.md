@@ -89,7 +89,7 @@ file-based routing became the convention in frameworks such as
 **Code splitting per route.** Each route's component tree becomes its own chunk, loaded on
 demand. Because the router knows the destination the moment a link is clicked — or hovered
 — it can prefetch the chunk and the data before the user commits, which is what makes a
-well-built client transition feel immediate.
+good client transition feel immediate.
 
 **Deep links must work cold.** Any URL the application can produce must render correctly
 when it is the first request. For a static host this needs a rewrite so unknown paths serve

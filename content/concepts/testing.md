@@ -83,9 +83,9 @@ check out, the one report the business runs on. Write them against user-visible 
 find whole classes of failure nothing else can — a missing environment variable, a broken
 build, a redirect loop.
 
-**Static checks before any of them.** A type checker, a linter and a formatter remove a
-large class of failures with zero runtime cost. It is not a substitute for tests, but it is
-the cheapest layer in the portfolio.
+**Static checks before any of them.** A type checker and a linter remove a large class of
+failures at zero runtime cost — not a substitute for tests, but the cheapest layer in the
+portfolio.
 
 ## Deep Dive
 

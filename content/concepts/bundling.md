@@ -77,15 +77,15 @@ a `sideEffects` declaration. This is why importing one helper from a large utili
 can pull in the whole thing while a deep import costs a few bytes.
 
 **Code splitting decides what arrives when.** A dynamic `import()` becomes a separate chunk
-fetched on demand — usually per route, sometimes per heavy component such as an editor or a
-chart library. Split too coarsely and every visitor downloads the whole application; split
-too finely and a navigation triggers a chain of small round trips. Route-level splitting
+fetched on demand — usually per route, sometimes per heavy component such as an editor or
+chart library. Split too coarsely and every visitor downloads the whole application; too
+finely and a navigation becomes a chain of small round trips. Route-level splitting
 plus a shared vendor chunk is the sane default; see [Routing](/concept/routing).
 
 **Hashing turns caching into a solved problem.** When the filename contains a hash of the
-contents, the file can be cached immutably forever, because a change produces a new name.
-Only the HTML document needs revalidating. Keep chunk boundaries stable, or one changed
-line invalidates a chunk that half the site was caching.
+contents, the file can be cached immutably forever, because a change produces a new name;
+only the HTML needs revalidating. Keep chunk boundaries stable, or one changed line
+invalidates a chunk half the site was caching.
 
 **Source maps keep production debuggable.** They map minified output back to original
 source so a stack trace names your function and line. Upload them to your error tracker

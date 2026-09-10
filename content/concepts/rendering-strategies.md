@@ -74,9 +74,9 @@ downloads the same components and attaches event handlers, which means the JavaS
 did not disappear, it moved after the paint. Every request costs a render, so the origin is
 now on the critical path.
 
-**SSG.** Render at build time and deploy the result as files. The best numbers available and
-the least to operate, bounded by two constraints: the content must be the same for every
-user, and it is only as fresh as the last build. Build time also grows with page count.
+**SSG.** Render at build time and deploy the result as files: the best numbers available
+and the least to operate, bounded by two constraints — the content must be the same for
+every user, and it is only as fresh as the last build. Build time grows with page count.
 
 **ISR.** Static output with a lifetime. The edge serves the cached page immediately and,
 once it is older than the revalidation window, regenerates it in the background so the next
@@ -98,10 +98,9 @@ page is prerendered with a live stock indicator streamed in, and checkout render
 request because it is personal. Frameworks such as [Next.js](/technology/nextjs) exist to
 express exactly this split.
 
-**The CDN is part of the rendering decision.** If a response can be cached at the edge, the
-strategy that produced it barely matters for the second visitor; if it cannot — a
-`Set-Cookie`, a personalised greeting, a `Vary` on almost anything — every view reaches your
-origin.
+**The CDN is part of the decision.** If a response can be cached at the edge, the strategy
+that produced it barely matters for the second visitor; if it cannot — a `Set-Cookie`, a
+`Vary` on almost anything — every view reaches your origin.
 
 **Hydration is the hidden bill of server rendering.** HTML arrives early and the page still
 cannot respond until its JavaScript has loaded and hydrated; painting at 0.8s and becoming

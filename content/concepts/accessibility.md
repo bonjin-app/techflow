@@ -63,8 +63,8 @@ Success | focus moves to the confirmation heading so the change is announced
 
 **Semantics first.** A native `button`, `a`, `input`, `label`, `table` and heading structure
 gives you focusability, keyboard behaviour, an accessible name, a role and platform
-conventions with no code. Every ARIA attribute you add is a promise that you will implement
-that role's keyboard behaviour yourself. The first rule of ARIA really is: do not use ARIA
+conventions with no code. Every ARIA attribute you add is a promise to implement that
+role's keyboard behaviour yourself. The first rule of ARIA really is: do not use ARIA
 if a native element will do.
 
 **Keyboard.** Everything clickable must be reachable and operable by keyboard, in an order
@@ -88,8 +88,8 @@ label, an icon or a pattern. Check the states people forget: disabled controls, 
 text, focus rings, and text over images.
 
 **Motion.** Respect `prefers-reduced-motion` by replacing movement with a fade or nothing.
-Large parallax and auto-playing motion cause real nausea for some users, and never
-auto-play anything longer than five seconds without a pause control.
+Large parallax causes real nausea for some users, and nothing longer than five seconds
+should auto-play without a pause control.
 
 ## Deep Dive
 
