@@ -30,9 +30,16 @@
       "note": "Branching and reviewing diffs are needed from the first team project, and mobile releases are cut from tags so the history has to be clean."
     },
     {
-      "label": "Swift or Kotlin",
+      "ref": "swift",
+      "label": "Swift (iOS)",
       "stage": "One platform first",
-      "note": "Pick iOS or Android and learn its language properly; splitting attention across both before either is comfortable produces two shallow skill sets."
+      "note": "Pick the platform you are shipping to first and learn its language properly; the second platform is much easier once one is fluent."
+    },
+    {
+      "ref": "kotlin",
+      "label": "Kotlin (Android)",
+      "stage": "One platform first",
+      "note": "The Android default. Null safety and coroutines remove the two bug classes that dominated the platform's crash reports."
     },
     {
       "label": "Declarative UI, navigation & app state",
@@ -41,9 +48,22 @@
       "ref": "state-management"
     },
     {
-      "label": "React Native or Flutter",
+      "ref": "react-native-vs-flutter",
+      "label": "Cross-platform: choosing a framework",
       "stage": "Cross-platform",
-      "note": "Worth learning after one native platform, so you can judge what a cross-platform runtime actually costs you and still drop to native code when it matters."
+      "note": "One codebase for both platforms is a trade, not a free win — read the comparison before committing a product to either."
+    },
+    {
+      "ref": "react-native",
+      "label": "React Native",
+      "stage": "Cross-platform",
+      "note": "Renders real platform views and reuses React skills, so the app inherits platform behaviour you did not write."
+    },
+    {
+      "ref": "flutter",
+      "label": "Flutter",
+      "stage": "Cross-platform",
+      "note": "Draws its own widgets, so both platforms render identical pixels and custom animation is cheap."
     },
     {
       "ref": "http",
@@ -66,7 +86,8 @@
     {
       "label": "Networking on mobile",
       "stage": "Talking to a server",
-      "note": "Comes right after the basics because mobile networks are the differentiator: request coalescing, retries with backoff, timeouts, radio wake-up cost and battery all change how you call an API."
+      "note": "Comes right after the basics because mobile networks are the differentiator: request coalescing, retries with backoff, timeouts, radio wake-up cost and battery all change how you call an API.",
+      "ref": "mobile-networking"
     },
     {
       "ref": "sqlite",
@@ -107,7 +128,8 @@
     {
       "label": "Push notifications",
       "stage": "Live features",
-      "note": "Placed after identity because a device token must be tied to a user, and after networking because delivery is best-effort — a push is a hint to sync, never the data itself."
+      "note": "Placed after identity because a device token must be tied to a user, and after networking because delivery is best-effort — a push is a hint to sync, never the data itself.",
+      "ref": "push-notification"
     },
     {
       "ref": "websocket",
@@ -130,7 +152,8 @@
     {
       "label": "App Store & Play review",
       "stage": "Shipping",
-      "note": "Last because it constrains everything before it: review guidelines, privacy disclosures, staged rollout and the fact that a bad release cannot be rolled back like a server deploy."
+      "note": "Last because it constrains everything before it: review guidelines, privacy disclosures, staged rollout and the fact that a bad release cannot be rolled back like a server deploy.",
+      "ref": "app-store-review"
     }
   ]
 }

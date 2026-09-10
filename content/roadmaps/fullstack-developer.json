@@ -26,7 +26,8 @@
     {
       "label": "HTML, CSS & JavaScript",
       "stage": "Foundations",
-      "note": "Every frontend framework compiles down to these three, and the server you will write later mostly produces or serves them."
+      "note": "Every frontend framework compiles down to these three, and the server you will write later mostly produces or serves them.",
+      "ref": "web-fundamentals"
     },
     {
       "label": "Git & version control",

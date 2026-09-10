@@ -19,7 +19,8 @@
     {
       "label": "HTML, CSS & JavaScript",
       "stage": "Foundations",
-      "note": "Every framework compiles down to these three; semantic HTML, layout with CSS and the JavaScript event loop are non-negotiable basics."
+      "note": "Every framework compiles down to these three; semantic HTML, layout with CSS and the JavaScript event loop are non-negotiable basics.",
+      "ref": "web-fundamentals"
     },
     {
       "label": "Git & version control",

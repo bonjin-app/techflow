@@ -13,7 +13,7 @@ const REQUIRED_SECTIONS: Record<DocNode["type"], string[]> = {
   pattern: ["Problem", "Solution", "How it works", "Advantages", "Disadvantages", "When to use", "When not to use"],
 };
 
-const KNOWN_FENCES = new Set(["steps", "sequence", "compare", "decision", "timeline", "text", "json", "http", "ts", "js", "sql", "bash", "yaml", "python", "java", "go"]);
+const KNOWN_FENCES = new Set(["steps", "sequence", "compare", "decision", "timeline", "text", "json", "http", "ts", "tsx", "js", "jsx", "sql", "bash", "yaml", "python", "java", "go", "kotlin", "swift", "dart", "rust", "hcl", "html", "css"]);
 
 function main() {
   let g;
