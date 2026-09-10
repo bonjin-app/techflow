@@ -119,7 +119,7 @@ search-autocomplete · image-pipeline
 
 ---
 
-# Wave 5 (in progress) — the AI cluster
+# Wave 5 (done) — the AI cluster
 
 The spec opens with AI → LLM → Vector DB → RAG, and `ai-rag` still has an unlinked
 vector store. Vendor-neutral: models and hosted APIs churn too fast to page.
@@ -138,3 +138,20 @@ rag-vs-fine-tuning · semantic-vs-keyword-search
 
 ## system-designs/
 ai-chatbot
+
+---
+
+# Wave 6 (in progress) — frontend, testing and operations gaps
+
+Chosen from evidence: these are the roadmap steps that had no node to link to.
+
+## concepts/
+state-management · routing · rendering-strategies · web-performance · accessibility ·
+bundling · testing · contract-testing · serverless · incident-response ·
+prompt-engineering · model-serving
+
+## patterns/
+offline-first · optimistic-ui
+
+## comparisons/
+serverless-vs-containers

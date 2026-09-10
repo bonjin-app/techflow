@@ -4,9 +4,18 @@
   "tagline": "From SQL and a script to pipelines that move billions of rows reliably",
   "summary": "An ordered path through the work of moving data from where it is produced to where it can be trusted and queried. It starts with the two tools you will never stop using — a language and SQL — then covers how data is stored and laid out on disk, how batch pipelines are orchestrated and transformed, how streaming changes the problem, and finally the modelling, quality and operational practices that separate a pipeline from a data platform.",
   "category": "career",
-  "tags": ["Data", "Pipelines", "Analytics", "Career", "Learning Path"],
+  "tags": [
+    "Data",
+    "Pipelines",
+    "Analytics",
+    "Career",
+    "Learning Path"
+  ],
   "difficulty": 3,
-  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-10",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "programming-fundamentals",
@@ -23,7 +32,8 @@
     {
       "label": "Linux & the shell",
       "stage": "Foundations",
-      "note": "Every pipeline runs on Linux somewhere, and files, pipes, permissions and exit codes are what a failed job actually reports back to you."
+      "note": "Every pipeline runs on Linux somewhere, and files, pipes, permissions and exit codes are what a failed job actually reports back to you.",
+      "ref": "linux"
     },
     {
       "ref": "sql",
@@ -64,12 +74,14 @@
     {
       "label": "Airflow (workflow orchestration)",
       "stage": "Batch",
-      "note": "Once you have more than two dependent jobs you need scheduling, retries, backfills and a dependency graph — that is what an orchestrator gives you."
+      "note": "Once you have more than two dependent jobs you need scheduling, retries, backfills and a dependency graph — that is what an orchestrator gives you.",
+      "ref": "airflow"
     },
     {
       "label": "Spark (distributed processing)",
       "stage": "Batch",
-      "note": "When a transformation no longer fits on one machine, a distributed engine handles the partitioning and shuffling; knowing why a shuffle is expensive is the whole skill."
+      "note": "When a transformation no longer fits on one machine, a distributed engine handles the partitioning and shuffling; knowing why a shuffle is expensive is the whole skill.",
+      "ref": "spark"
     },
     {
       "label": "dbt (SQL transformation)",
@@ -79,7 +91,8 @@
     {
       "label": "Dimensional modelling",
       "stage": "Modelling",
-      "note": "Facts, dimensions and slowly changing dimensions are how you turn raw events into tables analysts can join without asking you first."
+      "note": "Facts, dimensions and slowly changing dimensions are how you turn raw events into tables analysts can join without asking you first.",
+      "ref": "dimensional-modeling"
     },
     {
       "ref": "clickhouse",

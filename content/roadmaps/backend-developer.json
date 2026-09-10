@@ -4,9 +4,17 @@
   "tagline": "From a first program to designing systems that survive millions of users",
   "summary": "An ordered path through the skills a backend engineer relies on every day. It starts with the fundamentals every server touches (a language, Git, the shell, HTTP), moves into storing and protecting data, then into the caching and messaging layers that let a service scale, the tooling that ships and runs it, and finally the distributed-systems thinking behind system design.",
   "category": "career",
-  "tags": ["Backend", "Career", "Learning Path", "System Design"],
+  "tags": [
+    "Backend",
+    "Career",
+    "Learning Path",
+    "System Design"
+  ],
   "difficulty": 3,
-  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-09",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "programming-fundamentals",
@@ -17,12 +25,14 @@
     {
       "label": "Git & version control",
       "stage": "Foundations",
-      "note": "You will collaborate through branches, reviews and history from your very first project, so learn Git before the code gets big."
+      "note": "You will collaborate through branches, reviews and history from your very first project, so learn Git before the code gets big.",
+      "ref": "git"
     },
     {
       "label": "Linux & the terminal",
       "stage": "Foundations",
-      "note": "Servers, containers and CI runners are Linux; knowing processes, permissions, ports and logs saves hours of debugging later."
+      "note": "Servers, containers and CI runners are Linux; knowing processes, permissions, ports and logs saves hours of debugging later.",
+      "ref": "linux"
     },
     {
       "ref": "http",
@@ -105,7 +115,8 @@
     {
       "label": "CI/CD pipelines",
       "stage": "Operations",
-      "note": "Automated tests and builds on every push turn Docker images into something you can ship many times a day without fear."
+      "note": "Automated tests and builds on every push turn Docker images into something you can ship many times a day without fear.",
+      "ref": "ci-cd"
     },
     {
       "ref": "kubernetes",

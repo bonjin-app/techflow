@@ -24,7 +24,8 @@
     {
       "label": "Git & version control",
       "stage": "Foundations",
-      "note": "Branching, pull requests and reviewing diffs are part of the daily workflow before your first team project."
+      "note": "Branching, pull requests and reviewing diffs are part of the daily workflow before your first team project.",
+      "ref": "git"
     },
     {
       "ref": "http",
@@ -47,7 +48,8 @@
     {
       "label": "React (or another component framework)",
       "stage": "Framework",
-      "note": "Components, props and rendering-on-state-change are the mental model every modern framework shares; learn one deeply."
+      "note": "Components, props and rendering-on-state-change are the mental model every modern framework shares; learn one deeply.",
+      "ref": "react"
     },
     {
       "label": "State management",

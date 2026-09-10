@@ -26,7 +26,8 @@
     {
       "label": "Linux, processes & permissions",
       "stage": "Foundations",
-      "note": "Users, groups, file modes, capabilities and process isolation are the primitives every container and server control is built from."
+      "note": "Users, groups, file modes, capabilities and process isolation are the primitives every container and server control is built from.",
+      "ref": "linux"
     },
     {
       "ref": "http",
@@ -101,7 +102,8 @@
     {
       "label": "Threat modelling",
       "stage": "Application security",
-      "note": "Reviewing a design before it is built is far cheaper than finding the same flaw in a pen test, and it is the skill that turns an engineer into a security engineer."
+      "note": "Reviewing a design before it is built is far cheaper than finding the same flaw in a pen test, and it is the skill that turns an engineer into a security engineer.",
+      "ref": "threat-modeling"
     },
     {
       "ref": "rate-limiting",

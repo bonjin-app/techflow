@@ -4,9 +4,18 @@
   "tagline": "One person, the whole request: from a React click to a database row and back",
   "summary": "An ordered path for engineers who own both sides of the HTTP boundary. It starts with the browser's languages and Git, adds the typed component stack and the server runtime that shares its language, then works through API design, data, authentication and security before finishing with the delivery and operations concerns — caching, containers, CI/CD, CDNs, observability — that make a feature you built end to end actually shippable.",
   "category": "career",
-  "tags": ["Fullstack", "Career", "Learning Path", "Web", "TypeScript"],
+  "tags": [
+    "Fullstack",
+    "Career",
+    "Learning Path",
+    "Web",
+    "TypeScript"
+  ],
   "difficulty": 3,
-  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-09",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "programming-fundamentals",
@@ -22,7 +31,8 @@
     {
       "label": "Git & version control",
       "stage": "Foundations",
-      "note": "A fullstack change usually touches several directories in one pull request, so branching and reviewing diffs come before the first team project."
+      "note": "A fullstack change usually touches several directories in one pull request, so branching and reviewing diffs come before the first team project.",
+      "ref": "git"
     },
     {
       "ref": "http",
@@ -117,7 +127,8 @@
     {
       "label": "CI/CD pipelines",
       "stage": "Delivery",
-      "note": "Lint, type-check, test and build on every push so a fullstack change can be deployed many times a day with confidence."
+      "note": "Lint, type-check, test and build on every push so a fullstack change can be deployed many times a day with confidence.",
+      "ref": "ci-cd"
     },
     {
       "ref": "cdn",

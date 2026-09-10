@@ -4,9 +4,18 @@
   "tagline": "From Python and the math behind models to shipping reliable LLM-powered products",
   "summary": "An ordered path for engineers who turn models into products. It starts with Python, the mathematics and data skills models depend on, moves through machine learning, deep learning and transformers, then into the applied layer — prompting, embeddings, retrieval — and finally into the backend and operations work that makes an AI feature fast, affordable, observable and safe in production.",
   "category": "career",
-  "tags": ["AI", "Machine Learning", "LLM", "Career", "Learning Path"],
+  "tags": [
+    "AI",
+    "Machine Learning",
+    "LLM",
+    "Career",
+    "Learning Path"
+  ],
   "difficulty": 4,
-  "meta": { "lastReviewed": "2026-09-09", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-09",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "programming-fundamentals",
@@ -38,7 +47,8 @@
     {
       "label": "Transformers & large language models",
       "stage": "Models",
-      "note": "Attention, tokenisation and context windows are the constraints behind every prompt, cost estimate and truncation bug you will meet."
+      "note": "Attention, tokenisation and context windows are the constraints behind every prompt, cost estimate and truncation bug you will meet.",
+      "ref": "llm"
     },
     {
       "label": "Prompt engineering & structured output",
@@ -48,7 +58,8 @@
     {
       "label": "Embeddings & vector search",
       "stage": "Applied",
-      "note": "Turning text into vectors and searching by similarity is the mechanism behind retrieval, deduplication and semantic caching."
+      "note": "Turning text into vectors and searching by similarity is the mechanism behind retrieval, deduplication and semantic caching.",
+      "ref": "embedding"
     },
     {
       "ref": "elasticsearch",
@@ -123,12 +134,14 @@
     {
       "label": "Fine-tuning & model adaptation",
       "stage": "Advanced",
-      "note": "Only after prompting and retrieval plateau does fine-tuning pay off; knowing the evaluation loop first keeps it honest."
+      "note": "Only after prompting and retrieval plateau does fine-tuning pay off; knowing the evaluation loop first keeps it honest.",
+      "ref": "fine-tuning"
     },
     {
       "label": "Agents & tool use",
       "stage": "Advanced",
-      "note": "Multi-step agents that call tools reuse every skill above — APIs, retries, idempotency, observability — with the model as the planner."
+      "note": "Multi-step agents that call tools reuse every skill above — APIs, retries, idempotency, observability — with the model as the planner.",
+      "ref": "ai-agent"
     }
   ]
 }
