@@ -214,7 +214,7 @@ export interface BuildGoal {
 
 /* ── Technology Radar ─────────────────────────────────────── */
 export type RadarRing = "adopt" | "trial" | "assess" | "caution";
-export type RadarQuadrant = "languages-frameworks" | "platforms-infrastructure" | "data-messaging" | "techniques";
+export type RadarQuadrant = "languages-interfaces" | "platforms-delivery" | "data-messaging" | "architecture-operations";
 export interface RadarEntry {
   /** knowledge-graph node id */
   ref: string;
@@ -229,6 +229,35 @@ export interface RadarData {
   assessedOn: string;
   method: string;
   entries: RadarEntry[];
+}
+
+/* ── Real-world stacks ────────────────────────────────────── */
+export interface StackItem {
+  /** knowledge-graph node id, when TechFlow has a page for it */
+  ref?: string;
+  /** free-text label for tools without a page yet */
+  label?: string;
+  /** why this piece is in the stack */
+  note?: string;
+}
+export interface StackLayer {
+  label: string;
+  items: StackItem[];
+}
+export interface Stack {
+  id: string;
+  name: string;
+  tagline: string;
+  summary: string;
+  /** Provenance: what this stack is and is not. Always shown to the reader. */
+  basis: string;
+  updated: string;
+  confidence: "high" | "medium" | "low";
+  layers: StackLayer[];
+  whenToUse: string[];
+  tradeoffs: string[];
+  /** architecture / system-design ids to explore next */
+  related: string[];
 }
 
 /* ── Daily challenge ──────────────────────────────────────── */

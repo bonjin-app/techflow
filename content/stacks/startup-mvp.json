@@ -1,0 +1,72 @@
+{
+  "id": "startup-mvp",
+  "name": "Startup MVP",
+  "tagline": "The smallest stack that can serve real users and still be refactored later",
+  "summary": "One deployable application, one relational database, a managed host and a CDN. Nothing here is chosen because it scales to millions; everything is chosen because a small team can ship, debug and change it quickly.",
+  "basis": "TechFlow archetype, not a specific company's stack. It reflects the defaults we would pick for a new product with one to five engineers and no proven traffic.",
+  "updated": "2026-09-10",
+  "confidence": "high",
+  "layers": [
+    {
+      "label": "Client",
+      "items": [
+        { "ref": "react", "note": "One UI framework the whole team already knows." },
+        { "ref": "typescript", "note": "Types pay for themselves the first time you rename a field." }
+      ]
+    },
+    {
+      "label": "Edge",
+      "items": [{ "ref": "cdn", "note": "Static assets and cacheable pages served near the user." }]
+    },
+    {
+      "label": "Application",
+      "items": [
+        { "ref": "nodejs", "note": "Same language as the client; the ecosystem covers most integrations." },
+        { "ref": "modular-monolith", "note": "Clear internal modules, one deployment. Split later only if you must." },
+        { "ref": "rest", "note": "Boring, cacheable, easy to debug with curl." }
+      ]
+    },
+    {
+      "label": "Data",
+      "items": [
+        { "ref": "postgresql", "note": "Relational by default; JSONB covers the parts you have not modelled yet." },
+        { "ref": "indexing", "note": "Two good indexes beat any cache you have not needed yet." }
+      ]
+    },
+    {
+      "label": "Auth",
+      "items": [
+        { "ref": "session", "note": "Server sessions are simpler to revoke than tokens at this size." },
+        { "ref": "oauth", "note": "Social login avoids owning password reset flows on day one." }
+      ]
+    },
+    {
+      "label": "Operations",
+      "items": [
+        { "label": "Managed platform (PaaS)", "note": "Someone else runs the machines until that stops being the bottleneck." },
+        { "ref": "ci-cd", "note": "Push to main, tests run, deploy. Nothing manual." },
+        { "ref": "docker", "note": "Reproducible builds even when the host abstracts them away." }
+      ]
+    },
+    {
+      "label": "Visibility",
+      "items": [
+        { "label": "Hosted error tracking", "note": "You need the stack trace before you need dashboards." },
+        { "ref": "observability", "note": "Structured logs from the first commit; metrics when there is traffic to measure." }
+      ]
+    }
+  ],
+  "whenToUse": [
+    "Fewer than about five engineers and no validated traffic pattern",
+    "The product shape is still changing weekly",
+    "You would rather pay for managed services than run infrastructure",
+    "Correctness and iteration speed matter more than cost per request"
+  ],
+  "tradeoffs": [
+    "A single deployable means one bad release affects everything",
+    "Managed platforms cost more per unit of compute than raw servers",
+    "No cache and no queue means every slow dependency is felt by the user",
+    "You will outgrow parts of this — plan for the seams, not for the rewrite"
+  ],
+  "related": ["simple-web-app", "modular-monolith", "postgresql", "url-shortener"]
+}

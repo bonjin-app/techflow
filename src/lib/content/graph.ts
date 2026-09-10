@@ -14,6 +14,7 @@ import {
   type RadarData,
   type Relation,
   type RoadmapNode,
+  type Stack,
   type SystemDesignNode,
 } from "./types";
 
@@ -25,6 +26,7 @@ export interface KnowledgeGraph {
   builds: BuildGoal[];
   radar: RadarData;
   challenges: Challenge[];
+  stacks: Stack[];
   problems: string[];
 }
 
@@ -40,7 +42,7 @@ function edgeKey(e: Edge) {
 
 /** Build the graph (edges + adjacency) from raw content. Pure & deterministic. */
 export function buildGraph(): KnowledgeGraph {
-  const { nodes: list, builds, radar, challenges } = loadAllContent();
+  const { nodes: list, builds, radar, challenges, stacks } = loadAllContent();
   const nodes = new Map<string, AnyNode>(list.map((n) => [n.id, n]));
   const problems: string[] = [];
   const edgeSet = new Map<string, Edge>();
@@ -140,6 +142,13 @@ export function buildGraph(): KnowledgeGraph {
     for (const o of c.options) if (o.ref && !nodes.has(o.ref)) problems.push(`challenge '${c.id}': option ref '${o.ref}' unknown`);
   }
 
+  for (const st of stacks) {
+    for (const l of st.layers)
+      for (const it of l.items)
+        if (it.ref && !nodes.has(it.ref)) problems.push(`stack '${st.id}': layer '${l.label}' ref '${it.ref}' unknown`);
+    for (const id of st.related) if (!nodes.has(id)) problems.push(`stack '${st.id}': related '${id}' unknown`);
+  }
+
   // Symmetric relations get their inverse so neighbourhoods are consistent.
   for (const e of [...edgeSet.values()]) {
     const inv = INVERSE[e.rel];
@@ -158,7 +167,7 @@ export function buildGraph(): KnowledgeGraph {
     adjacency.get(e.from)!.push(e);
     adjacency.get(e.to)!.push(e);
   }
-  return { nodes, edges, adjacency, builds, radar, challenges, problems };
+  return { nodes, edges, adjacency, builds, radar, challenges, stacks, problems };
 }
 
 /** Memoised per request/build. */
@@ -199,6 +208,7 @@ export const getSystemDesigns = () => getNodesByType("system-design") as SystemD
 export const getBuilds = () => getGraph().builds;
 export const getRadar = () => getGraph().radar;
 export const getChallenges = () => getGraph().challenges;
+export const getStacks = () => getGraph().stacks;
 
 export interface Neighbor {
   node: NodeSummary;

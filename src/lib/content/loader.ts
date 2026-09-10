@@ -11,6 +11,7 @@ import type {
   DocNode,
   RadarData,
   Relation,
+  Stack,
   RoadmapNode,
   SystemDesignNode,
 } from "./types";
@@ -299,11 +300,40 @@ function loadChallenges(): Challenge[] {
   });
 }
 
+function loadStacks(): Stack[] {
+  return listFiles("stacks", ".json").map((file) => {
+    const rel = path.relative(CONTENT_ROOT, file);
+    const d = readJson<Record<string, unknown>>(file);
+    requireFields(d, ["id", "name", "tagline", "summary", "basis", "updated", "layers"], rel);
+    if (path.basename(file, ".json") !== d.id) throw new Error(`${rel}: filename must match id '${d.id}'`);
+    const layers = d.layers as Stack["layers"];
+    if (!Array.isArray(layers) || layers.length === 0) throw new Error(`${rel}: needs at least one layer`);
+    for (const l of layers) {
+      if (!l.label || !Array.isArray(l.items)) throw new Error(`${rel}: layer needs 'label' and 'items'`);
+      for (const it of l.items) if (!it.ref && !it.label) throw new Error(`${rel}: layer '${l.label}' item needs 'ref' or 'label'`);
+    }
+    return {
+      id: String(d.id),
+      name: String(d.name),
+      tagline: String(d.tagline),
+      summary: String(d.summary),
+      basis: String(d.basis),
+      updated: String(d.updated),
+      confidence: (d.confidence ?? "medium") as Stack["confidence"],
+      layers,
+      whenToUse: asStringArray(d.whenToUse),
+      tradeoffs: asStringArray(d.tradeoffs),
+      related: asStringArray(d.related),
+    };
+  });
+}
+
 export interface RawContent {
   nodes: AnyNode[];
   builds: BuildGoal[];
   radar: RadarData;
   challenges: Challenge[];
+  stacks: Stack[];
 }
 
 /** Read every content file from disk. No validation beyond shape. */
@@ -320,5 +350,5 @@ export function loadAllContent(): RawContent {
     if (seen.has(n.id)) throw new Error(`duplicate node id '${n.id}'`);
     seen.add(n.id);
   }
-  return { nodes, builds: loadBuilds(), radar: loadRadar(), challenges: loadChallenges() };
+  return { nodes, builds: loadBuilds(), radar: loadRadar(), challenges: loadChallenges(), stacks: loadStacks() };
 }

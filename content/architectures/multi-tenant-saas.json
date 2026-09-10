@@ -1,0 +1,146 @@
+{
+  "id": "multi-tenant-saas",
+  "name": "Multi-Tenant SaaS",
+  "tagline": "Shared services, isolated tenant data, per-tenant limits and automated onboarding",
+  "summary": "One application serves every customer, but each request carries a tenant identity resolved once at the edge and enforced all the way down to row-level policies in PostgreSQL. Per-tenant rate limits in Redis stop one noisy customer from consuming the shared pool, and the largest tenants are moved onto dedicated shards without changing the application code. Onboarding is an asynchronous provisioning job so signing up never blocks on infrastructure.",
+  "category": "system",
+  "tags": ["SaaS", "Multi-tenancy", "Isolation", "Rate limiting"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "nodes": [
+    { "id": "tenant-client", "label": "Tenant Users", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Browsers and API clients of many customers", "why": "Every request belongs to exactly one tenant, but tenants share one deployment — so tenant identity must travel with the request rather than with the server.",
+      "alternatives": [], "related": ["http", "rest"] },
+    { "id": "gateway", "label": "API Gateway", "kind": "edge", "x": 2, "y": 1, "ref": "api-gateway",
+      "role": "TLS, routing, tenant extraction", "why": "Resolves the tenant once — from subdomain, path or token claim — and rejects requests it cannot attribute, so no downstream service has to guess.",
+      "alternatives": ["nginx"], "related": ["api-gateway", "load-balancing", "authentication"] },
+    { "id": "limiter", "label": "Rate Limiter", "kind": "edge", "x": 4, "y": 1, "ref": "rate-limiting",
+      "role": "Per-tenant quotas", "why": "In a shared pool one customer's batch import can consume every worker; quotas keyed by tenant turn a platform-wide outage into one tenant's 429s.",
+      "alternatives": [], "related": ["rate-limiting", "bulkhead", "backpressure"] },
+    { "id": "authn", "label": "Auth Service", "kind": "service", "x": 0, "y": 1, "ref": "authentication",
+      "role": "Verify credentials, issue scoped tokens", "why": "Tokens carry the tenant id and role set, so tenant scope is signed rather than passed as a mutable header.",
+      "alternatives": [], "related": ["authentication", "jwt", "session"] },
+    { "id": "app", "label": "Application Service", "kind": "service", "x": 2, "y": 2, "ref": "backend",
+      "role": "Business logic, tenant context", "why": "Stateless and identical for all tenants; a middleware binds the tenant id to the request scope and to the database session before any query runs.",
+      "alternatives": [], "related": ["backend", "kubernetes", "rest"] },
+    { "id": "authz", "label": "Authorization (RBAC)", "kind": "service", "x": 0, "y": 3, "ref": "rbac",
+      "role": "Roles and permissions inside a tenant", "why": "Tenant isolation answers 'which company', RBAC answers 'which user in that company' — two different checks that are often wrongly merged into one.",
+      "alternatives": [], "related": ["rbac", "authentication"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 4, "y": 2, "ref": "redis",
+      "role": "Quota counters and tenant config cache", "why": "Rate-limit windows and the tenant→shard lookup are read on every request and must not add a database round-trip.",
+      "alternatives": ["memcached"], "related": ["redis", "rate-limiting", "cache-aside", "ttl"] },
+    { "id": "registry", "label": "Tenant Registry", "kind": "db", "x": 4, "y": 3, "ref": "postgresql",
+      "role": "Tenants, plans, shard mapping", "why": "The one authoritative place that maps a tenant to its plan, limits and data location; everything else caches it.",
+      "alternatives": [], "related": ["postgresql", "database", "sharding"] },
+    { "id": "shared-db", "label": "PostgreSQL (shared, RLS)", "kind": "db", "x": 1, "y": 4, "ref": "postgresql",
+      "role": "Pooled tenant data with row-level security", "why": "Thousands of small tenants in shared tables keep cost per tenant low; a row-level policy on tenant_id makes isolation a database guarantee instead of a code convention.",
+      "alternatives": ["mysql", "mongodb"], "related": ["postgresql", "sql", "indexing", "connection-pooling"] },
+    { "id": "dedicated-db", "label": "PostgreSQL (dedicated shard)", "kind": "db", "x": 3, "y": 4, "ref": "sharding",
+      "role": "Isolated database for large tenants", "why": "A tenant with 40% of the rows ruins shared-table query plans and cache locality, and enterprise contracts often demand physical separation.",
+      "alternatives": ["postgresql", "partitioning"], "related": ["sharding", "partitioning", "replication"] },
+    { "id": "provisioner", "label": "Provisioning Worker", "kind": "worker", "x": 5, "y": 4, "ref": "terraform",
+      "role": "Create tenant resources", "why": "Creating a schema, seeding defaults and allocating storage takes seconds to minutes; doing it asynchronously keeps sign-up fast and retryable.",
+      "alternatives": ["kubernetes"], "related": ["terraform", "infrastructure-as-code", "retry"] },
+    { "id": "object-store", "label": "S3", "kind": "storage", "x": 2, "y": 5, "ref": "s3",
+      "role": "Tenant files and exports", "why": "Uploads and report exports are large and rarely read; one bucket with a per-tenant key prefix and prefix-scoped credentials keeps isolation cheap.",
+      "alternatives": [], "related": ["s3", "cdn"] }
+  ],
+  "edges": [
+    { "from": "tenant-client", "to": "gateway", "label": "HTTPS (tenant subdomain)" },
+    { "from": "gateway", "to": "authn", "label": "verify token" },
+    { "from": "gateway", "to": "limiter", "label": "check quota" },
+    { "from": "limiter", "to": "redis", "label": "INCR tenant window" },
+    { "from": "gateway", "to": "app", "label": "request + tenant id" },
+    { "from": "authn", "to": "registry", "label": "tenant lookup", "style": "dashed" },
+    { "from": "app", "to": "authz", "label": "permission check" },
+    { "from": "app", "to": "redis", "label": "tenant config (TTL)" },
+    { "from": "app", "to": "registry", "label": "resolve shard on miss", "style": "dashed" },
+    { "from": "app", "to": "shared-db", "label": "SET tenant_id; query under RLS" },
+    { "from": "app", "to": "dedicated-db", "label": "large tenants" },
+    { "from": "app", "to": "object-store", "label": "files under tenant/ prefix" },
+    { "from": "gateway", "to": "provisioner", "label": "sign-up job", "style": "dashed" },
+    { "from": "provisioner", "to": "registry", "label": "register tenant" },
+    { "from": "provisioner", "to": "dedicated-db", "label": "create shard", "style": "dashed" },
+    { "from": "provisioner", "to": "object-store", "label": "create prefix + policy", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "tenant-request",
+      "name": "Tenant-scoped request (auth → tenant → row isolation)",
+      "path": ["tenant-client", "gateway", "authn", "app", "registry", "shared-db"],
+      "steps": [
+        "A user of acme.example.com requests GET /invoices with a bearer token.",
+        "The gateway reads the tenant from the subdomain and checks it matches the token's tenant claim — a mismatch is rejected here, not later.",
+        "The auth service validates the signature and returns the tenant id and the user's roles.",
+        "The application binds the tenant id to the request scope and, before any query, sets it on the database session.",
+        "The tenant registry (usually a Redis hit) says this tenant lives in the shared cluster.",
+        "PostgreSQL applies the row-level policy tenant_id = current_setting('app.tenant_id'), so even a query that forgot its WHERE clause returns only this tenant's invoices."
+      ]
+    },
+    {
+      "id": "noisy-neighbour",
+      "name": "Noisy neighbour hits its quota",
+      "path": ["tenant-client", "gateway", "limiter", "redis", "app"],
+      "steps": [
+        "One tenant starts a bulk import and sends 4,000 API calls per minute.",
+        "The gateway attributes every call to that tenant before doing any work.",
+        "The rate limiter looks up the tenant's plan limit and its current window.",
+        "Redis reports the sliding window exhausted; the gateway answers 429 with Retry-After for that tenant only.",
+        "The application pool keeps serving every other tenant at normal latency — the blast radius stays inside one customer."
+      ]
+    },
+    {
+      "id": "onboarding",
+      "name": "Tenant onboarding and provisioning",
+      "path": ["gateway", "provisioner", "registry", "dedicated-db", "object-store"],
+      "steps": [
+        "A sign-up request creates the tenant record and immediately returns 202 with a 'setting up' state.",
+        "The provisioning worker picks the job up; every step is idempotent so a retry cannot create a second shard.",
+        "The tenant is written to the registry with its plan, quota and target data location.",
+        "For an enterprise plan the worker creates a dedicated database (schema, roles, migrations at the current version); small plans skip this and use the shared cluster.",
+        "A prefix and a scoped access policy are created in object storage, the tenant is marked active, and the admin is notified."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Shared tables with row-level security, dedicated shards only for the largest tenants",
+      "why": "Cost per tenant in a shared schema is a fraction of a database per tenant, and one migration runs everywhere. Enforcing isolation with a database policy rather than application WHERE clauses means a forgotten filter is not a data breach.",
+      "alternatives": ["sharding", "database-per-service", "partitioning"],
+      "tradeoff": "A single bad query or a connection that forgets to set the tenant context still affects everyone, and a huge tenant skews indexes and query plans for all the small ones. Per-tenant databases give clean isolation and per-tenant restores, at the price of thousands of schemas to migrate and connection pools to size."
+    },
+    {
+      "decision": "Resolve tenant identity once at the gateway and sign it into the token",
+      "why": "If each service re-derives the tenant, they will eventually disagree, and a mutable X-Tenant-Id header is trivially forged. One resolution point makes attribution auditable and makes rate limiting possible before any work is done.",
+      "alternatives": ["authentication", "api-gateway"],
+      "tradeoff": "The gateway becomes critical path and a single point of failure, and cross-tenant admin operations need an explicit, separately audited escape hatch."
+    },
+    {
+      "decision": "Per-tenant rate limits in Redis rather than a global limit",
+      "why": "A global limit protects the platform but punishes innocent tenants first; a per-tenant window contains the noisy one. Counters must be atomic and shared across gateway instances, which is exactly what Redis does well.",
+      "alternatives": ["rate-limiting", "postgresql"],
+      "tradeoff": "Counters are lost if Redis restarts, briefly allowing over-consumption, and Redis is now on the request path for every call. Storing counters durably would double the write load per request."
+    },
+    {
+      "decision": "Asynchronous provisioning through infrastructure code",
+      "why": "Creating a shard, running migrations and configuring storage policies can take minutes and can fail halfway; a retryable worker with declarative resource definitions makes onboarding recoverable and reviewable.",
+      "alternatives": ["kubernetes"],
+      "tradeoff": "The tenant exists in a 'provisioning' state the UI must handle, and every provisioning step must be idempotent. Synchronous provisioning is simpler to reason about but makes sign-up slow and fragile."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "One shared database", "summary": "A single application and one PostgreSQL database with a tenant_id column on every table. Isolation is a WHERE clause and a code review.", "nodes": ["tenant-client", "gateway", "app", "shared-db"] },
+    { "version": "v2", "title": "Signed tenant identity and RBAC", "summary": "Auth issues tokens carrying the tenant id, row-level security enforces isolation in the database, and roles are checked inside each tenant.", "nodes": ["tenant-client", "gateway", "authn", "app", "authz", "shared-db", "registry"] },
+    { "version": "v3", "title": "Quotas and caching", "summary": "Redis holds per-tenant rate-limit windows and the tenant configuration cache, so one customer's burst no longer degrades the shared pool.", "nodes": ["tenant-client", "gateway", "authn", "limiter", "app", "authz", "redis", "registry", "shared-db", "object-store"] },
+    { "version": "v4", "title": "Dedicated shards and automated onboarding", "summary": "Large tenants move to their own database behind the same code path, and a provisioning worker creates tenant resources asynchronously.", "nodes": ["tenant-client", "gateway", "authn", "limiter", "app", "authz", "redis", "registry", "shared-db", "dedicated-db", "provisioner", "object-store"] }
+  ],
+  "textAlternative": "Tenant users at the top send HTTPS requests to an API gateway. The gateway calls an auth service on the left to verify the token and a rate limiter on the right, which keeps per-tenant counters in Redis. The gateway then forwards the request with a tenant id to a shared application service in the middle, which checks permissions with an RBAC service on the left, reads tenant configuration from Redis, and resolves the tenant's data location from a tenant registry on the right. Most tenants are served from a shared PostgreSQL database with row-level security below and to the left; large tenants are served from a dedicated shard next to it. Tenant files live in object storage at the bottom. A provisioning worker on the right creates the registry entry, the shard and the storage prefix when a new tenant signs up.",
+  "related": [
+    { "to": "rate-limiting", "rel": "RELATED_TO" },
+    { "to": "sharding", "rel": "RELATED_TO" },
+    { "to": "authentication", "rel": "RELATED_TO" },
+    { "to": "rbac", "rel": "RELATED_TO" },
+    { "to": "api-gateway", "rel": "RELATED_TO" },
+    { "to": "bulkhead", "rel": "RELATED_TO" }
+  ]
+}

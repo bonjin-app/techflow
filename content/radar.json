@@ -1,43 +1,322 @@
 {
-  "assessedOn": "2026-09-09",
+  "assessedOn": "2026-09-10",
   "method": "TechFlow editorial assessment for a typical product team building web/mobile backends in 2026. Rings describe how confidently we would start a new project with the item today — not how good the technology is in the abstract. Re-assessed quarterly; disagreement is expected and welcome.",
   "entries": [
-    { "ref": "typescript", "ring": "adopt", "quadrant": "languages-frameworks", "note": "Default for new JavaScript codebases; the ecosystem assumes it." },
-    { "ref": "react", "ring": "adopt", "quadrant": "languages-frameworks", "note": "Still the most widely deployed UI library; server components have matured." },
-    { "ref": "nodejs", "ring": "adopt", "quadrant": "languages-frameworks", "note": "Safe default for API servers and tooling; runtime alternatives exist but the ecosystem is here." },
-    { "ref": "graphql", "ring": "trial", "quadrant": "languages-frameworks", "note": "Earns its complexity for many-client, many-shape data needs; overkill for a single web app." },
-    { "ref": "grpc", "ring": "trial", "quadrant": "languages-frameworks", "note": "Excellent for service-to-service calls with strict contracts; browser story still needs a proxy." },
-    { "ref": "rest", "ring": "adopt", "quadrant": "techniques", "note": "The default public API style; boring in the best way." },
-
-    { "ref": "docker", "ring": "adopt", "quadrant": "platforms-infrastructure", "note": "Containers are the unit of deployment almost everywhere." },
-    { "ref": "kubernetes", "ring": "trial", "quadrant": "platforms-infrastructure", "note": "Right when you run many services and have platform capacity; a burden for a small team with one app." },
-    { "ref": "nginx", "ring": "adopt", "quadrant": "platforms-infrastructure", "note": "Reverse proxy, TLS termination and static serving with decades of production mileage." },
-    { "ref": "cdn", "ring": "adopt", "quadrant": "platforms-infrastructure", "note": "Put one in front of anything public; cheap latency and origin protection." },
-    { "ref": "s3", "ring": "adopt", "quadrant": "platforms-infrastructure", "note": "Object storage is the durable, cheap default for files, backups and data lakes." },
-    { "ref": "prometheus", "ring": "adopt", "quadrant": "platforms-infrastructure", "note": "Metrics standard; pair with a dashboard and tracing for full observability." },
-    { "ref": "observability", "ring": "adopt", "quadrant": "techniques", "note": "Logs, metrics and traces from day one — retrofitting is far more expensive." },
-
-    { "ref": "postgresql", "ring": "adopt", "quadrant": "data-messaging", "note": "The default relational database; JSONB, extensions and managed offerings cover most needs." },
-    { "ref": "mysql", "ring": "adopt", "quadrant": "data-messaging", "note": "Mature and everywhere; choose it when your team or platform already runs it." },
-    { "ref": "redis", "ring": "adopt", "quadrant": "data-messaging", "note": "Cache, session store, counters and pub/sub — nearly every backend ends up with one." },
-    { "ref": "memcached", "ring": "assess", "quadrant": "data-messaging", "note": "Still excellent for pure multi-threaded caching, but Redis covers the same job plus more." },
-    { "ref": "kafka", "ring": "trial", "quadrant": "data-messaging", "note": "Unmatched for durable event streams; heavy to operate for a team without streaming needs." },
-    { "ref": "rabbitmq", "ring": "adopt", "quadrant": "data-messaging", "note": "Pragmatic task queue and routing broker when you do not need a replayable log." },
-    { "ref": "mongodb", "ring": "trial", "quadrant": "data-messaging", "note": "Good fit for document-shaped, schema-flexible data; think twice for relational domains." },
-    { "ref": "dynamodb", "ring": "assess", "quadrant": "data-messaging", "note": "Superb at scale with known access patterns; painful when queries are not known upfront." },
-    { "ref": "elasticsearch", "ring": "trial", "quadrant": "data-messaging", "note": "The search default; keep the source of truth elsewhere and treat the index as derived." },
-
-    { "ref": "cache-aside", "ring": "adopt", "quadrant": "techniques", "note": "The first performance lever to pull; low risk when TTLs are set." },
-    { "ref": "outbox", "ring": "adopt", "quadrant": "techniques", "note": "The reliable way to publish events alongside database writes." },
-    { "ref": "circuit-breaker", "ring": "adopt", "quadrant": "techniques", "note": "Mandatory once you call anything over a network you do not control." },
-    { "ref": "idempotency", "ring": "adopt", "quadrant": "techniques", "note": "Design every mutating endpoint to be safely retried." },
-    { "ref": "event-driven-architecture", "ring": "trial", "quadrant": "techniques", "note": "Powerful decoupling; needs observability and idempotency to stay debuggable." },
-    { "ref": "cqrs", "ring": "assess", "quadrant": "techniques", "note": "Solves real read/write asymmetry; frequently adopted where a good index would do." },
-    { "ref": "saga", "ring": "assess", "quadrant": "techniques", "note": "Necessary for cross-service transactions; prefer avoiding the distributed transaction first." },
-    { "ref": "microservices", "ring": "assess", "quadrant": "techniques", "note": "Organisational scaling tool; start with a modular monolith unless you already have many teams." },
-    { "ref": "modular-monolith", "ring": "adopt", "quadrant": "techniques", "note": "Best default architecture for a new product: clear modules, one deployable." },
-    { "ref": "write-behind", "ring": "caution", "quadrant": "techniques", "note": "Fast, but data loss on cache failure is easy to underestimate." },
-    { "ref": "sse", "ring": "trial", "quadrant": "techniques", "note": "Underused: simpler than WebSocket for server → client streams such as AI token output." },
-    { "ref": "websocket", "ring": "adopt", "quadrant": "techniques", "note": "The standard for bidirectional real-time; plan for scaling connections across servers." }
+    {
+      "ref": "typescript",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Default for new JavaScript codebases; the ecosystem assumes it."
+    },
+    {
+      "ref": "react",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Still the most widely deployed UI library; server components have matured."
+    },
+    {
+      "ref": "nodejs",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Safe default for API servers and tooling; runtime alternatives exist but the ecosystem is here."
+    },
+    {
+      "ref": "graphql",
+      "ring": "trial",
+      "quadrant": "languages-interfaces",
+      "note": "Earns its complexity for many-client, many-shape data needs; overkill for a single web app."
+    },
+    {
+      "ref": "grpc",
+      "ring": "trial",
+      "quadrant": "languages-interfaces",
+      "note": "Excellent for service-to-service calls with strict contracts; browser story still needs a proxy."
+    },
+    {
+      "ref": "rest",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The default public API style; boring in the best way."
+    },
+    {
+      "ref": "docker",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Containers are the unit of deployment almost everywhere."
+    },
+    {
+      "ref": "kubernetes",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "Right when you run many services and have platform capacity; a burden for a small team with one app."
+    },
+    {
+      "ref": "nginx",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Reverse proxy, TLS termination and static serving with decades of production mileage."
+    },
+    {
+      "ref": "cdn",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Put one in front of anything public; cheap latency and origin protection."
+    },
+    {
+      "ref": "s3",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Object storage is the durable, cheap default for files, backups and data lakes."
+    },
+    {
+      "ref": "prometheus",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Metrics standard; pair with a dashboard and tracing for full observability."
+    },
+    {
+      "ref": "observability",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Logs, metrics and traces from day one — retrofitting is far more expensive."
+    },
+    {
+      "ref": "postgresql",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "The default relational database; JSONB, extensions and managed offerings cover most needs."
+    },
+    {
+      "ref": "mysql",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Mature and everywhere; choose it when your team or platform already runs it."
+    },
+    {
+      "ref": "redis",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Cache, session store, counters and pub/sub — nearly every backend ends up with one."
+    },
+    {
+      "ref": "memcached",
+      "ring": "assess",
+      "quadrant": "data-messaging",
+      "note": "Still excellent for pure multi-threaded caching, but Redis covers the same job plus more."
+    },
+    {
+      "ref": "kafka",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Unmatched for durable event streams; heavy to operate for a team without streaming needs."
+    },
+    {
+      "ref": "rabbitmq",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Pragmatic task queue and routing broker when you do not need a replayable log."
+    },
+    {
+      "ref": "mongodb",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Good fit for document-shaped, schema-flexible data; think twice for relational domains."
+    },
+    {
+      "ref": "dynamodb",
+      "ring": "assess",
+      "quadrant": "data-messaging",
+      "note": "Superb at scale with known access patterns; painful when queries are not known upfront."
+    },
+    {
+      "ref": "elasticsearch",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "The search default; keep the source of truth elsewhere and treat the index as derived."
+    },
+    {
+      "ref": "cache-aside",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "The first performance lever to pull; low risk when TTLs are set."
+    },
+    {
+      "ref": "outbox",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "The reliable way to publish events alongside database writes."
+    },
+    {
+      "ref": "circuit-breaker",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Mandatory once you call anything over a network you do not control."
+    },
+    {
+      "ref": "idempotency",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Design every mutating endpoint to be safely retried."
+    },
+    {
+      "ref": "event-driven-architecture",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Powerful decoupling; needs observability and idempotency to stay debuggable."
+    },
+    {
+      "ref": "cqrs",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Solves real read/write asymmetry; frequently adopted where a good index would do."
+    },
+    {
+      "ref": "saga",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Necessary for cross-service transactions; prefer avoiding the distributed transaction first."
+    },
+    {
+      "ref": "microservices",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Organisational scaling tool; start with a modular monolith unless you already have many teams."
+    },
+    {
+      "ref": "modular-monolith",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Best default architecture for a new product: clear modules, one deployable."
+    },
+    {
+      "ref": "write-behind",
+      "ring": "caution",
+      "quadrant": "data-messaging",
+      "note": "Fast, but data loss on cache failure is easy to underestimate."
+    },
+    {
+      "ref": "sse",
+      "ring": "trial",
+      "quadrant": "languages-interfaces",
+      "note": "Underused: simpler than WebSocket for server → client streams such as AI token output."
+    },
+    {
+      "ref": "websocket",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The standard for bidirectional real-time; plan for scaling connections across servers."
+    },
+    {
+      "ref": "go",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Small, fast, boring services with excellent concurrency and deployment ergonomics.",
+      "moved": "new"
+    },
+    {
+      "ref": "python",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Default for data, scripting and ML work; the library ecosystem is the reason.",
+      "moved": "new"
+    },
+    {
+      "ref": "rust",
+      "ring": "trial",
+      "quadrant": "languages-interfaces",
+      "note": "Worth it where correctness and predictable performance justify a steeper learning curve.",
+      "moved": "new"
+    },
+    {
+      "ref": "terraform",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Declarative infrastructure with a reviewable plan; state management is the operational cost.",
+      "moved": "new"
+    },
+    {
+      "ref": "github-actions",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Good enough CI for most teams and it lives next to the code.",
+      "moved": "new"
+    },
+    {
+      "ref": "opentelemetry",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Vendor-neutral traces and metrics; instrument once, change backends later.",
+      "moved": "new"
+    },
+    {
+      "ref": "clickhouse",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Exceptional for aggregate queries over huge tables; not a transactional store.",
+      "moved": "new"
+    },
+    {
+      "ref": "cassandra",
+      "ring": "assess",
+      "quadrant": "data-messaging",
+      "note": "Linear write scaling with known access patterns; the data model must be designed around queries.",
+      "moved": "new"
+    },
+    {
+      "ref": "infrastructure-as-code",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Environments should be reproducible from a repository, not from memory.",
+      "moved": "new"
+    },
+    {
+      "ref": "ci-cd",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Merge to main should be enough to reach production safely.",
+      "moved": "new"
+    },
+    {
+      "ref": "feature-flag",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Decouples deploy from release; budget time to delete stale flags.",
+      "moved": "new"
+    },
+    {
+      "ref": "canary-release",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "Real evidence before full exposure — needs enough traffic to be statistically meaningful.",
+      "moved": "new"
+    },
+    {
+      "ref": "slo",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Turns \"is it up?\" into a number you can act on; only useful if someone owns the budget.",
+      "moved": "new"
+    },
+    {
+      "ref": "oauth",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "The standard for delegated access; use authorization code with PKCE and nothing older.",
+      "moved": "new"
+    },
+    {
+      "ref": "database-per-service",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Required for real service autonomy, and the moment you inherit distributed transactions.",
+      "moved": "new"
+    },
+    {
+      "ref": "sidecar",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Useful when platform concerns must stay out of application code; another process to run.",
+      "moved": "new"
+    }
   ]
 }

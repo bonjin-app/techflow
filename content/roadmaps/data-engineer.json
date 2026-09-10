@@ -1,0 +1,138 @@
+{
+  "id": "data-engineer",
+  "name": "Data Engineer Roadmap",
+  "tagline": "From SQL and a script to pipelines that move billions of rows reliably",
+  "summary": "An ordered path through the work of moving data from where it is produced to where it can be trusted and queried. It starts with the two tools you will never stop using — a language and SQL — then covers how data is stored and laid out on disk, how batch pipelines are orchestrated and transformed, how streaming changes the problem, and finally the modelling, quality and operational practices that separate a pipeline from a data platform.",
+  "category": "career",
+  "tags": ["Data", "Pipelines", "Analytics", "Career", "Learning Path"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "programming-fundamentals",
+      "label": "Programming fundamentals",
+      "stage": "Foundations",
+      "note": "Pipelines are code: without fluency in loops, functions, error handling and testing every later tool becomes a black box you cannot debug."
+    },
+    {
+      "ref": "python",
+      "label": "Python",
+      "stage": "Foundations",
+      "note": "Python is the default language of the data ecosystem — Airflow DAGs, Spark jobs, dbt hooks and ad-hoc analysis all assume it."
+    },
+    {
+      "label": "Linux & the shell",
+      "stage": "Foundations",
+      "note": "Every pipeline runs on Linux somewhere, and files, pipes, permissions and exit codes are what a failed job actually reports back to you."
+    },
+    {
+      "ref": "sql",
+      "label": "SQL",
+      "stage": "Foundations",
+      "note": "SQL is the lingua franca of data work; joins, window functions and aggregation are the operations you will express in every warehouse and transformation tool."
+    },
+    {
+      "ref": "database",
+      "label": "Databases & OLTP vs OLAP",
+      "stage": "Storage",
+      "note": "Most data starts in a transactional database, so you need to know what it guarantees and why reading it for analytics is a different problem."
+    },
+    {
+      "ref": "indexing",
+      "label": "Indexing",
+      "stage": "Storage",
+      "note": "Understanding how an index turns a scan into a lookup is the first step in explaining — and fixing — why an extract takes four hours."
+    },
+    {
+      "ref": "partitioning",
+      "label": "Partitioning",
+      "stage": "Storage",
+      "note": "Partitioning by time or tenant is the single most effective layout decision in analytics: it lets a query skip the data it does not need."
+    },
+    {
+      "ref": "serialization",
+      "label": "Serialization & columnar formats",
+      "stage": "Storage",
+      "note": "Parquet, Avro and ORC are where compression, schema evolution and predicate pushdown live, so the file format decides half your query cost."
+    },
+    {
+      "ref": "s3",
+      "label": "Object storage & the data lake",
+      "stage": "Storage",
+      "note": "Cheap, durable object storage is the substrate every modern platform builds on; learn its consistency, listing and cost behaviour before designing layouts on it."
+    },
+    {
+      "label": "Airflow (workflow orchestration)",
+      "stage": "Batch",
+      "note": "Once you have more than two dependent jobs you need scheduling, retries, backfills and a dependency graph — that is what an orchestrator gives you."
+    },
+    {
+      "label": "Spark (distributed processing)",
+      "stage": "Batch",
+      "note": "When a transformation no longer fits on one machine, a distributed engine handles the partitioning and shuffling; knowing why a shuffle is expensive is the whole skill."
+    },
+    {
+      "label": "dbt (SQL transformation)",
+      "stage": "Batch",
+      "note": "dbt brings version control, tests, documentation and lineage to the SQL layer, which is where most business logic actually lives."
+    },
+    {
+      "label": "Dimensional modelling",
+      "stage": "Modelling",
+      "note": "Facts, dimensions and slowly changing dimensions are how you turn raw events into tables analysts can join without asking you first."
+    },
+    {
+      "ref": "clickhouse",
+      "label": "ClickHouse (columnar analytics)",
+      "stage": "Modelling",
+      "note": "A column store shows what the formats and partitioning above buy you: sub-second aggregation over billions of rows, and the constraints that come with it."
+    },
+    {
+      "ref": "message-queue",
+      "label": "Message queues",
+      "stage": "Streaming",
+      "note": "Before streaming frameworks, understand the decoupling a queue provides and what at-least-once delivery means for your row counts."
+    },
+    {
+      "ref": "kafka",
+      "label": "Kafka",
+      "stage": "Streaming",
+      "note": "A partitioned, replayable log is the backbone of event pipelines: it lets many consumers read the same data at their own pace and reprocess history."
+    },
+    {
+      "ref": "backpressure",
+      "label": "Backpressure",
+      "stage": "Streaming",
+      "note": "A streaming pipeline is only as fast as its slowest stage, and knowing how the system signals 'slow down' prevents unbounded lag and memory blow-ups."
+    },
+    {
+      "ref": "idempotency",
+      "label": "Idempotency & exactly-once semantics",
+      "stage": "Streaming",
+      "note": "Retries and replays are guaranteed, so pipelines must be safe to run twice; idempotent writes are what make at-least-once delivery acceptable."
+    },
+    {
+      "label": "Data quality, tests & contracts",
+      "stage": "Operations",
+      "note": "Data is trusted or worthless, so freshness checks, row-count assertions and producer-side schema contracts belong in the pipeline, not in a dashboard someone notices later."
+    },
+    {
+      "ref": "ci-cd",
+      "label": "CI/CD for pipelines",
+      "stage": "Operations",
+      "note": "Transformations and DAGs are code and need review, tests and staged deployment, or every change is a production experiment."
+    },
+    {
+      "ref": "terraform",
+      "label": "Terraform",
+      "stage": "Operations",
+      "note": "Warehouses, buckets, clusters and permissions should be reproducible; declaring infrastructure means a new environment is a plan and apply, not a wiki page."
+    },
+    {
+      "ref": "analytics-pipeline",
+      "label": "Analytics pipeline design",
+      "stage": "Design",
+      "note": "Finish by reading a whole platform end to end — ingestion, storage layout, transformation, serving and observability — and see how the pieces above fit together."
+    }
+  ]
+}

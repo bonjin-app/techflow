@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { NodeSummary } from "@/lib/content/types";
 import { TYPE_LABEL } from "@/lib/content/types";
 import { groupByType, searchNodes } from "@/lib/search";
+import { useSearchIndex } from "@/lib/useSearchIndex";
 
 /** Hero search: instant grouped results underneath, Enter → /search. */
-export function HomeSearch({ index, suggestions }: { index: NodeSummary[]; suggestions: string[] }) {
+export function HomeSearch({ suggestions }: { suggestions: string[] }) {
   const router = useRouter();
+  const index = useSearchIndex();
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
   const groups = useMemo(() => (q.trim() ? groupByType(searchNodes(index, q, 12)) : []), [q, index]);

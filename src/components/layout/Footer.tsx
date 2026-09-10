@@ -24,6 +24,7 @@ const columns = [
   {
     title: "Practice",
     links: [
+      { href: "/stack", label: "Real-world stacks" },
       { href: "/radar", label: "Technology radar" },
       { href: "/playground", label: "Developer playground" },
       { href: "/challenge", label: "Design challenges" },

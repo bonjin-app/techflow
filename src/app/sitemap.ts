@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
 
 export const dynamic = "force-static";
-import { getBuilds, getGraph } from "@/lib/content/graph";
+import { getBuilds, getGraph, getStacks } from "@/lib/content/graph";
 import { hrefFor } from "@/lib/content/types";
 import { site } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const g = getGraph();
-  const statics = ["", "/explore", "/technology", "/concept", "/pattern", "/architecture", "/compare", "/roadmap", "/system-design", "/search", "/radar", "/playground", "/playground/cache", "/playground/load-balancer", "/playground/jwt", "/challenge"];
+  const statics = ["", "/explore", "/technology", "/concept", "/pattern", "/architecture", "/compare", "/roadmap", "/system-design", "/search", "/radar", "/stack", "/challenge", "/playground", "/playground/cache", "/playground/load-balancer", "/playground/rate-limiter", "/playground/transport", "/playground/jwt"];
   const entries: MetadataRoute.Sitemap = statics.map((p) => ({
     url: `${site.url}${p}`,
     changeFrequency: "weekly",
@@ -22,5 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     });
   }
   for (const b of getBuilds()) entries.push({ url: `${site.url}/build/${b.id}`, changeFrequency: "monthly", priority: 0.8 });
+  for (const s of getStacks())
+    entries.push({ url: `${site.url}/stack/${s.id}`, lastModified: new Date(s.updated), changeFrequency: "monthly", priority: 0.8 });
   return entries;
 }

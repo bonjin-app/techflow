@@ -1,0 +1,143 @@
+{
+  "id": "analytics-pipeline",
+  "name": "Analytics Pipeline",
+  "tagline": "Buffered event ingest, stream processing, a columnar store and replayable history",
+  "summary": "Applications post event batches to a collector that validates them against a schema and appends them to Kafka, which absorbs bursts and decouples producers from consumers. A stream processor enriches and aggregates events into ClickHouse for interactive queries, while the raw stream is archived to object storage so any window can be reprocessed after a logic change. Dashboards query a thin API in front of ClickHouse with a short result cache.",
+  "category": "system",
+  "tags": ["Analytics", "Streaming", "Data", "Columnar"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "nodes": [
+    { "id": "producers", "label": "Event Producers", "kind": "client", "x": 2, "y": 0, "ref": "backend",
+      "role": "Apps, services and SDKs emitting events", "why": "Producers must never wait for analytics; they batch events locally and fire and forget, accepting that a crash loses the last few seconds.",
+      "alternatives": [], "related": ["backend", "react", "webhook"] },
+    { "id": "collector", "label": "Collector API", "kind": "service", "x": 2, "y": 1, "ref": "rest",
+      "role": "Accept, validate and enqueue batches", "why": "A tiny stateless service whose only job is to say 202 fast: it validates the envelope, stamps receive time, and appends to the log. Keeping it thin is what lets it absorb a traffic spike.",
+      "alternatives": ["nginx"], "related": ["rest", "backend", "rate-limiting", "backpressure"] },
+    { "id": "schema-registry", "label": "Schema Registry", "kind": "service", "x": 0, "y": 2, "ref": "serialization",
+      "role": "Event schemas and compatibility rules", "why": "Analytics breaks silently when a field changes type; a registry rejects incompatible producers at ingest instead of corrupting a table three days later.",
+      "alternatives": [], "related": ["serialization", "api-versioning"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 2, "y": 2, "ref": "kafka",
+      "role": "Durable, partitioned event log", "why": "Retains events for days, so a broken consumer is a replay rather than a data loss, and several consumers (stream job, archiver, experiments) read the same stream independently.",
+      "alternatives": ["rabbitmq"], "related": ["kafka", "message-queue", "partitioning", "backpressure"] },
+    { "id": "raw-lake", "label": "S3 (raw events)", "kind": "storage", "x": 4, "y": 2, "ref": "s3",
+      "role": "Immutable archive partitioned by hour", "why": "Kafka retention is days; the archive is the long-term source of truth that makes backfills and audits possible years later, at object-storage prices.",
+      "alternatives": [], "related": ["s3", "partitioning", "serialization"] },
+    { "id": "stream", "label": "Stream Processor", "kind": "worker", "x": 1, "y": 3, "ref": "backend",
+      "role": "Parse, enrich, aggregate, write", "why": "Does the work that must be near-real-time: sessionisation, per-minute rollups and dimension enrichment, with checkpointed offsets so a restart resumes exactly where it stopped.",
+      "alternatives": [], "related": ["backend", "backpressure", "partitioning", "idempotency"] },
+    { "id": "dlq", "label": "Dead Letter Queue", "kind": "queue", "x": 4, "y": 3, "ref": "dead-letter-queue",
+      "role": "Events the processor cannot handle", "why": "One malformed event must not stall a partition forever; parking it keeps the stream moving and leaves something concrete to fix.",
+      "alternatives": [], "related": ["dead-letter-queue", "retry", "message-queue"] },
+    { "id": "clickhouse", "label": "ClickHouse", "kind": "db", "x": 2, "y": 4, "ref": "clickhouse",
+      "role": "Columnar store for aggregate queries", "why": "Dashboard queries scan billions of rows over a few columns; a columnar engine with compression answers them in under a second where a row store would not finish.",
+      "alternatives": ["postgresql", "elasticsearch", "cassandra"],
+      "related": ["clickhouse", "partitioning", "indexing"] },
+    { "id": "batch", "label": "Backfill Job", "kind": "worker", "x": 4, "y": 4, "ref": "backend",
+      "role": "Reprocess archived partitions", "why": "When an aggregation rule changes or a bug is found, history must be recomputed from the raw archive — the same logic as the stream job, run over past partitions.",
+      "alternatives": [], "related": ["backend", "partitioning", "idempotency"] },
+    { "id": "cache", "label": "Redis", "kind": "cache", "x": 0, "y": 5, "ref": "redis",
+      "role": "Query result cache", "why": "A shared dashboard asks the same expensive question hundreds of times a minute; a 60-second result cache removes most of that load without making the numbers meaningfully stale.",
+      "alternatives": ["memcached"], "related": ["redis", "cache-aside", "ttl"] },
+    { "id": "query-api", "label": "Query API", "kind": "service", "x": 2, "y": 5, "ref": "backend",
+      "role": "Safe, bounded queries", "why": "Never expose the warehouse directly: this layer enforces time ranges, row limits, per-user quotas and tenant filters so one dashboard cannot saturate the cluster.",
+      "alternatives": ["graphql"], "related": ["backend", "rate-limiting", "backend-for-frontend"] },
+    { "id": "dashboard", "label": "Dashboard / BI", "kind": "client", "x": 2, "y": 6, "ref": "react",
+      "role": "Charts, funnels, ad-hoc exploration", "why": "The consumer of the whole pipeline; its query patterns — group by a few dimensions over a time range — are what the table layout is designed for.",
+      "alternatives": [], "related": ["react", "observability"] }
+  ],
+  "edges": [
+    { "from": "producers", "to": "collector", "label": "POST /events (batched)" },
+    { "from": "collector", "to": "schema-registry", "label": "validate", "style": "dashed" },
+    { "from": "collector", "to": "kafka", "label": "append" },
+    { "from": "kafka", "to": "stream", "style": "dashed" },
+    { "from": "kafka", "to": "raw-lake", "label": "archive by hour", "style": "dashed" },
+    { "from": "stream", "to": "clickhouse", "label": "batched INSERT" },
+    { "from": "stream", "to": "dlq", "label": "unparseable", "style": "dashed" },
+    { "from": "raw-lake", "to": "batch", "label": "read partitions", "style": "dashed" },
+    { "from": "batch", "to": "clickhouse", "label": "rebuild partition" },
+    { "from": "dashboard", "to": "query-api", "label": "chart query" },
+    { "from": "query-api", "to": "cache", "label": "GET / SET (60s)" },
+    { "from": "query-api", "to": "clickhouse", "label": "SELECT … GROUP BY" }
+  ],
+  "flows": [
+    {
+      "id": "ingest",
+      "name": "Event to dashboard",
+      "path": ["producers", "collector", "kafka", "stream", "clickhouse", "query-api", "dashboard"],
+      "steps": [
+        "The web app buffers 200 click events and posts them in one request.",
+        "The collector checks the envelope against the registered schema, stamps a receive timestamp, and answers 202 without waiting for anything downstream.",
+        "Kafka appends the batch to the events topic, partitioned by user id so one user's events stay ordered.",
+        "The stream processor enriches each event with device and geo dimensions, computes per-minute rollups, and buffers rows for a few seconds.",
+        "ClickHouse takes one large batched insert — thousands of small inserts would fragment the parts and slow every query.",
+        "A dashboard query arrives; the query API clamps the time range, applies the tenant filter and checks the result cache.",
+        "The chart renders from a scan of a few columns over the requested window, typically well under a second."
+      ]
+    },
+    {
+      "id": "backfill",
+      "name": "Batch backfill and replay",
+      "path": ["kafka", "raw-lake", "batch", "clickhouse"],
+      "steps": [
+        "An archiver consumer writes every raw event to object storage, partitioned by hour, independently of the stream job.",
+        "Three weeks later a bug is found in the sessionisation rule — beyond Kafka's retention, so the archive is the only source.",
+        "The backfill job runs the corrected logic over the affected hourly partitions in parallel, writing into a staging table.",
+        "The rebuilt partitions replace the old ones atomically; queries see either the old or the new numbers, never a half-rebuilt mix."
+      ]
+    },
+    {
+      "id": "bad-event",
+      "name": "A producer ships a malformed event",
+      "path": ["collector", "kafka", "stream", "dlq"],
+      "steps": [
+        "A new release sends price as a string instead of a number; the collector rejects it at the envelope level if the schema is enforced strictly.",
+        "Events that pass validation but break a downstream assumption still reach the topic.",
+        "The stream processor fails to parse one record and must not retry it forever — that would stall the whole partition.",
+        "The record goes to the dead-letter queue with its offset and error, the partition keeps flowing, and the events are replayed after the producer is fixed."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Kafka between ingest and processing",
+      "why": "Producers, the processor and the warehouse all have different throughput limits. A retained log lets the processor fall behind during a spike, lets several consumers read the same events, and turns a consumer bug into a replay instead of permanent data loss.",
+      "alternatives": ["rabbitmq", "redis"],
+      "tradeoff": "A cluster to operate, partition counts and retention to size, and consumer lag to monitor. Writing straight from the collector to the warehouse is far simpler and perfectly fine at low volume — until the warehouse is slow or down and the collector starts dropping events."
+    },
+    {
+      "decision": "ClickHouse as the query store instead of the transactional database",
+      "why": "Analytical queries touch few columns and enormous numbers of rows. Column storage plus compression turns a full-table scan into a fraction of the I/O, and keeps analytics load off the operational database entirely.",
+      "alternatives": ["postgresql", "elasticsearch", "cassandra"],
+      "tradeoff": "Poor at point updates and deletes, weak transactional guarantees, and it wants large batched inserts — which is why the stream processor buffers. PostgreSQL is easier to run and good enough for millions of rows; Elasticsearch is better for free-text search than for aggregate scans."
+    },
+    {
+      "decision": "Keep raw events in object storage as the replay source",
+      "why": "Aggregations encode assumptions that turn out to be wrong. Keeping the immutable raw stream means any derived table can be rebuilt from scratch, and it is orders of magnitude cheaper than extending broker retention to months.",
+      "alternatives": ["kafka", "s3"],
+      "tradeoff": "Two write paths to maintain and archived data that must be schema-versioned to stay readable. It also invites the hoarding of data nobody queries, with the storage bill and privacy retention obligations that follow."
+    },
+    {
+      "decision": "Same logic in a stream job and a batch backfill job",
+      "why": "Fresh numbers require streaming; correct history requires reprocessing. Keeping one implementation of the aggregation logic, invoked by two runners, avoids the classic failure where the streaming and batch results quietly disagree.",
+      "alternatives": ["cqrs", "event-driven-architecture"],
+      "tradeoff": "Two execution environments to test, and a real risk of drift if the shared code is not genuinely shared. Streaming only is simpler but cannot fix history; batch only is simpler but leaves dashboards hours behind."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Direct writes", "summary": "Producers post events to a collector that inserts them straight into the analytics store. Simple, and it fails as soon as the store is slow.", "nodes": ["producers", "collector", "clickhouse", "dashboard"] },
+    { "version": "v2", "title": "Buffered ingest", "summary": "Kafka decouples producers from the store, and a stream processor batches inserts and handles retries.", "nodes": ["producers", "collector", "kafka", "stream", "clickhouse", "query-api", "dashboard"] },
+    { "version": "v3", "title": "Schema, archive and dead letters", "summary": "A schema registry rejects incompatible producers, raw events are archived to object storage, and unparseable records are dead-lettered instead of stalling a partition.", "nodes": ["producers", "collector", "schema-registry", "kafka", "raw-lake", "stream", "dlq", "clickhouse", "query-api", "dashboard"] },
+    { "version": "v4", "title": "Backfill and query protection", "summary": "A backfill job rebuilds history from the archive, and the query API adds result caching, row limits and per-user quotas.", "nodes": ["producers", "collector", "schema-registry", "kafka", "raw-lake", "stream", "dlq", "clickhouse", "batch", "cache", "query-api", "dashboard"] }
+  ],
+  "textAlternative": "Event producers at the top post batches to a collector API, which validates them against a schema registry on the left and appends them to Kafka in the middle. Two consumers read the topic: an archiver that writes raw events to object storage on the right, and a stream processor on the left that enriches and aggregates them. Records the processor cannot parse go to a dead-letter queue on the right. The processor writes batched inserts into ClickHouse in the centre. A backfill job on the right reads archived partitions and rebuilds ClickHouse tables when logic changes. Below ClickHouse, a query API with a Redis result cache on the left serves the dashboard at the bottom.",
+  "related": [
+    { "to": "kafka", "rel": "RELATED_TO" },
+    { "to": "clickhouse", "rel": "RELATED_TO" },
+    { "to": "backpressure", "rel": "RELATED_TO" },
+    { "to": "partitioning", "rel": "RELATED_TO" },
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" },
+    { "to": "dead-letter-queue", "rel": "RELATED_TO" },
+    { "to": "cqrs", "rel": "RELATED_TO" }
+  ]
+}

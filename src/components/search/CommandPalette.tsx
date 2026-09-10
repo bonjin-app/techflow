@@ -5,9 +5,19 @@ import { useRouter } from "next/navigation";
 import type { NodeSummary } from "@/lib/content/types";
 import { TYPE_LABEL } from "@/lib/content/types";
 import { groupByType, searchNodes } from "@/lib/search";
+import { useSearchIndex } from "@/lib/useSearchIndex";
 import { getRecent } from "@/lib/local";
 import { OPEN_PALETTE_EVENT } from "./PaletteButton";
 import { nav } from "@/lib/site";
+import { PLAYGROUNDS } from "@/app/playground/registry";
+
+/** Interactive tools and index pages that are not knowledge-graph nodes. */
+const TOOLS: { label: string; href: string; hint: string }[] = [
+  ...PLAYGROUNDS.map((p) => ({ label: p.title, href: `/playground/${p.slug}`, hint: "playground" })),
+  { label: "Real-world stacks", href: "/stack", hint: "stacks" },
+  { label: "Technology radar", href: "/radar", hint: "radar" },
+  { label: "Design challenges", href: "/challenge", hint: "practice" },
+];
 
 interface Command {
   id: string;
@@ -20,9 +30,12 @@ interface Command {
   tagline?: string;
 }
 
-export function CommandPalette({ index }: { index: NodeSummary[] }) {
+export function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  /** The index is a static JSON file; fetch it the first time the palette opens. */
+  const [wanted, setWanted] = useState(false);
+  const index = useSearchIndex(wanted);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +46,7 @@ export function CommandPalette({ index }: { index: NodeSummary[] }) {
     const onOpen = (e: Event) => {
       const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
       setQuery(q);
+      setWanted(true);
       setOpen(true);
       const ids = getRecent().map((r) => r.id);
       setRecent(ids.map((id) => index.find((n) => n.id === id)).filter(Boolean) as NodeSummary[]);
@@ -72,6 +86,7 @@ export function CommandPalette({ index }: { index: NodeSummary[] }) {
           out.push({ id: `recent:${r.id}`, label: r.name, tagline: r.tagline, href: r.href, group: "Recent", type: r.type });
       out.push({ id: "random", label: "Surprise me", hint: "random technology or concept", action: random, group: "Actions" });
       out.push({ id: "explore", label: "Explore the knowledge graph", href: "/explore", group: "Actions", hint: "G then E" });
+      for (const t of TOOLS) out.push({ id: `tool:${t.href}`, label: t.label, href: t.href, hint: t.hint, group: "Tools" });
       out.push({ id: "challenge", label: "Today's design challenge", href: "/challenge", group: "Actions" });
       for (const n of nav) out.push({ id: `nav:${n.href}`, label: n.label, href: n.href, group: "Go to", hint: `G then ${n.key.toUpperCase()}` });
       return out;
@@ -80,6 +95,12 @@ export function CommandPalette({ index }: { index: NodeSummary[] }) {
     for (const g of groupByType(hits)) {
       for (const it of g.items)
         out.push({ id: it.id, label: it.name, tagline: it.tagline, href: it.href, group: TYPE_LABEL[g.type], type: it.type });
+    }
+    const ql = q.toLowerCase();
+    for (const t of TOOLS) {
+      if (t.label.toLowerCase().includes(ql) || t.hint.includes(ql)) {
+        out.push({ id: `tool:${t.href}`, label: t.label, href: t.href, hint: t.hint, group: "Tools" });
+      }
     }
     if (out.length === 0) {
       out.push({ id: "search", label: `Search “${q}”`, href: `/search?q=${encodeURIComponent(q)}`, group: "Search" });

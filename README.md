@@ -40,7 +40,10 @@ src/components/md/                     Markdown renderer + fence components
 src/components/graph/                  RelationshipGraph (force layout) + lazy loader
 src/components/canvas/                 ArchitectureCanvas (zoom/pan, ▶ Run, inspector, versions), StepJourney
 src/components/detail/                 shared detail-page building blocks (levels, learning path, neighbours, TOC)
-src/app/                               routes: /technology /concept /pattern /architecture /compare /roadmap /system-design /build /search /explore
+src/components/radar/                  Technology Radar chart
+src/components/playground/             browser-only simulators (cache, rate limiter, load balancer, transports, JWT)
+src/app/                               routes: /technology /concept /pattern /architecture /compare /roadmap
+                                       /system-design /build /stack /radar /playground /challenge /search /explore
 ```
 
 ## Adding content
@@ -51,6 +54,21 @@ src/app/                               routes: /technology /concept /pattern /ar
 
 Edges are declared in frontmatter (`related`) and derived automatically from `usedFor`,
 `prerequisites`, `learningPath`, architecture node `ref`s, comparison `subjects` and roadmap steps.
+
+## What is on the site
+
+| Area | Route | What it does |
+| --- | --- | --- |
+| Knowledge graph | `/explore`, every detail page | Force-directed graph of all nodes; hover a neighbourhood, click to open |
+| Technologies / Concepts / Patterns | `/technology`, `/concept`, `/pattern` | Three depth levels, trade-offs, prerequisites, learning path, animated diagrams |
+| Architecture Explorer | `/architecture` | Interactive diagrams: ▶ Run animates a request, inspector per component, version evolution |
+| System Design | `/system-design` | Step-by-step scale journeys with the reasoning and alternatives at each step |
+| Comparisons | `/compare` | Feature matrices plus an interactive decision tree, and a "which would you pick" vote |
+| Roadmaps | `/roadmap` | Ordered learning paths with local progress tracking |
+| Real-world stacks | `/stack` | Which technologies get combined in practice, layer by layer, with the costs |
+| Technology Radar | `/radar` | Adopt / Trial / Assess / Caution with dated, sourced reasoning |
+| Playground | `/playground` | Cache, rate limiter, load balancer, real-time transports, JWT — all client-side |
+| Design challenges | `/challenge` | Multiple-choice design questions that explain every option |
 
 ## Keyboard
 

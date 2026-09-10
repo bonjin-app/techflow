@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getSearchIndex } from "@/lib/content/graph";
 import { pageMetadata } from "@/lib/seo";
 import { SearchResults } from "@/components/search/SearchResults";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
@@ -15,7 +14,6 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  const index = getSearchIndex();
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Search", path: "#" }]} />
@@ -23,7 +21,7 @@ export default function Page() {
         Search
       </h1>
       <Suspense fallback={<div className="h-14 rounded-xl border border-border bg-surface" />}>
-        <SearchResults index={index} />
+        <SearchResults />
       </Suspense>
     </div>
   );

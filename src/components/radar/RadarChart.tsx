@@ -24,12 +24,12 @@ export const RING_BLURB: Record<RadarRing, string> = {
   assess: "Worth understanding; adopt only with a specific reason.",
   caution: "Proceed carefully — the failure modes are easy to underestimate.",
 };
-export const QUADRANTS: RadarQuadrant[] = ["languages-frameworks", "platforms-infrastructure", "data-messaging", "techniques"];
+export const QUADRANTS: RadarQuadrant[] = ["languages-interfaces", "platforms-delivery", "data-messaging", "architecture-operations"];
 export const QUADRANT_LABEL: Record<RadarQuadrant, string> = {
-  "languages-frameworks": "Languages & Frameworks",
-  "platforms-infrastructure": "Platforms & Infrastructure",
+  "languages-interfaces": "Languages & Interfaces",
+  "platforms-delivery": "Platforms & Delivery",
   "data-messaging": "Data & Messaging",
-  techniques: "Techniques & Patterns",
+  "architecture-operations": "Architecture & Operations",
 };
 
 const SIZE = 720;
@@ -37,10 +37,10 @@ const C = SIZE / 2;
 const RING_R = [0.5, 0.7, 0.86, 1.0].map((f) => f * (C - 24));
 // quadrant angle ranges (radians), starting at top-left going clockwise
 const QUAD_ANGLE: Record<RadarQuadrant, [number, number]> = {
-  "languages-frameworks": [Math.PI, 1.5 * Math.PI],
-  "platforms-infrastructure": [1.5 * Math.PI, 2 * Math.PI],
+  "languages-interfaces": [Math.PI, 1.5 * Math.PI],
+  "platforms-delivery": [1.5 * Math.PI, 2 * Math.PI],
   "data-messaging": [0, 0.5 * Math.PI],
-  techniques: [0.5 * Math.PI, Math.PI],
+  "architecture-operations": [0.5 * Math.PI, Math.PI],
 };
 
 function hash(s: string) {
@@ -49,23 +49,32 @@ function hash(s: string) {
   return (h >>> 0) / 4294967295;
 }
 
-/** Deterministic dot placement inside its ring band and quadrant wedge (no overlap guarantee, but spread). */
+/**
+ * Deterministic dot placement inside a ring band and quadrant wedge. Items in the
+ * same band are spread across three radial sub-bands and their labels alternate
+ * above / below the dot, which keeps a crowded ring readable.
+ */
 function place(items: RadarItem[]) {
-  const out = new Map<string, { x: number; y: number }>();
+  const out = new Map<string, { x: number; y: number; below: boolean }>();
+  const round = (v: number) => Math.round(v * 100) / 100;
   for (const q of QUADRANTS) {
     for (const ring of RINGS) {
       const group = items.filter((i) => i.quadrant === q && i.ring === ring);
       const ri = RINGS.indexOf(ring);
-      const inner = ri === 0 ? 40 : RING_R[ri - 1];
+      const inner = ri === 0 ? 46 : RING_R[ri - 1];
       const outer = RING_R[ri];
       const [a0, a1] = QUAD_ANGLE[q];
       group.forEach((it, idx) => {
-        const t = (idx + 0.5) / group.length;
-        const angle = a0 + (a1 - a0) * (0.08 + 0.84 * t);
-        // alternate inner/outer bands so neighbouring labels don't collide
-        const band = idx % 2 === 0 ? 0.22 : 0.62;
-        const radius = inner + (outer - inner) * (band + 0.16 * hash(it.ref));
-        out.set(it.ref, { x: C + Math.cos(angle) * radius, y: C + Math.sin(angle) * radius });
+        const t = group.length === 1 ? 0.5 : (idx + 0.5) / group.length;
+        const angle = a0 + (a1 - a0) * (0.07 + 0.86 * t);
+        // three radial sub-bands, so neighbouring dots are never at the same radius
+        const band = [0.18, 0.5, 0.8][idx % 3];
+        const radius = inner + (outer - inner) * (band + 0.1 * hash(it.ref));
+        out.set(it.ref, {
+          x: round(C + Math.cos(angle) * radius),
+          y: round(C + Math.sin(angle) * radius),
+          below: idx % 2 === 1,
+        });
       });
     }
   }
@@ -78,6 +87,12 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
   const positions = useMemo(() => place(items), [items]);
   const hovered = hover ? items.find((i) => i.ref === hover) : undefined;
   const visible = quad ? items.filter((i) => i.quadrant === quad) : items;
+  /** A crowded quadrant only shows labels once it is focused — the list on the right always has them. */
+  const crowded = useMemo(() => {
+    const counts = new Map<RadarQuadrant, number>();
+    for (const i of items) counts.set(i.quadrant, (counts.get(i.quadrant) ?? 0) + 1);
+    return new Set([...counts.entries()].filter(([, n]) => n > 16).map(([q]) => q));
+  }, [items]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -105,18 +120,36 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
               </text>
             );
           })}
-          {items.map((it) => {
+          {[...items].sort((x, y) => (x.ref === hover ? 1 : y.ref === hover ? -1 : 0)).map((it) => {
             const p = positions.get(it.ref)!;
             const dim = quad && it.quadrant !== quad;
             const active = hover === it.ref;
+            const showLabel = active || quad === it.quadrant || !crowded.has(it.quadrant);
             return (
-              <g key={it.ref} transform={`translate(${p.x} ${p.y})`} data-type={it.type} style={{ opacity: dim ? 0.2 : 1, transition: "opacity 160ms" }} onPointerEnter={() => setHover(it.ref)} onPointerLeave={() => setHover(null)}>
+              <g
+                key={it.ref}
+                transform={`translate(${p.x} ${p.y})`}
+                data-type={it.type}
+                style={{ opacity: dim ? 0.2 : 1, transition: "opacity 160ms" }}
+                onPointerEnter={() => setHover(it.ref)}
+                onPointerLeave={() => setHover(null)}
+              >
                 <Link href={it.href} aria-label={`${it.name} — ${RING_LABEL[it.ring]}`}>
                   <circle r={active ? 9 : 7} fill="var(--type)" stroke="var(--bg)" strokeWidth={2} style={{ cursor: "pointer" }} />
                   {it.moved === "new" && <circle r={11} fill="none" stroke="var(--type)" strokeOpacity={0.5} />}
-                  <text y={-11} textAnchor="middle" style={{ fontSize: active ? 11.5 : 10, fontWeight: active ? 600 : 500, pointerEvents: "none" }} fill="var(--fg)" stroke="var(--bg)" strokeWidth={3} paintOrder="stroke">
-                    {it.name}
+                  {showLabel && (
+                  <text
+                    y={p.below ? 17 : -11}
+                    textAnchor="middle"
+                    style={{ fontSize: active ? 11.5 : 9.5, fontWeight: active ? 600 : 500, pointerEvents: "none" }}
+                    fill={active ? "var(--fg)" : "var(--fg-muted)"}
+                    stroke="var(--bg)"
+                    strokeWidth={3.5}
+                    paintOrder="stroke"
+                  >
+                    {it.name.length > 17 && !active ? `${it.name.slice(0, 16)}…` : it.name}
                   </text>
+                  )}
                 </Link>
               </g>
             );
@@ -136,6 +169,11 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
       </div>
 
       <aside className="space-y-4">
+        {crowded.size > 0 && (
+          <p className="text-xs text-fg-faint">
+            Busy quadrants show their labels once you focus them — pick a quadrant below, or hover any dot.
+          </p>
+        )}
         <div className="flex flex-wrap gap-1.5 text-xs">
           <button onClick={() => setQuad(null)} className={`rounded-md border px-2 py-1 ${quad === null ? "border-accent bg-accent-soft" : "border-border text-fg-muted"}`}>
             All

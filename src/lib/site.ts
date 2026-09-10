@@ -16,6 +16,7 @@ export const nav = [
   { href: "/system-design", label: "System Design", key: "s" },
   { href: "/compare", label: "Compare", key: "m" },
   { href: "/roadmap", label: "Roadmaps", key: "r" },
+  { href: "/stack", label: "Stacks", key: "k" },
   { href: "/radar", label: "Radar", key: "d" },
   { href: "/playground", label: "Playground", key: "y" },
 ] as const;

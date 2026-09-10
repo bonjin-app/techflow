@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { dailyPick, getArchitectures, getBuilds, getChallenges, getConcepts, getGraph, getNode, getPatterns, getSearchIndex, getTechnologies, getUniverse, summarize } from "@/lib/content/graph";
+import { dailyPick, getArchitectures, getBuilds, getChallenges, getConcepts, getGraph, getNode, getPatterns, getTechnologies, getUniverse, summarize } from "@/lib/content/graph";
 import { buildRefMap } from "@/lib/content/refs";
 import { ChallengeCard } from "@/components/home/ChallengeCard";
 import { hrefFor, TYPE_LABEL, type NodeType } from "@/lib/content/types";
@@ -34,7 +34,6 @@ const FIRST_JOURNEY = ["redis", "cache", "cache-aside", "e-commerce", "postgresq
 
 export default function Home() {
   const g = getGraph();
-  const index = getSearchIndex();
   const builds = getBuilds();
   const today = todayKey();
   const dailyConcept = dailyPick(getConcepts(), today, 1);
@@ -90,7 +89,7 @@ export default function Home() {
             An interactive knowledge graph for developers. Not a list of tools — the reasons, trade-offs and connections between them.
           </p>
           <div className="mt-8">
-            <HomeSearch index={index} suggestions={["redis", "why kafka", "websocket vs sse", "race condition", "cache aside"]} />
+            <HomeSearch suggestions={["redis", "why kafka", "websocket vs sse", "race condition", "cache aside"]} />
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
             {ENTRY_TYPES.map((t) => (
@@ -110,7 +109,7 @@ export default function Home() {
       </section>
 
       <div className="mx-auto max-w-7xl space-y-20 px-4 py-12 sm:px-6">
-        <StreakBadge index={index} />
+        <StreakBadge />
 
         {/* Universe */}
         <section>
@@ -231,8 +230,13 @@ export default function Home() {
             </Link>
             <Link href="/playground" className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
               <div className="font-mono text-[11px] uppercase tracking-wider text-fg-faint">Developer playground</div>
-              <h3 className="mt-1 text-lg font-semibold group-hover:underline">Cache · Load balancer · JWT</h3>
-              <p className="mt-1 text-sm text-fg-muted">Simulate eviction policies, balancing algorithms and token structure in your browser.</p>
+              <h3 className="mt-1 text-lg font-semibold group-hover:underline">Cache · Rate limiter · Transports</h3>
+              <p className="mt-1 text-sm text-fg-muted">Simulate eviction policies, limiter algorithms, balancing and real-time transports in your browser.</p>
+            </Link>
+            <Link href="/stack" className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-fg-faint">Real-world stacks</div>
+              <h3 className="mt-1 text-lg font-semibold group-hover:underline">What actually gets combined</h3>
+              <p className="mt-1 text-sm text-fg-muted">Startup MVP, B2B SaaS, real-time, analytics and AI — layer by layer, with the cost of each combination.</p>
             </Link>
           </div>
         </section>

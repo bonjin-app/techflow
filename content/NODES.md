@@ -33,7 +33,7 @@ real-time-chat · e-commerce · ai-application · saas · notification
 
 ---
 
-# Wave 2 (in progress)
+# Wave 2 (done)
 
 ## technologies/
 nginx · graphql · grpc · nodejs · react · typescript · mysql · dynamodb · s3 · prometheus
@@ -58,3 +58,33 @@ rate-limiter · news-feed
 
 ## builds/
 video-platform · search-engine
+
+---
+
+# Wave 3 (in progress)
+
+## technologies/
+go · python · rust · terraform · opentelemetry · cassandra · clickhouse · github-actions
+
+## concepts/
+oauth · jwt · cors · webhook · rbac · backpressure · connection-pooling · indexing · ci-cd ·
+infrastructure-as-code · slo · partitioning
+
+## patterns/
+strangler-fig · sidecar · backend-for-frontend · leader-election · api-versioning ·
+blue-green-deployment · canary-release · feature-flag
+
+## architectures/
+multi-tenant-saas · analytics-pipeline · iot-telemetry
+
+## comparisons/
+sql-vs-nosql · jwt-vs-session · kubernetes-vs-serverless · go-vs-python
+
+## roadmaps/
+data-engineer · security-engineer · software-architect
+
+## system-designs/
+job-scheduler · distributed-cache
+
+## builds/
+data-platform · iot-product

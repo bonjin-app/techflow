@@ -1,0 +1,11 @@
+{
+  "id": "data-platform",
+  "name": "Data Platform",
+  "tagline": "Ingest, store and model data so analysts can query billions of rows in seconds",
+  "architecture": "analytics-pipeline",
+  "systemDesign": "job-scheduler",
+  "technologies": ["kafka", "s3", "clickhouse", "postgresql", "python", "terraform"],
+  "concepts": ["sql", "database", "partitioning", "indexing", "serialization", "backpressure", "idempotency"],
+  "patterns": ["event-driven-architecture", "outbox", "cqrs", "retry", "dead-letter-queue"],
+  "learningPath": ["sql", "database", "python", "s3", "kafka", "clickhouse", "analytics-pipeline"]
+}

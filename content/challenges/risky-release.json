@@ -1,0 +1,13 @@
+{
+  "id": "risky-release",
+  "question": "You are shipping a rewritten checkout flow. It touches money, and you cannot fully reproduce production traffic in staging. How do you release it?",
+  "context": "Deploys are automated and take two minutes. The old flow works. Rolling back a deploy is easy; rolling back a database migration is not. You want real traffic on the new code, but not all of it.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Deploy to everyone and watch the dashboards closely", "correct": false, "why": "Fast rollback still means every customer met the bug first. For a money path, the blast radius is the whole point of the exercise.", "ref": "ci-cd" },
+    { "label": "Put the new flow behind a flag and ramp it: internal users, then 1%, then more", "correct": true, "why": "A flag decouples deploying from releasing, so the code ships dark and exposure grows only as the metrics hold. Turning it off is a config change, not a rollback — which matters when a migration cannot be reversed.", "ref": "feature-flag" },
+    { "label": "Blue-green: run both versions and switch all traffic at once", "correct": false, "why": "Excellent for a clean, instant cutover and rollback, but the switch is still all-or-nothing. It solves deployment risk, not \"let me try this on a small slice of real orders\".", "ref": "blue-green-deployment" },
+    { "label": "Keep it on a long-lived branch until QA signs off", "correct": false, "why": "The branch drifts, the merge gets scarier, and you still learn nothing about production behaviour. Delay is not a substitute for controlled exposure.", "ref": "canary-release" }
+  ],
+  "related": ["feature-flag", "canary-release", "blue-green-deployment", "payment-system", "ci-cd"]
+}

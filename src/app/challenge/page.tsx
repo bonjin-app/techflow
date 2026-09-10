@@ -13,7 +13,9 @@ export const metadata: Metadata = pageMetadata({
 
 export default function Page() {
   const challenges = getChallenges();
-  const refs = buildRefMap();
+  const refs = buildRefMap(
+    challenges.flatMap((c) => [...c.related, ...c.options.map((o) => o.ref).filter((r): r is string => !!r)]),
+  );
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Challenges", path: "#" }]} />

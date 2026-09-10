@@ -12,6 +12,9 @@ content/
 ├── architectures/  *.json Chat system, E-commerce … (interactive diagrams)
 ├── comparisons/    *.md   Redis vs Memcached, WebSocket vs SSE …
 ├── roadmaps/       *.json Backend, Frontend …
+├── stacks/         *.json Real-world stack archetypes
+├── challenges/     *.json Design challenge questions
+├── radar.json             Technology radar assessment
 ├── system-designs/ *.json URL shortener … (step-by-step scale journey)
 └── builds/         *.json "I want to build…" goals
 ```
@@ -201,3 +204,68 @@ fence), `## When X`, `## When Y`, `## Deep Dive`.
 ## Build goals (`builds/*.json`)
 
 `{ id, name, tagline, architecture, systemDesign?, technologies: [], concepts: [], patterns: [], learningPath: [] }`.
+
+## Real-world stacks (`stacks/*.json`)
+
+Archetype stacks — **never** presented as a specific company's stack.
+
+```jsonc
+{
+  "id": "modern-saas",
+  "name": "Modern B2B SaaS",
+  "tagline": "≤ 90 chars",
+  "summary": "2–3 sentences on what this stack is for.",
+  "basis": "Where this comes from. Required — it is rendered to the reader.",
+  "updated": "2026-09-10",
+  "confidence": "high",          // high | medium | low
+  "layers": [
+    { "label": "Data", "items": [
+      { "ref": "postgresql", "note": "why this piece is here" },
+      { "label": "Managed platform (PaaS)", "note": "free text when no page exists yet" }
+    ]}
+  ],
+  "whenToUse": ["..."],           // "Fits when"
+  "tradeoffs": ["..."],           // "What it costs you" — required, be honest
+  "related": ["multi-tenant-saas", "rbac"]
+}
+```
+
+Every `ref` must be an existing node id. Stacks are not graph nodes: they do not appear in
+search or the graph, they live at `/stack/<id>`.
+
+## Design challenges (`challenges/*.json`)
+
+```jsonc
+{
+  "id": "double-charge",
+  "question": "One concrete design question.",
+  "context": "The constraints that make the answer non-obvious.",
+  "difficulty": 3,
+  "options": [                    // 2+; exactly the ones a real engineer would consider
+    { "label": "…", "correct": true,  "why": "why this fits", "ref": "idempotency" },
+    { "label": "…", "correct": false, "why": "why this looks right but is not", "ref": "transaction" }
+  ],
+  "related": ["idempotency", "payment-system"]
+}
+```
+
+Wrong options must be *plausible* and their `why` must teach something. At least one option
+must be `correct: true`. The home page features one per day, deterministically.
+
+## Technology radar (`radar.json`)
+
+```jsonc
+{
+  "assessedOn": "2026-09-09",
+  "method": "How to read this. Required — rendered on the page.",
+  "entries": [
+    { "ref": "redis", "ring": "adopt", "quadrant": "data-messaging",
+      "note": "One sentence: why this ring, today.", "moved": "new" }
+  ]
+}
+```
+
+`ring`: `adopt | trial | assess | caution`. `quadrant`: `languages-interfaces |
+platforms-delivery | data-messaging | architecture-operations` — keep the four roughly
+balanced, or labels collide in the chart. Rings describe how confidently
+*we* would start a new project with the item — never an absolute quality ranking.

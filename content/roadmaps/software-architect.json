@@ -1,0 +1,142 @@
+{
+  "id": "software-architect",
+  "name": "Software Architect Roadmap",
+  "tagline": "From structuring one codebase to choosing, justifying and evolving whole systems",
+  "summary": "Architecture is the set of decisions that are expensive to reverse, so this path is about earning the judgement to make them. It starts where every architect starts — building things — then moves through the structural patterns that keep one codebase changeable, the data guarantees that constrain every design, the distributed-systems reality that appears the moment there is a second machine, the integration patterns that connect services, and finally how systems are evolved and how decisions are recorded and measured.",
+  "category": "career",
+  "tags": ["Architecture", "System Design", "Trade-offs", "Career", "Learning Path"],
+  "difficulty": 5,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "programming-fundamentals",
+      "label": "Programming fundamentals",
+      "stage": "Foundations",
+      "note": "An architect who cannot still read and write the code loses the feedback loop that keeps designs honest, so this never stops being step one."
+    },
+    {
+      "ref": "backend",
+      "label": "Build and run real services",
+      "stage": "Foundations",
+      "note": "Judgement about designs comes from having operated a few; you need the memory of a bad decision costing you a weekend before the patterns mean anything."
+    },
+    {
+      "ref": "http",
+      "label": "HTTP & API design",
+      "stage": "Foundations",
+      "note": "Nearly every boundary you will draw is exposed over HTTP, and the contract at that boundary outlives the code behind it."
+    },
+    {
+      "ref": "database",
+      "label": "Databases",
+      "stage": "Foundations",
+      "note": "Data outlives services: the storage choice and the schema are the hardest parts of any system to change later, so they anchor the whole design."
+    },
+    {
+      "ref": "layered-architecture",
+      "label": "Layered architecture",
+      "stage": "Structuring code",
+      "note": "Start with the simplest structural idea — separate presentation, logic and data access — and learn precisely where it starts to leak."
+    },
+    {
+      "ref": "clean-architecture",
+      "label": "Clean & hexagonal architecture",
+      "stage": "Structuring code",
+      "note": "Inverting dependencies so business rules do not import the database or the framework is what makes a codebase testable and portable across a decade of tooling changes."
+    },
+    {
+      "label": "Domain-driven design",
+      "stage": "Structuring code",
+      "note": "Bounded contexts and a shared language are how you decide where the seams belong; almost every bad service split is really a missing domain model."
+    },
+    {
+      "ref": "modular-monolith",
+      "label": "Modular monolith",
+      "stage": "Structuring code",
+      "note": "Enforcing module boundaries inside one deployable gives you most of the benefit of services with none of the network, and it is the correct default for most teams."
+    },
+    {
+      "ref": "transaction",
+      "label": "Transactions & isolation",
+      "stage": "Data guarantees",
+      "note": "Knowing exactly what a transaction promises — and what isolation level your database actually runs — determines whether a design needs distributed coordination at all."
+    },
+    {
+      "ref": "sharding",
+      "label": "Replication & sharding",
+      "stage": "Data guarantees",
+      "note": "How data is copied and split decides your read scaling, your failure modes and which queries become impossible, so it belongs in the design and not in a later migration."
+    },
+    {
+      "ref": "cap-theorem",
+      "label": "CAP theorem & consistency models",
+      "stage": "Distributed thinking",
+      "note": "This is the vocabulary for saying what a system gives up during a partition; without it 'highly available and strongly consistent' sounds like a requirement rather than a contradiction."
+    },
+    {
+      "ref": "distributed-system",
+      "label": "Distributed systems",
+      "stage": "Distributed thinking",
+      "note": "Partial failure, timeouts, retries and clock skew are not edge cases but the normal operating condition of anything with two machines in it."
+    },
+    {
+      "ref": "microservices",
+      "label": "Microservices & service boundaries",
+      "stage": "Distributed thinking",
+      "note": "Once you know both the modular alternative and the distributed cost, you can judge when independent deployment and scaling actually justify the network between components."
+    },
+    {
+      "ref": "message-queue",
+      "label": "Message queues & asynchrony",
+      "stage": "Integration",
+      "note": "Asynchronous messaging is the main tool for decoupling services in time, and it trades immediate consistency for availability — a trade an architect must make deliberately."
+    },
+    {
+      "ref": "event-driven-architecture",
+      "label": "Event-driven architecture",
+      "stage": "Integration",
+      "note": "Publishing facts instead of calling commands changes who depends on whom; it enables independent evolution and makes debugging and ordering much harder."
+    },
+    {
+      "ref": "saga",
+      "label": "Saga & distributed transactions",
+      "stage": "Integration",
+      "note": "When a business process spans services there is no single transaction, so you need compensation, idempotency and a clear story about intermediate states."
+    },
+    {
+      "ref": "api-versioning",
+      "label": "API versioning & contracts",
+      "stage": "Integration",
+      "note": "Every boundary you create must be changeable without a coordinated release, and versioning discipline is what makes independent deployment real rather than nominal."
+    },
+    {
+      "ref": "strangler-fig",
+      "label": "Strangler fig & legacy migration",
+      "stage": "Evolution",
+      "note": "Most architecture work is changing a running system, and incremental replacement behind a facade is the only approach that keeps the business alive during the rewrite."
+    },
+    {
+      "ref": "slo",
+      "label": "SLOs & quality attributes",
+      "stage": "Operations",
+      "note": "Latency, availability and durability targets turn vague non-functional requirements into numbers a design can be evaluated against."
+    },
+    {
+      "ref": "observability",
+      "label": "Observability",
+      "stage": "Operations",
+      "note": "A design you cannot observe cannot be verified or debugged, so tracing, metrics and log structure are architectural concerns and not an afterthought for the ops team."
+    },
+    {
+      "label": "Architecture decision records",
+      "stage": "Practice",
+      "note": "Writing down the options, the choice and the consequences is what makes architecture reviewable, teachable and reversible when the context changes."
+    },
+    {
+      "ref": "news-feed",
+      "label": "Practise whole-system design",
+      "stage": "Practice",
+      "note": "Finish by walking a system from one server to a scaled-out design, naming the trade-off at each step — the exercise every topic above exists to support."
+    }
+  ]
+}

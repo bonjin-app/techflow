@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { DocNode } from "@/lib/content/types";
 import { getEgoGraph, getNeighbors, resolveRefs } from "@/lib/content/graph";
-import { buildRefMap } from "@/lib/content/refs";
+import { buildRefMap, collectMarkdownRefs } from "@/lib/content/refs";
 import { breadcrumbJsonLd, breadcrumbsFor, techArticleJsonLd } from "@/lib/seo";
 import { Markdown } from "@/components/md/Markdown";
 import { GraphLoader } from "@/components/graph/GraphLoader";
@@ -44,7 +44,8 @@ function Section({ id, title, eyebrow, children }: { id: string; title: string; 
 
 export function DocDetail({ node }: { node: DocNode }) {
   const s = node.sections;
-  const refs = buildRefMap();
+  // Only the ids this page links to — the full map would be serialised into every page.
+  const refs = buildRefMap(collectMarkdownRefs(Object.values(s)));
   const neighbors = getNeighbors(node.id);
   const ego = getEgoGraph(node.id, { depth: 2, maxNodes: 26 });
   const usedFor = resolveRefs(node.usedFor);

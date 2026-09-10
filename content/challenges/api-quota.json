@@ -1,0 +1,13 @@
+{
+  "id": "api-quota",
+  "question": "Your public API allows 100 requests per minute per key. Customers complain that a well-behaved integration gets 429s, while a badly written one still manages short floods. Which limiter fits best?",
+  "context": "Clients are batch-oriented: they sync every few minutes and want to send a short burst, then go quiet. The limit exists to protect the database, which can absorb a brief spike but not a sustained one.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Fixed window counter per minute", "correct": false, "why": "Cheapest to build, but two clumps either side of a minute boundary are counted separately — so a client can push close to 200 requests in a few seconds while a client that syncs mid-window gets rejected.", "ref": "rate-limiting" },
+    { "label": "Token bucket sized to the burst, refilling at the sustained rate", "correct": true, "why": "The bucket is exactly the \"short burst is fine, sustained flood is not\" policy: a client that has been quiet has a full bucket to spend, then settles to the refill rate. It is also O(1) state per key.", "ref": "rate-limiting" },
+    { "label": "Sliding window log of every request timestamp", "correct": false, "why": "Precise and boundary-free, but it stores a timestamp per request per key and admits no deliberate burst. Correct behaviour, wrong shape for batch clients, and the most expensive option.", "ref": "redis" },
+    { "label": "Leaky bucket that queues and drains at a fixed rate", "correct": false, "why": "Smooths the load on the database perfectly, but accepted requests wait in the queue — an API client sees latency instead of a clear 429, which is usually worse for an integration.", "ref": "backpressure" }
+  ],
+  "related": ["rate-limiting", "rate-limiter", "api-gateway", "redis"]
+}

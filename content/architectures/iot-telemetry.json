@@ -1,0 +1,143 @@
+{
+  "id": "iot-telemetry",
+  "name": "IoT Telemetry",
+  "tagline": "Devices through a protocol gateway, buffered ingest, time-series storage and alerting",
+  "summary": "Constrained devices hold one long-lived, mutually authenticated connection to a protocol gateway that translates their compact publish/subscribe traffic into events on Kafka. A writer consumer applies backpressure and fans the readings out to a latest-state store for device pages and a columnar store for history, while a rule engine watches the same stream for threshold breaches. Commands travel back to devices over the same connection, so nothing has to reach a device that sits behind a mobile NAT.",
+  "category": "system",
+  "tags": ["IoT", "Streaming", "Time series", "Backpressure"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "nodes": [
+    { "id": "devices", "label": "Devices / Sensors", "kind": "client", "x": 2, "y": 0,
+      "role": "Constrained publishers behind NAT", "why": "Battery- and bandwidth-limited, often on cellular links that drop; they cannot accept inbound connections, so they keep one outbound session open and reconnect with backoff.",
+      "alternatives": [], "related": ["tcp", "tls", "retry"] },
+    { "id": "ops-console", "label": "Ops Console", "kind": "client", "x": 5, "y": 0, "ref": "react",
+      "role": "Fleet dashboard and command issuing", "why": "Operators need current device state, history and the ability to send a configuration change or firmware trigger to one device or a group.",
+      "alternatives": [], "related": ["react", "observability"] },
+    { "id": "proto-gw", "label": "Protocol Gateway", "kind": "edge", "x": 2, "y": 1,
+      "role": "MQTT-style broker and translator", "why": "Holds hundreds of thousands of idle TLS sessions, speaks the compact device protocol with QoS and last-will messages, and turns each publish into an internal event — work an HTTP service is not shaped for.",
+      "alternatives": ["nginx", "websocket"], "related": ["tcp", "tls", "pub-sub", "backpressure"] },
+    { "id": "device-auth", "label": "Device Identity", "kind": "service", "x": 4, "y": 1, "ref": "authentication",
+      "role": "Per-device credentials and revocation", "why": "Devices live in the field for years and get stolen or cloned; each has its own certificate or key so a single device can be revoked without touching the fleet.",
+      "alternatives": [], "related": ["authentication", "tls", "rbac"] },
+    { "id": "kafka", "label": "Kafka", "kind": "queue", "x": 2, "y": 2, "ref": "kafka",
+      "role": "Telemetry and command topics", "why": "Absorbs the reconnect storm after a network outage, when a whole region's devices flush their buffered readings at once, and lets the writer, the rule engine and the archiver read the same stream.",
+      "alternatives": ["rabbitmq"], "related": ["kafka", "message-queue", "partitioning", "backpressure"] },
+    { "id": "registry", "label": "Device Registry", "kind": "db", "x": 4, "y": 2, "ref": "postgresql",
+      "role": "Device metadata, owners, thresholds", "why": "Which customer owns a device, its firmware version, its alert thresholds and whether it is decommissioned — small, relational, frequently joined data.",
+      "alternatives": ["mongodb"], "related": ["postgresql", "database", "rbac"] },
+    { "id": "writer", "label": "Telemetry Writer", "kind": "worker", "x": 1, "y": 3, "ref": "backend",
+      "role": "Validate, batch and persist readings", "why": "Consumes at the rate the stores can absorb, batching thousands of readings per insert; when a store slows down it stops committing offsets instead of buffering without limit.",
+      "alternatives": [], "related": ["backend", "backpressure", "idempotency"] },
+    { "id": "cmd-svc", "label": "Command Service", "kind": "service", "x": 4, "y": 3, "ref": "backend",
+      "role": "Validate and track downlink commands", "why": "A command must be authorised, recorded, delivered at most once in effect, and reconciled with the device's acknowledgement — a device may be offline for days.",
+      "alternatives": [], "related": ["backend", "idempotency", "rbac", "timeout"] },
+    { "id": "hot-state", "label": "Cassandra (latest state)", "kind": "db", "x": 0, "y": 4, "ref": "cassandra",
+      "role": "Current reading per device", "why": "Millions of device rows overwritten constantly and read by key; a wide-column store handles that write rate and gives predictable single-key latency for device pages.",
+      "alternatives": ["redis", "dynamodb"], "related": ["cassandra", "partitioning", "eventual-consistency"] },
+    { "id": "ts-store", "label": "ClickHouse (history)", "kind": "db", "x": 2, "y": 4, "ref": "clickhouse",
+      "role": "Time-series history and rollups", "why": "Charts ask for averages over months across many devices; columnar compression on monotonic sensor values is extremely effective and makes those scans cheap.",
+      "alternatives": ["postgresql", "cassandra"], "related": ["clickhouse", "partitioning", "indexing"] },
+    { "id": "alerting", "label": "Rule Engine / Alerting", "kind": "worker", "x": 4, "y": 4, "ref": "observability",
+      "role": "Threshold and silence detection", "why": "Reads the stream directly so an alert does not wait for the write path, and separately watches for devices that stopped reporting — the most common real failure.",
+      "alternatives": ["prometheus"], "related": ["observability", "prometheus", "slo", "notification-system"] },
+    { "id": "archive", "label": "S3 (raw archive)", "kind": "storage", "x": 2, "y": 5, "ref": "s3",
+      "role": "Immutable raw readings", "why": "Regulatory retention and reprocessing after a calibration fix; keeping years of raw payloads in a database would cost far more than object storage.",
+      "alternatives": [], "related": ["s3", "partitioning", "serialization"] }
+  ],
+  "edges": [
+    { "from": "devices", "to": "proto-gw", "label": "publish over mTLS" },
+    { "from": "proto-gw", "to": "device-auth", "label": "client cert check" },
+    { "from": "device-auth", "to": "registry", "label": "identity lookup", "style": "dashed" },
+    { "from": "proto-gw", "to": "kafka", "label": "telemetry topic" },
+    { "from": "kafka", "to": "writer", "style": "dashed" },
+    { "from": "writer", "to": "hot-state", "label": "upsert latest" },
+    { "from": "writer", "to": "ts-store", "label": "batched INSERT" },
+    { "from": "writer", "to": "archive", "label": "raw batches", "style": "dashed" },
+    { "from": "kafka", "to": "alerting", "style": "dashed" },
+    { "from": "alerting", "to": "registry", "label": "thresholds, owner", "style": "dashed" },
+    { "from": "ops-console", "to": "cmd-svc", "label": "POST /commands" },
+    { "from": "ops-console", "to": "ts-store", "label": "history charts", "style": "dashed" },
+    { "from": "cmd-svc", "to": "registry", "label": "authorise device" },
+    { "from": "cmd-svc", "to": "kafka", "label": "commands topic" },
+    { "from": "kafka", "to": "proto-gw", "label": "command subscribe", "style": "dashed" },
+    { "from": "proto-gw", "to": "devices", "label": "downlink publish", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "telemetry",
+      "name": "Reading to storage and alert",
+      "path": ["devices", "proto-gw", "device-auth", "kafka", "writer", "ts-store", "alerting"],
+      "steps": [
+        "A sensor publishes a 40-byte reading on its existing session — no TLS handshake, no HTTP headers, no reconnect.",
+        "The gateway maps the session to a device id and rejects any topic outside that device's namespace, so a compromised device cannot publish as its neighbour.",
+        "Device identity was established at connect time from the client certificate; the result is cached for the life of the session.",
+        "The reading is appended to the telemetry topic, partitioned by device id so one device's readings stay in order.",
+        "The writer consumes in batches, drops readings with impossible timestamps, and commits offsets only after the stores accept the batch.",
+        "ClickHouse takes one insert per few thousand readings for history; the latest value is upserted separately for device pages.",
+        "The rule engine, reading the same topic in parallel, sees the value cross a threshold and raises an alert without waiting for the write path."
+      ]
+    },
+    {
+      "id": "downlink",
+      "name": "Send a command to a device",
+      "path": ["ops-console", "cmd-svc", "registry", "kafka", "proto-gw", "devices"],
+      "steps": [
+        "An operator asks a valve to close, or a group of meters to change reporting interval.",
+        "The command service assigns a command id, checks the operator's permission and records the command as pending.",
+        "The registry confirms the device exists, is not decommissioned, and runs firmware that understands this command.",
+        "The command is published to the commands topic keyed by device id — the same broker, so no direct coupling to whichever gateway holds the session.",
+        "The gateway instance holding that device's session picks it up and publishes it on the device's downlink topic; if the device is offline the command waits, with an expiry.",
+        "The device applies the change and publishes an acknowledgement carrying the command id, which moves the record from pending to confirmed."
+      ]
+    },
+    {
+      "id": "surge",
+      "name": "Reconnect storm and backpressure",
+      "path": ["devices", "proto-gw", "kafka", "writer", "hot-state"],
+      "steps": [
+        "A regional network outage ends and 200,000 devices reconnect within a minute, each flushing an hour of buffered readings.",
+        "The gateway paces accepted connections and applies a per-device publish quota, so the surge is spread instead of amplified.",
+        "Kafka absorbs the flood durably — this is the moment the broker earns its operational cost.",
+        "The writer keeps consuming at the rate the stores can accept; lag grows to twenty minutes and is a monitored, expected condition rather than an incident.",
+        "The latest-state store is written last-write-wins per device, so a device page shows current data even while history is still catching up."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "A protocol gateway with long-lived sessions instead of HTTPS per reading",
+      "why": "A TLS handshake and HTTP headers can cost more bytes and energy than the reading itself, and a battery device cannot afford that per sample. One persistent session also gives a return path to a device behind carrier NAT, which is what makes commands possible at all.",
+      "alternatives": ["http", "websocket", "nginx"],
+      "tradeoff": "A stateful component holding enormous connection counts, with its own scaling and failover story, and none of the HTTP ecosystem's caching, proxies or debugging tools. For a few thousand mains-powered devices, plain HTTPS POSTs are simpler and entirely adequate."
+    },
+    {
+      "decision": "Kafka as the buffer, with consumer-side backpressure",
+      "why": "IoT load is spiky in the worst way: outages create synchronised reconnect storms far above steady-state rate. A durable log lets consumers fall behind for twenty minutes without losing a reading, and lets the writer, rule engine and archiver be independent.",
+      "alternatives": ["rabbitmq", "redis"],
+      "tradeoff": "Consumer lag becomes the metric that matters, and alerting on a lagging stream is delayed alerting. Backpressure is honest but visible: during a surge, dashboards are stale, and that must be communicated rather than hidden."
+    },
+    {
+      "decision": "Two stores: latest state and columnar history",
+      "why": "The two access patterns are opposites. 'Show this device now' is a single-key read of constantly overwritten data; 'average temperature per site for six months' is a scan of billions of immutable rows. One engine tuned for both would be mediocre at each.",
+      "alternatives": ["postgresql", "cassandra", "redis"],
+      "tradeoff": "Every reading is written twice, the two stores can disagree briefly, and there are two operational skill sets to maintain. A single PostgreSQL instance with time partitioning is a perfectly reasonable starting point until the retention window or the fleet size makes it impossible."
+    },
+    {
+      "decision": "Commands travel through the broker, not directly to a gateway instance",
+      "why": "The command service does not know, and should not track, which of fifty gateway instances holds a device's session. Publishing to a keyed topic lets the right instance pick it up, and the recorded command plus acknowledgement gives a reconciliation trail for devices that were offline.",
+      "alternatives": ["websocket", "rpc"],
+      "tradeoff": "Delivery is at-least-once, so devices must treat commands idempotently by command id, and a command may be applied minutes or days after it was issued — expiry and cancellation have to be designed in, not added later."
+    }
+  ],
+  "textAlternative": "Devices at the top left publish over a mutually authenticated session to a protocol gateway below them; an ops console at the top right is the human entry point. The gateway checks device identity with an identity service on the right, which reads the device registry. Telemetry is published to Kafka in the middle. A telemetry writer on the left consumes it and writes the latest value per device to Cassandra, history to ClickHouse in the centre, and raw batches to object storage at the bottom. A rule engine on the right reads the same topic and raises alerts using thresholds from the registry. For commands, the ops console calls a command service on the right, which validates against the registry, publishes to a commands topic on Kafka, and the gateway delivers it down to the device.",
+  "related": [
+    { "to": "kafka", "rel": "RELATED_TO" },
+    { "to": "backpressure", "rel": "RELATED_TO" },
+    { "to": "cassandra", "rel": "RELATED_TO" },
+    { "to": "clickhouse", "rel": "RELATED_TO" },
+    { "to": "pub-sub", "rel": "RELATED_TO" },
+    { "to": "partitioning", "rel": "RELATED_TO" },
+    { "to": "notification-system", "rel": "RELATED_TO" }
+  ]
+}

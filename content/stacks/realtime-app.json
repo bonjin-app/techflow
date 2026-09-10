@@ -1,0 +1,75 @@
+{
+  "id": "realtime-app",
+  "name": "Real-time Collaboration",
+  "tagline": "Chat, presence and shared documents where latency is the product",
+  "summary": "Stateful connection servers in front of a fan-out layer, with a durable log behind them. The hard parts are not the transport but connection state, ordering and what happens when a server or a network blips.",
+  "basis": "TechFlow archetype, not a specific company's stack. It reflects the shape most chat and collaboration systems converge on once one server can no longer hold every connection.",
+  "updated": "2026-09-10",
+  "confidence": "high",
+  "layers": [
+    {
+      "label": "Client",
+      "items": [
+        { "ref": "websocket", "note": "Bidirectional messages; reconnect with backoff and replay from a cursor." },
+        { "ref": "sse", "note": "Simpler alternative where the client only receives." }
+      ]
+    },
+    {
+      "label": "Edge",
+      "items": [
+        { "ref": "load-balancing", "note": "Long-lived connections spread across servers; watch for sticky routing needs." },
+        { "ref": "nginx", "note": "TLS termination and upgrade handling in front of the connection tier." }
+      ]
+    },
+    {
+      "label": "Connection tier",
+      "items": [
+        { "ref": "backend", "note": "Stateless apart from its open sockets, so any number can run." },
+        { "ref": "backpressure", "note": "Slow clients must not grow unbounded server-side buffers." }
+      ]
+    },
+    {
+      "label": "Fan-out",
+      "items": [
+        { "ref": "pub-sub", "note": "Every server subscribes so a message reaches recipients on other servers." },
+        { "ref": "redis", "note": "Presence, room membership and the low-latency pub/sub channel." }
+      ]
+    },
+    {
+      "label": "Durability",
+      "items": [
+        { "ref": "kafka", "note": "The replayable record of every message for history, search and analytics." },
+        { "ref": "postgresql", "note": "Conversation history with ordering and pagination." },
+        { "ref": "idempotency", "note": "Client retries must not duplicate messages; dedupe on a client-generated id." }
+      ]
+    },
+    {
+      "label": "Downstream",
+      "items": [
+        { "ref": "notification-system", "note": "Push and email for recipients who are not connected." },
+        { "ref": "elasticsearch", "note": "Message search as a derived index, never the source of truth." }
+      ]
+    },
+    {
+      "label": "Operations",
+      "items": [
+        { "ref": "kubernetes", "note": "Rolling connection servers requires draining, not killing." },
+        { "ref": "observability", "note": "Connection counts, message lag and reconnect storms are the signals that matter." },
+        { "ref": "prometheus" }
+      ]
+    }
+  ],
+  "whenToUse": [
+    "Users expect updates in well under a second without refreshing",
+    "Many clients must see the same event (rooms, documents, dashboards)",
+    "Presence, typing indicators or cursors are part of the experience",
+    "Message loss is unacceptable even though delivery is asynchronous"
+  ],
+  "tradeoffs": [
+    "Stateful servers make deploys, autoscaling and failover harder than stateless HTTP",
+    "Redis pub/sub is fire-and-forget: it cannot be the only delivery path",
+    "Ordering and exactly-once delivery are application problems, not transport features",
+    "Connection cost per user is real; idle clients still consume memory and file descriptors"
+  ],
+  "related": ["chat-system", "websocket-vs-sse", "pub-sub", "news-feed"]
+}

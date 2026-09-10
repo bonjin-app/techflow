@@ -1,0 +1,72 @@
+{
+  "id": "analytics-stack",
+  "name": "Analytics & Event Pipeline",
+  "tagline": "Turn product events into queryable facts without slowing the product down",
+  "summary": "Events are appended to a log, processed once, and stored in a columnar engine for aggregation. Everything downstream is derived and replayable, which is what makes fixing a bad transform survivable.",
+  "basis": "TechFlow archetype, not a specific company's stack. It reflects the components most product-analytics and reporting pipelines share, independent of vendor.",
+  "updated": "2026-09-10",
+  "confidence": "medium",
+  "layers": [
+    {
+      "label": "Producers",
+      "items": [
+        { "ref": "backend", "note": "Application emits domain events, not database rows." },
+        { "ref": "outbox", "note": "Events are published only if the transaction that caused them committed." }
+      ]
+    },
+    {
+      "label": "Transport",
+      "items": [
+        { "ref": "kafka", "note": "Durable, partitioned, replayable — the backbone of the pipeline." },
+        { "ref": "partitioning", "note": "Partition key decides both parallelism and ordering guarantees." },
+        { "ref": "backpressure", "note": "Consumers lag instead of dropping data when volume spikes." }
+      ]
+    },
+    {
+      "label": "Processing",
+      "items": [
+        { "ref": "python", "note": "Transform and enrichment jobs; the ecosystem for data work lives here." },
+        { "label": "Stream/batch processor", "note": "Windowed aggregation now, backfills later, ideally the same logic." },
+        { "ref": "idempotency", "note": "Reprocessing must not double-count. Deterministic keys, upserts." }
+      ]
+    },
+    {
+      "label": "Storage",
+      "items": [
+        { "ref": "s3", "note": "Raw events kept cheaply, so any transform can be re-run from scratch." },
+        { "ref": "clickhouse", "note": "Columnar store for aggregate queries over billions of rows." },
+        { "ref": "postgresql", "note": "Curated marts and metadata that BI tools and the product read." }
+      ]
+    },
+    {
+      "label": "Consumption",
+      "items": [
+        { "label": "BI / dashboards", "note": "Analysts query the warehouse, never the production database." },
+        { "ref": "cache-aside", "note": "Dashboard queries are repetitive; cache the expensive ones." },
+        { "ref": "redis" }
+      ]
+    },
+    {
+      "label": "Operations",
+      "items": [
+        { "ref": "infrastructure-as-code" },
+        { "ref": "terraform" },
+        { "ref": "observability", "note": "Consumer lag, freshness and row-count checks are the health of a pipeline." },
+        { "ref": "slo", "note": "Data freshness targets, agreed with the people who read the dashboards." }
+      ]
+    }
+  ],
+  "whenToUse": [
+    "Product questions need aggregation over millions of events",
+    "Reporting queries are hurting the transactional database",
+    "Several teams want the same events for different purposes",
+    "You must be able to recompute history after fixing a transform"
+  ],
+  "tradeoffs": [
+    "Every stage adds latency: dashboards are minutes behind, not seconds",
+    "Schema changes ripple through transforms and stored aggregates",
+    "A columnar store is fast at aggregates and poor at single-row updates",
+    "Operating a streaming platform is a full engineering commitment"
+  ],
+  "related": ["analytics-pipeline", "kafka", "clickhouse", "eventual-consistency"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "token-revocation",
+  "question": "You issue stateless JWT access tokens valid for 24 hours. Security asks: when an admin disables an account, how is the user logged out immediately?",
+  "context": "Tokens are verified by signature only, with no lookup. Several services accept the same token. \"Immediately\" means within seconds, not hours.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Nothing to change — the signature is still valid, so the token is still valid", "correct": false, "why": "That is exactly the problem being reported. A stateless token remains acceptable until it expires; a disabled account can keep working for the rest of the day.", "ref": "jwt" },
+    { "label": "Short-lived access tokens plus a refresh token checked against server state", "correct": true, "why": "Access tokens live minutes, so a disabled account stops working almost at once; the refresh step is the checkpoint where revocation is enforced. This keeps the common path stateless without pretending revocation is free.", "ref": "jwt" },
+    { "label": "Rotate the signing key so every token becomes invalid", "correct": false, "why": "It does log the user out — along with every other user, on every service. A blunt instrument for a per-account action, and it breaks key rotation hygiene.", "ref": "authentication" },
+    { "label": "Switch entirely to server-side sessions", "correct": false, "why": "Revocation becomes trivial, and this is a legitimate design — but it is a bigger change than the problem requires and gives up the stateless verification other services rely on. Consider it if you find yourself checking state on every request anyway.", "ref": "session" }
+  ],
+  "related": ["jwt", "jwt-vs-session", "session", "authentication-system", "oauth"]
+}

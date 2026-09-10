@@ -1,0 +1,13 @@
+{
+  "id": "tenant-isolation",
+  "question": "In a multi-tenant SaaS, a bug in one endpoint returned another tenant's records. Every query already takes a tenant_id parameter. What is the durable fix?",
+  "context": "One shared database, one schema, tenant_id on every table. The endpoint in question built its query without the filter. Code review missed it, and the tests all used a single tenant.",
+  "difficulty": 4,
+  "options": [
+    { "label": "Add a code-review checklist item for tenant_id", "correct": false, "why": "Process helps but does not hold: the next new endpoint, written under time pressure, will miss it again. Isolation should not depend on every developer remembering.", "ref": "rbac" },
+    { "label": "Enforce the tenant boundary below the application — row-level security or a per-tenant schema", "correct": true, "why": "The database rejects a query that has no tenant context, so forgetting the filter fails loudly instead of leaking. Application code becomes the convenience layer, not the security boundary.", "ref": "multi-tenant-saas" },
+    { "label": "Give each tenant its own database", "correct": false, "why": "Strong isolation, and sometimes required — but it multiplies migrations, connections, backups and cost. Reach for it when contracts or data residency demand it, not to fix a missing WHERE clause.", "ref": "database-per-service" },
+    { "label": "Encrypt each tenant's rows with a tenant-specific key", "correct": false, "why": "Protects data at rest against a different threat. The leaking endpoint would decrypt happily with whatever key it was given, so the cross-tenant read still happens.", "ref": "tls" }
+  ],
+  "related": ["multi-tenant-saas", "rbac", "postgresql", "authentication"]
+}

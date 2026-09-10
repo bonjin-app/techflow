@@ -58,7 +58,8 @@ function main() {
   const counts: Record<string, number> = {};
   for (const n of g.nodes.values()) counts[n.type] = (counts[n.type] ?? 0) + 1;
   console.log(
-    `\n${g.nodes.size} nodes, ${g.edges.length} edges, ${g.builds.length} build goals — ` +
+    `\n${g.nodes.size} nodes, ${g.edges.length} edges, ${g.builds.length} build goals, ` +
+      `${g.stacks.length} stacks, ${g.challenges.length} challenges, ${g.radar.entries.length} radar entries — ` +
       Object.entries(counts)
         .map(([k, v]) => `${k}: ${v}`)
         .join(", "),

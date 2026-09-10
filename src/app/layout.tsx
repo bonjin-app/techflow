@@ -4,7 +4,6 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { site } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/local";
-import { getSearchIndex } from "@/lib/content/graph";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Shortcuts } from "@/components/layout/Shortcuts";
@@ -33,7 +32,6 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const index = getSearchIndex();
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
@@ -51,7 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <Footer />
-        <CommandPalette index={index} />
+        <CommandPalette />
         <Shortcuts />
       </body>
     </html>

@@ -1,0 +1,139 @@
+{
+  "id": "security-engineer",
+  "name": "Security Engineer Roadmap",
+  "tagline": "From how a packet and a certificate work to defending a system you did not build",
+  "summary": "Security is applied systems knowledge, so this path deliberately starts with the things being attacked: code, the network, and the cryptography that protects traffic in transit. From there it moves through identity — who is calling and what they may do — then the application layer where most breaches actually happen, then the infrastructure and delivery pipeline that has become the favourite target, and ends with detection, response and a worked identity design.",
+  "category": "career",
+  "tags": ["Security", "Authentication", "Cryptography", "Career", "Learning Path"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "programming-fundamentals",
+      "label": "Programming fundamentals",
+      "stage": "Foundations",
+      "note": "You cannot review, exploit or fix code you cannot read, and almost every vulnerability is ultimately a line of code that trusted its input."
+    },
+    {
+      "label": "Linux, processes & permissions",
+      "stage": "Foundations",
+      "note": "Users, groups, file modes, capabilities and process isolation are the primitives every container and server control is built from."
+    },
+    {
+      "ref": "http",
+      "label": "HTTP",
+      "stage": "Foundations",
+      "note": "The web attack surface is HTTP: methods, headers, cookies and status codes are where injection, session and access-control bugs are expressed."
+    },
+    {
+      "ref": "tcp",
+      "label": "TCP/IP & the network stack",
+      "stage": "Networking",
+      "note": "Firewalls, segmentation, port scanning and traffic interception all assume you know what a connection is and where it can be observed."
+    },
+    {
+      "ref": "dns",
+      "label": "DNS",
+      "stage": "Networking",
+      "note": "DNS is both a dependency and an attack path — spoofing, subdomain takeover and exfiltration all live here, and every certificate is validated against a name."
+    },
+    {
+      "label": "Cryptography basics",
+      "stage": "Cryptography",
+      "note": "Hashes, MACs, symmetric and asymmetric encryption, key derivation and randomness are the vocabulary of everything below; you need to know what each guarantees, not how to implement it."
+    },
+    {
+      "ref": "tls",
+      "label": "TLS",
+      "stage": "Cryptography",
+      "note": "TLS is where that theory becomes a handshake, a certificate chain and a trust store — and the place most 'secure transport' mistakes are made."
+    },
+    {
+      "ref": "https",
+      "label": "HTTPS & certificate management",
+      "stage": "Cryptography",
+      "note": "Once TLS makes sense, the operational reality is issuance, rotation, expiry monitoring, HSTS and mixed content — the parts that break in production."
+    },
+    {
+      "ref": "authentication",
+      "label": "Authentication",
+      "stage": "Identity",
+      "note": "Password storage, MFA, account recovery and session lifetime are the highest-leverage controls in most products, and the easiest to get subtly wrong."
+    },
+    {
+      "ref": "oauth",
+      "label": "OAuth 2.0 & OIDC",
+      "stage": "Identity",
+      "note": "Delegated authorization is now the default for third-party and SSO access, so knowing the flows — and which ones are deprecated — prevents whole classes of token theft."
+    },
+    {
+      "ref": "jwt",
+      "label": "JWT",
+      "stage": "Identity",
+      "note": "Signed tokens are everywhere and carry their own pitfalls: algorithm confusion, missing audience checks and the fact that a valid token cannot easily be withdrawn."
+    },
+    {
+      "ref": "rbac",
+      "label": "RBAC & authorization models",
+      "stage": "Identity",
+      "note": "After proving who a caller is you must decide what they may do; broken access control is consistently the most common serious web vulnerability."
+    },
+    {
+      "label": "OWASP Top 10 & web attacks",
+      "stage": "Application security",
+      "note": "Injection, XSS, SSRF, deserialization and access-control flaws are the concrete bugs the foundations above let you reason about — learn them as patterns, not as a checklist."
+    },
+    {
+      "ref": "cors",
+      "label": "CORS & browser security model",
+      "stage": "Application security",
+      "note": "Same-origin policy, CORS, CSP and cookie attributes are the browser-side controls that decide whether an injected script can actually do damage."
+    },
+    {
+      "label": "Threat modelling",
+      "stage": "Application security",
+      "note": "Reviewing a design before it is built is far cheaper than finding the same flaw in a pen test, and it is the skill that turns an engineer into a security engineer."
+    },
+    {
+      "ref": "rate-limiting",
+      "label": "Rate limiting & abuse prevention",
+      "stage": "Application security",
+      "note": "Credential stuffing, scraping and enumeration are volume attacks, so limits, lockouts and anomaly detection are security controls rather than performance tuning."
+    },
+    {
+      "label": "Secrets management",
+      "stage": "Infrastructure security",
+      "note": "Leaked credentials are a leading breach cause, so a vault, short-lived credentials and rotation must replace environment variables copied between machines."
+    },
+    {
+      "ref": "docker",
+      "label": "Container hardening",
+      "stage": "Infrastructure security",
+      "note": "Images inherit every vulnerability they package; minimal base images, non-root users, read-only filesystems and scanning are the baseline for anything you deploy."
+    },
+    {
+      "ref": "kubernetes",
+      "label": "Kubernetes security",
+      "stage": "Infrastructure security",
+      "note": "A cluster multiplies blast radius: RBAC, network policies, admission control, service accounts and secret handling are what keep one compromised pod from owning everything."
+    },
+    {
+      "ref": "ci-cd",
+      "label": "Supply chain & pipeline security",
+      "stage": "Supply chain",
+      "note": "The build system can deploy to production, which makes it a prime target — dependency pinning, provenance, signed artifacts and least-privilege runners belong here."
+    },
+    {
+      "ref": "observability",
+      "label": "Detection, logging & incident response",
+      "stage": "Detection & response",
+      "note": "Prevention always fails eventually, so audit logs, alerting on the right signals and a rehearsed response runbook decide whether an incident lasts hours or months."
+    },
+    {
+      "ref": "authentication-system",
+      "label": "Design an authentication system",
+      "stage": "Design",
+      "note": "Finish on a real design where identity, tokens, sessions, transport and revocation all interact — the place every topic above shows up at once."
+    }
+  ]
+}

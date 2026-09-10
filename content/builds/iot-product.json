@@ -1,0 +1,11 @@
+{
+  "id": "iot-product",
+  "name": "IoT Product",
+  "tagline": "Collect telemetry from thousands of devices and turn it into alerts and dashboards",
+  "architecture": "iot-telemetry",
+  "systemDesign": "rate-limiter",
+  "technologies": ["kafka", "cassandra", "clickhouse", "s3", "prometheus", "go"],
+  "concepts": ["tcp", "tls", "serialization", "backpressure", "partitioning", "idempotency", "observability"],
+  "patterns": ["event-driven-architecture", "write-behind", "retry", "dead-letter-queue", "circuit-breaker"],
+  "learningPath": ["tcp", "tls", "serialization", "kafka", "backpressure", "cassandra", "iot-telemetry"]
+}

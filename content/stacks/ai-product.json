@@ -1,0 +1,79 @@
+{
+  "id": "ai-product",
+  "name": "AI Product (RAG)",
+  "tagline": "Retrieval-augmented answers over your own documents, with streaming and guardrails",
+  "summary": "Documents are chunked, embedded and indexed; a query retrieves the relevant chunks and a model answers with them in context. Most of the engineering is ordinary backend work: ingestion, caching, rate limits, evaluation and cost control.",
+  "basis": "TechFlow archetype, not a specific company's stack. Model and vector-store choices move quickly; treat the components as roles rather than product recommendations.",
+  "updated": "2026-09-10",
+  "confidence": "medium",
+  "layers": [
+    {
+      "label": "Client",
+      "items": [
+        { "ref": "react" },
+        { "ref": "sse", "note": "Token-by-token streaming is one-directional — exactly what SSE is for." }
+      ]
+    },
+    {
+      "label": "Edge",
+      "items": [
+        { "ref": "api-gateway", "note": "One place for auth, quotas and request logging." },
+        { "ref": "rate-limiting", "note": "Model calls cost money; limits are a budget control, not just abuse protection." }
+      ]
+    },
+    {
+      "label": "Application",
+      "items": [
+        { "ref": "backend", "note": "Orchestrates retrieval, prompt assembly, tool calls and streaming." },
+        { "ref": "python", "note": "Where the embedding, evaluation and data-prep libraries live." },
+        { "ref": "timeout", "note": "Model calls are slow and occasionally hang; every call needs a deadline." },
+        { "ref": "circuit-breaker", "note": "Provider outages must degrade the feature, not the product." }
+      ]
+    },
+    {
+      "label": "Retrieval",
+      "items": [
+        { "label": "Vector index", "note": "Approximate nearest neighbour over embeddings; a database extension is often enough." },
+        { "ref": "elasticsearch", "note": "Keyword search alongside vectors — hybrid retrieval beats either alone." },
+        { "ref": "postgresql", "note": "Documents, chunks, metadata and permissions live in the relational store." }
+      ]
+    },
+    {
+      "label": "Ingestion",
+      "items": [
+        { "ref": "s3", "note": "Source documents, kept so you can re-chunk and re-embed after a model change." },
+        { "ref": "rabbitmq", "note": "Ingestion is bursty and slow; do it in workers, not in the request." },
+        { "ref": "message-queue" }
+      ]
+    },
+    {
+      "label": "Cost & caching",
+      "items": [
+        { "ref": "redis", "note": "Cache embeddings and repeated answers; identical prompts should not be paid for twice." },
+        { "ref": "cache-aside" },
+        { "ref": "ttl", "note": "Answers go stale when documents change — bound how long you serve them." }
+      ]
+    },
+    {
+      "label": "Visibility",
+      "items": [
+        { "ref": "opentelemetry", "note": "Trace retrieval and generation separately; that is where latency hides." },
+        { "label": "Evaluation set", "note": "A fixed set of questions and expected sources, run on every prompt change." },
+        { "ref": "observability", "note": "Track cost per request, token counts, retrieval hit rate and refusal rate." }
+      ]
+    }
+  ],
+  "whenToUse": [
+    "Answers must be grounded in your own documents rather than general knowledge",
+    "The corpus changes often enough that retraining is not an option",
+    "Users need citations or provenance for what the system says",
+    "You need per-tenant permissions applied to what can be retrieved"
+  ],
+  "tradeoffs": [
+    "Retrieval quality, not the model, is usually the limiting factor — and it is hard to measure",
+    "Cost scales with tokens, so caching and prompt size become product decisions",
+    "Model and vendor churn means this layer changes faster than the rest of your stack",
+    "Streaming responses complicate error handling, retries and idempotency"
+  ],
+  "related": ["ai-rag", "sse", "rate-limiting", "elasticsearch"]
+}

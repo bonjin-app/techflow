@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "pnpm validate && next build",
+    "dev": "pnpm gen:index && next dev",
+    "build": "pnpm validate && pnpm gen:index && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "validate": "tsx scripts/validate-content.ts"
+    "validate": "tsx scripts/validate-content.ts",
+    "gen:index": "tsx scripts/gen-search-index.ts"
   },
   "dependencies": {
     "d3-force": "^3.0.0",

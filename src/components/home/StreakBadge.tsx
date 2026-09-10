@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { KEYS, streakFromRaw, type RecentItem } from "@/lib/local";
 import { useLocalRaw } from "@/lib/useLocal";
+import { useSearchIndex } from "@/lib/useSearchIndex";
 import type { NodeSummary } from "@/lib/content/types";
 
 /** Personal strip: streak + recently viewed (localStorage only, hidden until hydrated / when empty). */
-export function StreakBadge({ index }: { index: NodeSummary[] }) {
+export function StreakBadge() {
+  const index = useSearchIndex();
   const recentRaw = useLocalRaw(KEYS.recent);
   const streakRaw = useLocalRaw(KEYS.streak);
   const streak = streakFromRaw(streakRaw).current;

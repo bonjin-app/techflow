@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { NodeSummary } from "@/lib/content/types";
 import { TYPE_LABEL } from "@/lib/content/types";
 import { groupByType, searchNodes } from "@/lib/search";
+import { useSearchIndex } from "@/lib/useSearchIndex";
 import { NodeGrid } from "@/components/ui/NodeCard";
 
 /** Knowledge-graph search page body: query in the URL, results grouped by type. */
-export function SearchResults({ index }: { index: NodeSummary[] }) {
+export function SearchResults() {
+  const index = useSearchIndex();
   const params = useSearchParams();
   const router = useRouter();
   const fromUrl = params.get("q") ?? "";

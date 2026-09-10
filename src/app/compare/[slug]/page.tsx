@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getComparisons, getNeighbors, getNode } from "@/lib/content/graph";
-import { buildRefMap } from "@/lib/content/refs";
+import { buildRefMap, collectMarkdownRefs } from "@/lib/content/refs";
 import { hrefFor } from "@/lib/content/types";
 import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { Markdown } from "@/components/md/Markdown";
@@ -32,7 +32,7 @@ export default async function Page({ params }: PageProps<"/compare/[slug]">) {
   const { slug } = await params;
   const node = getNode(slug);
   if (!node || node.type !== "comparison") notFound();
-  const refs = buildRefMap();
+  const refs = buildRefMap(collectMarkdownRefs(Object.values(node.sections)));
   const subjects = node.subjects.map((s) => getNode(s)).filter(Boolean);
   const neighbors = getNeighbors(node.id);
   const s = node.sections;

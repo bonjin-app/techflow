@@ -1,0 +1,90 @@
+{
+  "id": "modern-saas",
+  "name": "Modern B2B SaaS",
+  "tagline": "Multi-tenant subscription software with real customers and real audits",
+  "summary": "A stack for software sold to companies: tenant isolation, role-based access, audit trails, background work and enough observability to answer \"what happened to this customer at 14:07?\". It grows from the MVP stack by adding a cache, a broker and infrastructure automation.",
+  "basis": "TechFlow archetype, not a specific company's stack. It reflects the components most B2B products converge on once they have paying tenants and compliance questions.",
+  "updated": "2026-09-10",
+  "confidence": "high",
+  "layers": [
+    {
+      "label": "Client",
+      "items": [
+        { "ref": "react", "note": "Component model plus server rendering for the marketing and app surfaces." },
+        { "ref": "typescript" }
+      ]
+    },
+    {
+      "label": "Edge",
+      "items": [
+        { "ref": "cdn", "note": "Static assets, TLS termination and bot filtering at the edge." },
+        { "ref": "api-gateway", "note": "One entry point for auth, quotas and routing." },
+        { "ref": "rate-limiting", "note": "Per-tenant limits so one customer's batch job cannot starve the rest." }
+      ]
+    },
+    {
+      "label": "Application",
+      "items": [
+        { "ref": "modular-monolith", "note": "Modules per domain; extract a service only when a team or scaling need demands it." },
+        { "ref": "backend-for-frontend", "note": "Shapes data for the web app without leaking internal models." },
+        { "ref": "rest", "note": "Public API surface customers integrate against." },
+        { "ref": "api-versioning", "note": "Customers upgrade on their schedule, not yours." }
+      ]
+    },
+    {
+      "label": "Data",
+      "items": [
+        { "ref": "postgresql", "note": "Tenant-scoped rows with row-level security or a schema per tenant." },
+        { "ref": "redis", "note": "Sessions, permission lookups and hot reads via Cache Aside." },
+        { "ref": "s3", "note": "Customer files and exports; never on the application disk." }
+      ]
+    },
+    {
+      "label": "Async",
+      "items": [
+        { "ref": "rabbitmq", "note": "Emails, exports, webhooks and imports off the request path." },
+        { "ref": "outbox", "note": "Events published only when the database transaction commits." },
+        { "ref": "webhook", "note": "Signed, retried callbacks so customers can react to changes." }
+      ]
+    },
+    {
+      "label": "Auth & access",
+      "items": [
+        { "ref": "oauth", "note": "SSO is a procurement requirement, not a nice-to-have." },
+        { "ref": "rbac", "note": "Roles per tenant; permissions checked server-side on every call." },
+        { "ref": "jwt", "note": "Short-lived access tokens for service-to-service and API clients." }
+      ]
+    },
+    {
+      "label": "Operations",
+      "items": [
+        { "ref": "docker" },
+        { "ref": "ci-cd", "note": "Tests, migrations and deploys on every merge." },
+        { "ref": "infrastructure-as-code", "note": "Environments are reviewable code, not console clicks." },
+        { "ref": "terraform" },
+        { "ref": "blue-green-deployment", "note": "Release without a maintenance window; roll back by switching traffic." }
+      ]
+    },
+    {
+      "label": "Visibility",
+      "items": [
+        { "ref": "prometheus" },
+        { "ref": "opentelemetry", "note": "One trace per request across app, cache and broker." },
+        { "ref": "slo", "note": "Availability targets you can hold yourself to in a contract." }
+      ]
+    }
+  ],
+  "whenToUse": [
+    "You sell to companies and must isolate tenants from each other",
+    "Customers ask about SSO, audit logs, uptime and data residency",
+    "Background work (exports, imports, webhooks) has become significant",
+    "The team is large enough to own deployment and monitoring"
+  ],
+  "tradeoffs": [
+    "Every added component is another thing to patch, monitor and pay for",
+    "Per-tenant isolation complicates migrations, backups and noisy-neighbour handling",
+    "A broker plus a cache means eventual consistency shows up in the product",
+    "Infrastructure automation is a real investment before it saves time"
+  ],
+  "related": ["multi-tenant-saas", "microservices", "rbac", "payment-system"]
+}
