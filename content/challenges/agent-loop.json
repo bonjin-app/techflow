@@ -1,0 +1,13 @@
+{
+  "id": "agent-loop",
+  "question": "An agent that calls your internal tools occasionally runs for minutes, repeats the same write twice and then times out. Which change addresses the root cause?",
+  "context": "The loop is: ask the model what to do, call the tool it names, feed the result back, repeat until it says it is done. Tools include \"create refund\" and \"send email\".",
+  "difficulty": 4,
+  "options": [
+    { "label": "Give it a step budget, idempotent tools and a deadline per call", "correct": true, "why": "The loop has no bound, so it can spin; the tools are not safe to repeat, so a retried step duplicates work. Bounding the loop, making each tool idempotent and putting a deadline on each call fixes all three symptoms at their source.", "ref": "ai-agent" },
+    { "label": "Prompt it more firmly to stop when finished", "correct": false, "why": "Instructions in a prompt are a request, not a guarantee. Control that must hold belongs in the code around the model, not in the text you send it.", "ref": "llm" },
+    { "label": "Cache the model responses so repeats are cheaper", "correct": false, "why": "Cheaper repeats are still repeats: the refund is still created twice. Caching hides the cost of the bug rather than removing it.", "ref": "semantic-cache" },
+    { "label": "Replace the loop with a scripted pipeline", "correct": false, "why": "Often the right call, and worth considering — a fixed sequence is easier to test and cheaper to run. But it is a redesign, not a fix for the loop you have in production today.", "ref": "rag" }
+  ],
+  "related": ["ai-agent", "idempotency", "timeout", "retry", "llm"]
+}

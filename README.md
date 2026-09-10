@@ -36,6 +36,7 @@ content/                 all content — see content/README.md for the authoring
 scripts/validate-content.ts            content validator (broken links fail the build)
 src/lib/content/                       loader → knowledge graph (edges, neighbours, ego graphs, search index)
 src/lib/fences.ts                      parsers for the visual code fences (steps / sequence / compare / decision / timeline)
+src/lib/intent.ts                      recognises a typed question (goal / why / compare / how / learn) — keyword matching, no model
 src/components/md/                     Markdown renderer + fence components
 src/components/graph/                  RelationshipGraph (force layout) + lazy loader
 src/components/canvas/                 ArchitectureCanvas (zoom/pan, ▶ Run, inspector, versions), StepJourney
@@ -69,6 +70,7 @@ Edges are declared in frontmatter (`related`) and derived automatically from `us
 | Technology Radar | `/radar` | Adopt / Trial / Assess / Caution with dated, sourced reasoning |
 | Playground | `/playground` | HTTP anatomy, cache, rate limiter, load balancer, real-time transports, JWT — all client-side |
 | Design challenges | `/challenge` | Multiple-choice design questions that explain every option |
+| Search | `/search`, `⌘K` | Keyword search over the graph, plus question answering: a typed sentence is matched to a goal, a comparison or the pages for what it names |
 
 ## Keyboard
 
@@ -84,6 +86,14 @@ Source: GitHub Actions**. The workflow token is not allowed to create the Pages 
 so until that is set the build job passes and the deploy job fails. For a sub-path host it sets
 `NEXT_PUBLIC_BASE_PATH=/<repo>`; on a custom domain remove that variable and set
 `NEXT_PUBLIC_SITE_URL` to the domain so canonical / sitemap URLs are right.
+
+## Question answering
+
+`/search` accepts sentences, not just keywords. "I want to build a chat app but I don't
+understand why I need Redis and Kafka" resolves to the real-time chat goal plus the Redis and
+Kafka pages. It is keyword matching against the graph in the browser — no model, no network —
+and it says so on the card, falling back to ranked results when it cannot read the question.
+The recognisers live in `src/lib/intent.ts`; goal keywords are the `GOAL_WORDS` table.
 
 ## Personal state
 

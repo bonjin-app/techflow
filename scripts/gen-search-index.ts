@@ -11,6 +11,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { buildGraph, summarize } from "../src/lib/content/graph";
 
+function write(name: string, data: unknown) {
+  const out = path.join(process.cwd(), "public", name);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, JSON.stringify(data));
+  return (fs.statSync(out).size / 1024).toFixed(1);
+}
+
 function main() {
   const g = buildGraph();
   const index = [...g.nodes.values()]
@@ -29,11 +36,13 @@ function main() {
     }))
     .sort((a, b) => b.degree - a.degree);
 
-  const out = path.join(process.cwd(), "public", "search-index.json");
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, JSON.stringify(index));
-  const kb = (fs.statSync(out).size / 1024).toFixed(1);
+  const kb = write("search-index.json", index);
   console.log(`✔ public/search-index.json — ${index.length} nodes, ${kb} KB`);
+
+  // "I want to build …" goals, so the search page can recognise a goal in a sentence.
+  const goals = g.builds.map(({ id, name, tagline }) => ({ id, name, tagline }));
+  const gkb = write("build-goals.json", goals);
+  console.log(`✔ public/build-goals.json — ${goals.length} goals, ${gkb} KB`);
 }
 
 main();

@@ -10,56 +10,113 @@
     {
       "label": "Client",
       "items": [
-        { "ref": "react" },
-        { "ref": "sse", "note": "Token-by-token streaming is one-directional — exactly what SSE is for." }
+        {
+          "ref": "react"
+        },
+        {
+          "ref": "sse",
+          "note": "Token-by-token streaming is one-directional — exactly what SSE is for."
+        }
       ]
     },
     {
       "label": "Edge",
       "items": [
-        { "ref": "api-gateway", "note": "One place for auth, quotas and request logging." },
-        { "ref": "rate-limiting", "note": "Model calls cost money; limits are a budget control, not just abuse protection." }
+        {
+          "ref": "api-gateway",
+          "note": "One place for auth, quotas and request logging."
+        },
+        {
+          "ref": "rate-limiting",
+          "note": "Model calls cost money; limits are a budget control, not just abuse protection."
+        }
       ]
     },
     {
       "label": "Application",
       "items": [
-        { "ref": "backend", "note": "Orchestrates retrieval, prompt assembly, tool calls and streaming." },
-        { "ref": "python", "note": "Where the embedding, evaluation and data-prep libraries live." },
-        { "ref": "timeout", "note": "Model calls are slow and occasionally hang; every call needs a deadline." },
-        { "ref": "circuit-breaker", "note": "Provider outages must degrade the feature, not the product." }
+        {
+          "ref": "backend",
+          "note": "Orchestrates retrieval, prompt assembly, tool calls and streaming."
+        },
+        {
+          "ref": "python",
+          "note": "Where the embedding, evaluation and data-prep libraries live."
+        },
+        {
+          "ref": "timeout",
+          "note": "Model calls are slow and occasionally hang; every call needs a deadline."
+        },
+        {
+          "ref": "circuit-breaker",
+          "note": "Provider outages must degrade the feature, not the product."
+        }
       ]
     },
     {
       "label": "Retrieval",
       "items": [
-        { "label": "Vector index", "note": "Approximate nearest neighbour over embeddings; a database extension is often enough." },
-        { "ref": "elasticsearch", "note": "Keyword search alongside vectors — hybrid retrieval beats either alone." },
-        { "ref": "postgresql", "note": "Documents, chunks, metadata and permissions live in the relational store." }
+        {
+          "note": "Approximate nearest neighbour over embeddings; a database extension is often enough.",
+          "ref": "vector-database"
+        },
+        {
+          "ref": "elasticsearch",
+          "note": "Keyword search alongside vectors — hybrid retrieval beats either alone."
+        },
+        {
+          "ref": "postgresql",
+          "note": "Documents, chunks, metadata and permissions live in the relational store."
+        }
       ]
     },
     {
       "label": "Ingestion",
       "items": [
-        { "ref": "s3", "note": "Source documents, kept so you can re-chunk and re-embed after a model change." },
-        { "ref": "rabbitmq", "note": "Ingestion is bursty and slow; do it in workers, not in the request." },
-        { "ref": "message-queue" }
+        {
+          "ref": "s3",
+          "note": "Source documents, kept so you can re-chunk and re-embed after a model change."
+        },
+        {
+          "ref": "rabbitmq",
+          "note": "Ingestion is bursty and slow; do it in workers, not in the request."
+        },
+        {
+          "ref": "message-queue"
+        }
       ]
     },
     {
       "label": "Cost & caching",
       "items": [
-        { "ref": "redis", "note": "Cache embeddings and repeated answers; identical prompts should not be paid for twice." },
-        { "ref": "cache-aside" },
-        { "ref": "ttl", "note": "Answers go stale when documents change — bound how long you serve them." }
+        {
+          "ref": "redis",
+          "note": "Cache embeddings and repeated answers; identical prompts should not be paid for twice."
+        },
+        {
+          "ref": "cache-aside"
+        },
+        {
+          "ref": "ttl",
+          "note": "Answers go stale when documents change — bound how long you serve them."
+        }
       ]
     },
     {
       "label": "Visibility",
       "items": [
-        { "ref": "opentelemetry", "note": "Trace retrieval and generation separately; that is where latency hides." },
-        { "label": "Evaluation set", "note": "A fixed set of questions and expected sources, run on every prompt change." },
-        { "ref": "observability", "note": "Track cost per request, token counts, retrieval hit rate and refusal rate." }
+        {
+          "ref": "opentelemetry",
+          "note": "Trace retrieval and generation separately; that is where latency hides."
+        },
+        {
+          "note": "A fixed set of questions and expected sources, run on every prompt change.",
+          "ref": "llm-evaluation"
+        },
+        {
+          "ref": "observability",
+          "note": "Track cost per request, token counts, retrieval hit rate and refusal rate."
+        }
       ]
     }
   ],
@@ -75,5 +132,14 @@
     "Model and vendor churn means this layer changes faster than the rest of your stack",
     "Streaming responses complicate error handling, retries and idempotency"
   ],
-  "related": ["ai-rag", "sse", "rate-limiting", "elasticsearch"]
+  "related": [
+    "ai-rag",
+    "sse",
+    "rate-limiting",
+    "elasticsearch",
+    "rag",
+    "llm",
+    "semantic-cache",
+    "ai-chatbot"
+  ]
 }

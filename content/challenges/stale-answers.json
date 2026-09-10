@@ -1,0 +1,13 @@
+{
+  "id": "stale-answers",
+  "question": "Your RAG assistant keeps citing a policy document that was replaced last week. The new version is in the source bucket. What is the fix?",
+  "context": "Documents are chunked and embedded by a worker when they are uploaded. The old chunks are still in the vector store, and both versions score well for the same question.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Use a bigger model with a longer context window", "correct": false, "why": "A larger window lets you stuff both versions into the prompt, which makes the contradiction more likely, not less. The problem is what you retrieved, not how much the model can read.", "ref": "context-window" },
+    { "label": "Make ingestion replace a document's chunks, and filter retrieval by version", "correct": true, "why": "Chunks are derived data keyed by document id. Re-ingestion must delete or supersede the previous chunks, and retrieval should filter to the current version — otherwise the index accumulates every past truth.", "ref": "vector-database" },
+    { "label": "Fine-tune the model on the new document", "correct": false, "why": "Fine-tuning teaches format and behaviour, not changing facts, and you would retrain on every policy edit. Retrieval is the right layer for facts that change.", "ref": "fine-tuning" },
+    { "label": "Lower the similarity threshold so fewer chunks come back", "correct": false, "why": "Fewer results is not the same as the right results. The stale chunk is genuinely similar to the question, so tightening the threshold can just as easily drop the new version.", "ref": "semantic-search" }
+  ],
+  "related": ["rag", "vector-database", "ai-rag", "embedding", "ai-chatbot"]
+}

@@ -18,8 +18,11 @@ export function HomeSearch({ suggestions }: { suggestions: string[] }) {
   const [active, setActive] = useState(0);
 
   const submit = () => {
+    // A sentence is a question — the search page answers those. A short query is
+    // a lookup, so jumping straight to the best hit is what the reader wants.
+    const looksLikeQuestion = q.trim().split(/\s+/).length >= 4;
     const pick = flat[active];
-    if (pick) router.push(pick.href);
+    if (pick && !looksLikeQuestion) router.push(pick.href);
     else if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`);
   };
 

@@ -4,12 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TYPE_LABEL } from "@/lib/content/types";
 import { groupByType, searchNodes } from "@/lib/search";
-import { useSearchIndex } from "@/lib/useSearchIndex";
+import { useBuildGoals, useSearchIndex } from "@/lib/useSearchIndex";
+import { detectIntent } from "@/lib/intent";
+import { IntentAnswer } from "./IntentAnswer";
 import { NodeGrid } from "@/components/ui/NodeCard";
 
 /** Knowledge-graph search page body: query in the URL, results grouped by type. */
 export function SearchResults() {
   const index = useSearchIndex();
+  const goals = useBuildGoals();
   const params = useSearchParams();
   const router = useRouter();
   const fromUrl = params.get("q") ?? "";
@@ -32,6 +35,8 @@ export function SearchResults() {
 
   const hits = useMemo(() => searchNodes(index, q, 60), [index, q]);
   const groups = groupByType(hits);
+  // A typed sentence gets an answer, not just matches.
+  const intent = useMemo(() => detectIntent(q, index, goals), [q, index, goals]);
 
   return (
     <div>
@@ -41,7 +46,7 @@ export function SearchResults() {
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search the knowledge graph…"
+          placeholder="Ask a question, or search the graph…"
           className="h-14 w-full rounded-xl border border-border bg-surface px-4 text-lg outline-none focus:border-accent"
           autoComplete="off"
           spellCheck={false}
@@ -50,6 +55,8 @@ export function SearchResults() {
       <div className="mt-2 text-xs text-fg-faint">
         {q.trim() ? `${hits.length} result${hits.length === 1 ? "" : "s"} across ${groups.length} type${groups.length === 1 ? "" : "s"}` : `${index.length} nodes in the graph`}
       </div>
+      {intent && <div className="mt-8">{<IntentAnswer intent={intent} query={q} />}</div>}
+
       <div className="mt-8 space-y-10">
         {groups.map((g) => (
           <section key={g.type}>

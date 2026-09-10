@@ -91,7 +91,7 @@ data-platform · iot-product
 
 ---
 
-# Wave 4 (in progress)
+# Wave 4 (done)
 
 Fills the plain-text steps that roadmaps could not link to yet.
 
@@ -116,3 +116,25 @@ mobile-developer · cloud-engineer
 
 ## system-designs/
 search-autocomplete · image-pipeline
+
+---
+
+# Wave 5 (in progress) — the AI cluster
+
+The spec opens with AI → LLM → Vector DB → RAG, and `ai-rag` still has an unlinked
+vector store. Vendor-neutral: models and hosted APIs churn too fast to page.
+
+## technologies/
+pgvector
+
+## concepts/
+llm · embedding · vector-database · context-window · semantic-search · llm-evaluation · fine-tuning
+
+## patterns/
+rag · ai-agent · semantic-cache
+
+## comparisons/
+rag-vs-fine-tuning · semantic-vs-keyword-search
+
+## system-designs/
+ai-chatbot

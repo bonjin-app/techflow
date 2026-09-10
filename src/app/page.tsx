@@ -89,7 +89,9 @@ export default function Home() {
             An interactive knowledge graph for developers. Not a list of tools — the reasons, trade-offs and connections between them.
           </p>
           <div className="mt-8">
-            <HomeSearch suggestions={["redis", "why kafka", "websocket vs sse", "race condition", "cache aside"]} />
+            <HomeSearch
+              suggestions={["redis", "why do I need a message queue", "websocket vs sse", "I want to build a chat app", "race condition"]}
+            />
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
             {ENTRY_TYPES.map((t) => (

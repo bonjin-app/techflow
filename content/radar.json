@@ -317,6 +317,69 @@
       "quadrant": "architecture-operations",
       "note": "Useful when platform concerns must stay out of application code; another process to run.",
       "moved": "new"
+    },
+    {
+      "ref": "rag",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "The default way to ground answers in your own data; retrieval quality is the real work.",
+      "moved": "new"
+    },
+    {
+      "ref": "embedding",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Text as vectors is now ordinary infrastructure, not research.",
+      "moved": "new"
+    },
+    {
+      "ref": "vector-database",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Needed once similarity search is a product feature; a database extension often suffices.",
+      "moved": "new"
+    },
+    {
+      "ref": "pgvector",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Keeps vectors next to the rows they belong to — start here before a separate store.",
+      "moved": "new"
+    },
+    {
+      "ref": "llm-evaluation",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Without a golden set every prompt change is a guess; harder than it sounds.",
+      "moved": "new"
+    },
+    {
+      "ref": "semantic-search",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Strongest as hybrid retrieval alongside keyword search, not as a replacement.",
+      "moved": "new"
+    },
+    {
+      "ref": "ai-agent",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Tool-calling loops need step budgets, idempotent tools and a kill switch; a scripted pipeline often wins.",
+      "moved": "new"
+    },
+    {
+      "ref": "fine-tuning",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Good for format and behaviour, poor for facts that change; try retrieval first.",
+      "moved": "new"
+    },
+    {
+      "ref": "semantic-cache",
+      "ring": "caution",
+      "quadrant": "data-messaging",
+      "note": "A similarity threshold is a correctness knob: near-miss questions can return the wrong answer.",
+      "moved": "new"
     }
   ]
 }
