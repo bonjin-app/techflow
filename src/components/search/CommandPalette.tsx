@@ -14,9 +14,11 @@ import { PLAYGROUNDS } from "@/app/playground/registry";
 /** Interactive tools and index pages that are not knowledge-graph nodes. */
 const TOOLS: { label: string; href: string; hint: string }[] = [
   ...PLAYGROUNDS.map((p) => ({ label: p.title, href: `/playground/${p.slug}`, hint: "playground" })),
+  { label: "Mind map", href: "/map", hint: "mind map" },
   { label: "Real-world stacks", href: "/stack", hint: "stacks" },
   { label: "Technology radar", href: "/radar", hint: "radar" },
   { label: "Design challenges", href: "/challenge", hint: "practice" },
+  { label: "JSON API", href: "/api-docs", hint: "api" },
 ];
 
 interface Command {

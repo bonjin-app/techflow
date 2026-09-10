@@ -115,7 +115,11 @@ export function DocDetail({ node }: { node: DocNode }) {
           <Section id="graph" title="Relationship graph" eyebrow="How it connects">
             <p className="mb-3 max-w-2xl text-sm text-fg-muted">
               Everything {node.name} touches — concepts it relies on, patterns that use it, alternatives, and architectures where it appears.
-              Click any node to keep exploring.
+              Click any node to keep exploring, or{" "}
+              <Link href={`/map?focus=${node.id}`} className="text-accent hover:underline">
+                open it as a mind map
+              </Link>
+              .
             </p>
             <GraphLoader data={ego} height={420} mode="ego" />
           </Section>

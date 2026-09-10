@@ -26,9 +26,15 @@ export function Header() {
         <Link href="/" className="shrink-0 rounded-md text-fg" aria-label={`${site.name} home`}>
           <Logo />
         </Link>
-        <nav aria-label="Primary" className="no-scrollbar hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex">
-          <NavLinks items={nav} />
-        </nav>
+        <div className="relative hidden min-w-0 flex-1 md:block">
+          <nav
+            aria-label="Primary"
+            className="no-scrollbar flex items-center gap-1 overflow-x-auto"
+            style={{ maskImage: "linear-gradient(to right, black calc(100% - 28px), transparent)", WebkitMaskImage: "linear-gradient(to right, black calc(100% - 28px), transparent)" }}
+          >
+            <NavLinks items={nav} />
+          </nav>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <PaletteButton />
           <ThemeToggle />

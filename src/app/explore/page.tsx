@@ -34,6 +34,9 @@ export default function Page() {
           </p>
         </div>
         <div className="text-xs text-fg-faint">
+          <Link href="/map" className="mb-2 block text-sm text-accent hover:underline">
+            Walk it as a mind map →
+          </Link>
           Hubs:{" "}
           {hubs.map((h, i) => (
             <span key={h.n.id}>
