@@ -14,6 +14,9 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# One-time setup: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+# The workflow token cannot create the Pages site itself (the API answers
+# "Resource not accessible by integration"), so the deploy job fails until that is set.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,13 +28,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Configure GitHub Pages
-        id: pages
-        uses: actions/configure-pages@v5
-        with:
-          # Turns Pages on for this repository if it is not enabled yet, so no
-          # manual Settings change is needed. Requires the `pages: write` permission.
-          enablement: true
       - name: Validate content, lint, typecheck
         run: |
           pnpm validate
