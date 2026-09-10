@@ -82,9 +82,8 @@ And nothing logs an error | the only symptom is quality, which is why you must c
 - **Compress history, do not drop it.** Keep the last few turns verbatim, replace older
   turns with a rolling summary, and pin durable facts (the user's account, the chosen
   product, constraints already agreed) in a small structured block that is always included.
-- **Move state out of the prompt.** Anything you can look up should be looked up: a user
-  profile, an order status, the current file. A tool call that returns 200 tokens on demand
-  is cheaper than 2,000 tokens of "context just in case" on every turn.
+- **Move state out of the prompt.** Anything you can look up should be looked up. A tool
+  call returning 200 tokens on demand beats 2,000 tokens of "context just in case" per turn.
 - **Cache the stable prefix.** Providers commonly charge less for a repeated prefix, so put
   invariant content (system prompt, tool definitions, few-shot examples) first and the
   variable content last. Pair that with an ordinary [Cache](/concept/cache) for identical

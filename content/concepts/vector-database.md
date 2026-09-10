@@ -76,7 +76,7 @@ VectorDB --> API: passages ready for re-ranking
 
 The upsert path and the query path are the whole API surface. Note that the filter is part
 of the search, not applied afterwards: filtering *after* retrieval means asking for 20 and
-receiving 3 once the tenant filter is applied.
+receiving 3.
 
 ## How it works
 

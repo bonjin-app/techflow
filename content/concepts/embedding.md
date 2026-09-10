@@ -52,8 +52,8 @@ That comes with constraints worth knowing on day one:
   one answers the question and the other contradicts it. Distance ranks candidates; it
   never decides correctness.
 - **Storage and cost are real.** Hundreds or thousands of float dimensions per chunk add
-  up: millions of chunks is gigabytes of vectors that all want to be in memory for fast
-  search, plus one embedding call per chunk at ingest and one per query.
+  up: millions of chunks is gigabytes of vectors that all want to be in memory, plus one
+  embedding call per chunk at ingest and one per query.
 
 ## Visual
 
@@ -62,7 +62,7 @@ title: Text to vector to distance
 Chunk the text | split documents into passages of a few hundred tokens, with slight overlap
 Embed each chunk | one model call returns a fixed-length vector, the same length every time
 Normalise and store [vector-database] | keep the vector next to its text and its metadata
-Embed the query | the same model, so both sides live in the same space
+Embed the query | the same model, so both sides share one space
 Rank by distance | cosine or inner product, then take the top k as candidates
 Re-rank or filter | a cross-encoder or a metadata filter decides the final order
 ```

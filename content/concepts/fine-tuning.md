@@ -74,58 +74,56 @@ Deploy behind a flag [feature-flag] | route a slice of traffic, watch quality an
 Watch for drift [observability] | inputs shift over time, so plan the next data collection round now
 ```
 
-The loop never runs once. Every model upgrade, every schema change and every drift in user
-phrasing sends you around it again — which is precisely the cost to weigh before starting.
+The loop never runs once. Every model upgrade, schema change and drift in user phrasing
+sends you around it again — which is precisely the cost to weigh before starting.
 
 ## How it works
 
-- **Supervised fine-tuning (SFT)** is the common case: a file of input/output pairs, trained
-  with the same next-token objective used in pre-training. Your examples teach the mapping
-  you want.
+- **Supervised fine-tuning (SFT)** is the common case: a file of input/output pairs trained
+  with the same next-token objective as pre-training, teaching the mapping you want.
 - **Parameter-efficient methods** (low-rank adapters and similar) train a small set of extra
-  weights and leave the base model frozen. They are cheap, fast, produce artefacts of
-  megabytes rather than gigabytes, can be swapped per tenant or per task, and are what almost
-  everyone should use. Full fine-tuning of every weight is a research or platform-team
-  activity.
+  weights and leave the base model frozen. Cheap, fast, artefacts of megabytes rather than
+  gigabytes, swappable per tenant or task — and what almost everyone should use. Full
+  fine-tuning of every weight is a platform-team activity.
 - **Preference tuning** optimises against pairwise human judgements ("this answer is better
   than that one") rather than single correct outputs. It shapes behaviour where "correct" is
   a matter of degree, and needs considerably more data and care.
-- **Distillation** trains a small model on a large model's outputs for a specific task. It is
-  the standard route to a cheap, fast production model once a large model has proven the task
-  is doable — check the licence terms of any model whose outputs you use as training data.
-- **The knobs.** Learning rate, number of epochs and dataset size. Too many epochs on a small
-  set memorises it: the test score plateaus while the model becomes brittle and repetitive.
-  Watch the held-out loss, not the training loss.
+- **Distillation** trains a small model on a large model's outputs for one task — the standard
+  route to a cheap production model once a large model has proven the task is doable. Check
+  the licence terms of any model whose outputs you train on.
+- **The knobs.** Learning rate, epochs and dataset size. Too many epochs on a small set
+  memorises it: the test score plateaus while the model turns brittle and repetitive. Watch
+  the held-out loss, not the training loss.
 
 ## Deep Dive
 
 **Data quality is the whole game.** A few hundred consistent, carefully reviewed examples
-beat tens of thousands of scraped ones. The single most common cause of a disappointing
-fine-tune is contradictory labels — two examples that give different outputs for equivalent
-inputs teach the model to be inconsistent. Deduplicate aggressively, and make sure the test
-split shares no near-duplicates with training, or your score is measuring memorisation.
+beat tens of thousands of scraped ones. The commonest cause of a disappointing fine-tune is
+contradictory labels — two examples with different outputs for equivalent inputs teach the
+model to be inconsistent. Deduplicate aggressively, and keep near-duplicates out of the test
+split, or your score measures memorisation.
 
 **Fine-tuning and RAG are not rivals.** The productive combination is a fine-tune that fixes
 format and behaviour plus retrieval that supplies current facts. [RAG vs
 Fine-tuning](/compare/rag-vs-fine-tuning) works through the decision case by case; the short
-version is that questions of *what is true right now* belong to retrieval, and questions of
-*how should this be said* belong to training.
+version is that *what is true right now* belongs to retrieval and *how it should be said*
+belongs to training.
 
 **Catastrophic forgetting is real.** Training hard on one narrow task degrades unrelated
 abilities — instruction following, other languages, refusing unsafe requests. Keep a
-regression set of general capabilities you care about and run it alongside your task metrics.
+regression set of general capabilities and run it alongside your task metrics.
 
 **Every fine-tune is a version you must carry.** When the base model is deprecated or
 improved, your adapter does not come along: you re-run the loop, re-evaluate and re-ship.
-Store the dataset, the split, the hyperparameters and the evaluation results together with
-the artefact, or you will not be able to reproduce a model you depend on.
+Store the dataset, the split, the hyperparameters and the evaluation results with the
+artefact, or you cannot reproduce a model you depend on.
 
 **Cost lands in the wrong place.** Training is a one-off bill that is easy to approve;
-inference on a custom model is the recurring one, and hosting a private model can be more
-expensive per token than a shared endpoint unless throughput is high. Compare on total cost
-per thousand requests including the idle capacity you pay for.
+inference on a custom model is the recurring one, and hosting a private model can cost more
+per token than a shared endpoint unless throughput is high. Compare total cost per thousand
+requests, including idle capacity.
 
-**Security and privacy.** Training data ends up inside the weights, so personal or
-confidential examples can be surfaced later by an unrelated prompt, and there is no delete
-path short of retraining. Strip identifiers before training, keep a documented provenance
-for every example, and never fine-tune on data you would not be allowed to disclose.
+**Security and privacy.** Training data ends up inside the weights, so confidential examples
+can surface later from an unrelated prompt, and there is no delete path short of retraining.
+Strip identifiers before training, keep provenance for every example, and never fine-tune on
+data you would not be allowed to disclose.

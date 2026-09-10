@@ -39,12 +39,11 @@ always run both and fuse the results — hybrid search — rather than choosing.
 Search failures are asymmetric. A user who types the same words as your documents finds
 them with any technology; a user who describes their problem in their own words is the one
 who needs help, and lexical matching returns nothing. That gap is where semantic search
-pays for itself: support portals, internal wikis, product catalogues with inconsistent
-vocabulary, and every [RAG](/pattern/rag) pipeline, where retrieval quality sets the ceiling
-on answer quality.
+pays for itself: support portals, internal wikis, catalogues with inconsistent vocabulary,
+and every [RAG](/pattern/rag) pipeline, where retrieval quality sets the ceiling on answer
+quality.
 
-The honest counterweight is that semantic search introduces failure modes that lexical
-search does not have:
+The counterweight is a set of failure modes lexical search does not have:
 
 - It always returns *something*. There is no such thing as zero results, so an irrelevant
   top hit looks identical to a relevant one until a human reads it.
@@ -86,17 +85,17 @@ Search --> Client: top 10 results with highlights and sources
 
 ## How it works
 
-- **Two indexes, one query.** The lexical index (an inverted index with BM25 scoring) and
-  the vector index answer the same filtered query independently. Both are asked for more
-  candidates than you will show, because fusion needs overlap to work with.
+- **Two indexes, one query.** The lexical index (inverted, BM25-scored) and the vector index
+  answer the same filtered query independently. Both are asked for more candidates than you
+  will show, because fusion needs overlap to work with.
 - **Fusion.** Scores from the two systems are not comparable — one is a relevance score, the
   other a distance. Reciprocal rank fusion sidesteps this by combining *positions* rather
   than scores, needs no tuning, and is the sensible default. Weighted score blending can beat
   it, but only after normalisation and only if you measure.
 - **Re-ranking.** A cross-encoder reads the query and each candidate *together* and scores
-  the pair. It is far more accurate than vector distance and far too slow for the whole
-  corpus, which is why it runs on the top few dozen candidates only. In most RAG systems
-  adding a re-ranker is the single largest quality win available.
+  the pair. Far more accurate than vector distance, and far too slow for the whole corpus,
+  so it runs on the top few dozen candidates only. In most RAG systems adding a re-ranker is
+  the single largest quality win available.
 - **Filters are part of the query, not a post-step.** Tenant, language, permissions, date
   range and document status must constrain both retrievers. Filtering after retrieval is how
   a "top 10" becomes a top 2 — or how one tenant sees another's content.
@@ -122,16 +121,15 @@ expanding acronyms, and rewriting a follow-up question into a standalone one usi
 conversation history all move quality more than swapping the embedding model.
 
 **Where to run it.** If you already operate [Elasticsearch](/technology/elasticsearch), it
-holds both the inverted index and vectors, plus filters and aggregations — the shortest path
-to hybrid. If your data lives in [PostgreSQL](/technology/postgresql), full-text search plus
+holds the inverted index, vectors, filters and aggregations — the shortest path to hybrid. If
+your data lives in [PostgreSQL](/technology/postgresql), full-text search plus
 [pgvector](/technology/pgvector) gives the same two retrievers in one transactional
-database, which is enough well past the point most teams assume. A dedicated
-[Vector Database](/concept/vector-database) is for scale and per-tenant sharding, not for
-getting started. [Semantic vs Keyword Search](/compare/semantic-vs-keyword-search) lays the
-choice out side by side.
+database. A dedicated [Vector Database](/concept/vector-database) is for scale and
+per-tenant sharding, not for getting started;
+[Semantic vs Keyword Search](/compare/semantic-vs-keyword-search) lays the choice out side
+by side.
 
 **When not to reach for it.** If your users search by identifier, SKU or exact filename; if
-your corpus is small enough that a `LIKE` query and a few filters satisfy everyone; if you
-cannot maintain a re-embedding path when the model changes; or if you have no way to measure
-relevance — keyword search plus good filters and facets is the better engineering decision,
-and it is cheaper to operate by an order of magnitude.
+a `LIKE` query and a few filters satisfy everyone; if you cannot maintain a re-embedding
+path when the model changes; or if you have no way to measure relevance — keyword search with
+good filters and facets is the better engineering decision, and far cheaper to operate.

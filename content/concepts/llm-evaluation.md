@@ -89,8 +89,8 @@ always come first:
   and cheap, but biased: judges favour longer answers, their own family's style, and the first
   option in a pair. Calibrate against a few hundred human labels, keep the rubric in version
   control, and never let the judge be the only gate.
-- **Human review where it counts.** A small weekly sample reviewed by someone who knows the
-  domain remains the ground truth that keeps automated scores honest.
+- **Human review where it counts.** A small weekly sample read by someone who knows the
+  domain is the ground truth that keeps automated scores honest.
 - **Adversarial cases.** Prompt injection attempts inside retrieved documents, questions the
   corpus cannot answer (the correct answer is a refusal), ambiguous questions, and
   out-of-scope requests. These belong in the golden set from the first week.
@@ -126,5 +126,5 @@ and treat a change inside the noise band as no change.
 
 **It is the prerequisite for the other work.** Choosing between [RAG](/pattern/rag) and
 [Fine-tuning](/concept/fine-tuning), raising top-k, switching to a cheaper model class,
-enabling a semantic cache — each of these is a guess without a score to compare against. Build
-the harness before the optimisations, or the optimisations are unfalsifiable.
+enabling a semantic cache — each is a guess without a score to compare against. Build the
+harness first, or the optimisations are unfalsifiable.
