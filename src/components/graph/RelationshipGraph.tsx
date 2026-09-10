@@ -15,7 +15,7 @@ import {
   type SimulationNodeDatum,
 } from "d3-force";
 import type { GraphView } from "@/lib/content/graph";
-import { RELATION_LABEL, TYPE_LABEL, type NodeType } from "@/lib/content/types";
+import { RELATION_LABEL, TYPE_LABEL, type NodeType, type Relation } from "@/lib/content/types";
 
 type SimNode = GraphView["nodes"][number] & SimulationNodeDatum & { r: number };
 type SimLink = SimulationLinkDatum<SimNode> & { rel: GraphView["edges"][number]["rel"] };
@@ -271,40 +271,59 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
         data-tick={tick}
       >
         <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
-          {links.map((l, i) => {
-            const s = l.source as SimNode;
-            const t = l.target as SimNode;
-            if (s.x == null || t.x == null) return null;
-            const active = hover && (s.id === hover || t.id === hover);
-            const dim = (hover && !active) || (pinnedTypes && (!pinnedTypes.has(s.type) || !pinnedTypes.has(t.type)));
-            const mx = (s.x + t.x) / 2;
-            const my = (s.y! + t.y!) / 2;
+          {/* Edges are drawn as a handful of paths rather than ~1,400 elements:
+              with one element per edge the simulation could not hold 60fps. */}
+          {(() => {
+            let solid = "";
+            let dashed = "";
+            let hotSolid = "";
+            let hotDashed = "";
+            const labels: { x: number; y: number; rel: Relation }[] = [];
+            for (const l of links) {
+              const a = l.source as SimNode;
+              const b = l.target as SimNode;
+              if (a.x == null || a.y == null || b.x == null || b.y == null) continue;
+              if (pinnedTypes && (!pinnedTypes.has(a.type) || !pinnedTypes.has(b.type))) continue;
+              const seg = `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+              const isDashed = l.rel === "ALTERNATIVE_TO";
+              const active = hover != null && (a.id === hover || b.id === hover);
+              if (active) {
+                if (isDashed) hotDashed += seg;
+                else hotSolid += seg;
+                if (labels.length < 10) labels.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 4, rel: l.rel });
+              } else if (isDashed) dashed += seg;
+              else solid += seg;
+            }
+            const restOpacity = hover ? 0.12 : 0.55;
             return (
-              <g key={i} data-graph-edge>
-                <line
-                  x1={s.x}
-                  y1={s.y}
-                  x2={t.x}
-                  y2={t.y}
-                  stroke={active ? "var(--accent)" : "var(--border-strong)"}
-                  strokeOpacity={dim ? 0.15 : active ? 0.95 : 0.55}
-                  strokeWidth={active ? 1.6 : 1}
-                  strokeDasharray={l.rel === "ALTERNATIVE_TO" ? "4 4" : undefined}
-                />
-                {active && (
+              <g data-graph-edges-layer>
+                {solid && <path d={solid} fill="none" stroke="var(--border-strong)" strokeOpacity={restOpacity} strokeWidth={1} />}
+                {dashed && (
+                  <path d={dashed} fill="none" stroke="var(--border-strong)" strokeOpacity={restOpacity} strokeWidth={1} strokeDasharray="4 4" />
+                )}
+                {hotSolid && <path d={hotSolid} fill="none" stroke="var(--accent)" strokeOpacity={0.95} strokeWidth={1.6} />}
+                {hotDashed && (
+                  <path d={hotDashed} fill="none" stroke="var(--accent)" strokeOpacity={0.95} strokeWidth={1.6} strokeDasharray="4 4" />
+                )}
+                {labels.map((l, i) => (
                   <text
-                    x={mx}
-                    y={my - 4}
+                    key={i}
+                    x={l.x}
+                    y={l.y}
                     textAnchor="middle"
-                    className="pointer-events-none font-mono text-[9px]"
+                    className="pointer-events-none font-mono"
+                    style={{ fontSize: 9 }}
                     fill="var(--fg-muted)"
+                    stroke="var(--bg-subtle)"
+                    strokeWidth={3}
+                    paintOrder="stroke"
                   >
                     {RELATION_LABEL[l.rel]}
                   </text>
-                )}
+                ))}
               </g>
             );
-          })}
+          })()}
           {nodes.map((n) => {
             if (n.x == null || n.y == null) return null;
             const dim = isDim(n.id, n.type);

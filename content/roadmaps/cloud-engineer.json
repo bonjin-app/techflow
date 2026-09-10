@@ -1,0 +1,128 @@
+{
+  "id": "cloud-engineer",
+  "name": "Cloud Engineer Roadmap",
+  "tagline": "From Linux and DNS to reproducible, observable, cost-aware cloud infrastructure",
+  "summary": "An ordered path for engineers who build and run infrastructure on a public cloud. It begins below the cloud — Linux, networking, certificates — because every managed service is an abstraction over those, then covers the four primitives every provider sells under different names: identity, network, compute and storage. The second half is what separates a working account from an operable platform: describing everything as code, automating delivery, handling secrets, measuring reliability against an SLO, and keeping the bill proportional to the traffic.",
+  "category": "career",
+  "tags": ["Cloud", "Infrastructure", "Career", "Learning Path", "DevOps"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "linux",
+      "label": "Linux",
+      "stage": "Below the cloud",
+      "note": "Almost every instance, container and managed runtime is Linux, so processes, permissions, systemd and the shell are the floor you debug down to."
+    },
+    {
+      "ref": "dns",
+      "label": "DNS",
+      "stage": "Below the cloud",
+      "note": "Comes early because service discovery, certificate validation, failover and 'it works from my laptop' all resolve to DNS records and their TTLs."
+    },
+    {
+      "ref": "tls",
+      "label": "TLS & certificates",
+      "stage": "Below the cloud",
+      "note": "Every public endpoint terminates TLS somewhere; knowing chains, SNI and renewal prevents the single most common self-inflicted outage."
+    },
+    {
+      "ref": "git",
+      "label": "Git & version control",
+      "stage": "Below the cloud",
+      "note": "Learned before any automation, because from here on the desired state of your infrastructure lives in a repository and changes go through review."
+    },
+    {
+      "label": "Cloud provider fundamentals",
+      "stage": "Cloud primitives",
+      "note": "Regions, availability zones, the shared responsibility model, quotas and the console-versus-API split are the vocabulary every later step is expressed in."
+    },
+    {
+      "ref": "rbac",
+      "label": "IAM & least privilege",
+      "stage": "Cloud primitives",
+      "note": "Placed before compute on purpose: identity is the real perimeter in the cloud, and roles granted early as wildcards are almost never narrowed later."
+    },
+    {
+      "label": "Networking & VPC",
+      "stage": "Cloud primitives",
+      "note": "Subnets, route tables, NAT and security groups decide what can reach what; nearly all 'connection timed out' incidents are answered in this layer."
+    },
+    {
+      "ref": "load-balancing",
+      "label": "Load balancing",
+      "stage": "Cloud primitives",
+      "note": "The first component in front of your application: it defines health checks, TLS termination and how a rolling deploy avoids dropping requests."
+    },
+    {
+      "ref": "s3",
+      "label": "Object storage",
+      "stage": "Compute & storage",
+      "note": "The default place for anything that is not a database row — uploads, artefacts, backups, logs — and the cheapest durable storage the cloud sells."
+    },
+    {
+      "ref": "docker",
+      "label": "Docker",
+      "stage": "Compute & storage",
+      "note": "Containers make the deployable unit identical from laptop to production, which is the prerequisite for every orchestrator and managed runtime that follows."
+    },
+    {
+      "ref": "kubernetes",
+      "label": "Kubernetes",
+      "stage": "Compute & storage",
+      "note": "Worth learning after containers and networking, since it mostly composes those primitives; learn it to understand scheduling, not because every workload needs it."
+    },
+    {
+      "label": "Serverless",
+      "stage": "Compute & storage",
+      "note": "The other end of the spectrum from a cluster you operate: study it next to Kubernetes so the choice becomes a trade-off about cold starts, limits and cost rather than a preference."
+    },
+    {
+      "ref": "infrastructure-as-code",
+      "label": "Infrastructure as code",
+      "stage": "Automation",
+      "note": "Comes only once you know what the resources are, because clicking in a console teaches you the model but leaves nothing reviewable or reproducible."
+    },
+    {
+      "ref": "terraform",
+      "label": "Terraform",
+      "stage": "Automation",
+      "note": "A concrete tool for the previous idea: providers, state, plan-before-apply and modules are the day-to-day mechanics of changing infrastructure safely."
+    },
+    {
+      "ref": "ci-cd",
+      "label": "CI/CD",
+      "stage": "Automation",
+      "note": "With code and infrastructure both in Git, a pipeline becomes the only path to production — which is also where policy checks and plan approvals belong."
+    },
+    {
+      "ref": "secrets-management",
+      "label": "Secrets management",
+      "stage": "Security & reliability",
+      "note": "Automation immediately creates the problem of credentials in pipelines and repos; short-lived, rotatable secrets issued to workload identities are the answer."
+    },
+    {
+      "ref": "observability",
+      "label": "Observability",
+      "stage": "Security & reliability",
+      "note": "Once deploys are frequent you need metrics, logs and traces to tell whether a change helped, and to answer questions you did not anticipate."
+    },
+    {
+      "ref": "slo",
+      "label": "SLOs & error budgets",
+      "stage": "Security & reliability",
+      "note": "Turns raw telemetry into a decision rule: how much unreliability is acceptable, and therefore when to ship features versus stop and fix."
+    },
+    {
+      "ref": "capacity-planning",
+      "label": "Capacity planning",
+      "stage": "Cost & scale",
+      "note": "With targets defined you can size things deliberately — headroom, autoscaling limits and quota ceilings — instead of reacting to the next traffic spike."
+    },
+    {
+      "label": "Cost management",
+      "stage": "Cost & scale",
+      "note": "Last because it depends on everything above: in the cloud an architecture choice is a recurring bill, and tagging, rightsizing and commitment discounts are engineering work."
+    }
+  ]
+}

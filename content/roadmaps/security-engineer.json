@@ -4,9 +4,18 @@
   "tagline": "From how a packet and a certificate work to defending a system you did not build",
   "summary": "Security is applied systems knowledge, so this path deliberately starts with the things being attacked: code, the network, and the cryptography that protects traffic in transit. From there it moves through identity — who is calling and what they may do — then the application layer where most breaches actually happen, then the infrastructure and delivery pipeline that has become the favourite target, and ends with detection, response and a worked identity design.",
   "category": "career",
-  "tags": ["Security", "Authentication", "Cryptography", "Career", "Learning Path"],
+  "tags": [
+    "Security",
+    "Authentication",
+    "Cryptography",
+    "Career",
+    "Learning Path"
+  ],
   "difficulty": 4,
-  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-10",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "programming-fundamentals",
@@ -103,7 +112,8 @@
     {
       "label": "Secrets management",
       "stage": "Infrastructure security",
-      "note": "Leaked credentials are a leading breach cause, so a vault, short-lived credentials and rotation must replace environment variables copied between machines."
+      "note": "Leaked credentials are a leading breach cause, so a vault, short-lived credentials and rotation must replace environment variables copied between machines.",
+      "ref": "secrets-management"
     },
     {
       "ref": "docker",

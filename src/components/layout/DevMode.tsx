@@ -30,7 +30,11 @@ export function DevMode({ onClose }: { onClose: () => void }) {
         frames = 0;
         last = t;
         const nodes = document.querySelectorAll("[data-graph-node]").length;
-        const edges = document.querySelectorAll("[data-graph-edge]").length;
+        // Edges are drawn as merged paths, so read the count the graph reports.
+        const edges = [...document.querySelectorAll("[data-graph-edges]")].reduce(
+          (sum, el) => sum + Number(el.getAttribute("data-graph-edges") ?? 0),
+          0,
+        );
         const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
         const resources = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
         const transfer = resources.reduce((s, r) => s + (r.transferSize || 0), 0) + (nav?.transferSize ?? 0);

@@ -1,0 +1,142 @@
+{
+  "id": "file-storage-service",
+  "name": "File Storage Service",
+  "tagline": "Pre-signed direct uploads, async processing and CDN-served downloads",
+  "summary": "Clients ask an API for a short-lived pre-signed URL and then upload the bytes straight to object storage, so no file ever passes through application servers. The upload event triggers asynchronous workers that scan for malware and produce derived variants, with the database holding metadata and processing state. Downloads are served by a CDN using signed URLs, which keeps private files private without putting the API in the byte path.",
+  "category": "system",
+  "tags": ["Storage", "Media", "Scalability", "Security"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "nodes": [
+    { "id": "browser", "label": "Browser / Mobile App", "kind": "client", "x": 2, "y": 0, "ref": "http",
+      "role": "Uploads and downloads bytes directly", "why": "The client is the only participant that already holds the file, so every byte it can send straight to storage is a byte your servers never buffer, and progress and resume can be handled where the user is waiting.",
+      "alternatives": [], "related": ["http", "react", "https"] },
+    { "id": "auth", "label": "Auth Service", "kind": "service", "x": 0, "y": 1, "ref": "authentication",
+      "role": "Identity and permission decisions", "why": "A pre-signed URL is a bearer credential for one object, so the only place authorisation can happen is before it is minted. After that, storage will honour the URL for anyone holding it.",
+      "alternatives": ["jwt", "oauth"], "related": ["authentication", "jwt", "rbac"] },
+    { "id": "api", "label": "File API", "kind": "service", "x": 2, "y": 1, "ref": "rest",
+      "role": "Mints URLs, owns metadata, never sees bytes", "why": "Keeping the API out of the data path is what makes it small and horizontally trivial: it does an auth check, a row insert and a signature, all in single-digit milliseconds regardless of whether the file is 4KB or 4GB.",
+      "alternatives": ["graphql"], "related": ["rest", "backend", "rate-limiting"] },
+    { "id": "cdn", "label": "CDN", "kind": "edge", "x": 4, "y": 1, "ref": "cdn",
+      "role": "Caches and serves downloads at the edge", "why": "Popular files are requested far more often than they change, and object storage egress from one region is both slower and more expensive than an edge cache close to the user.",
+      "alternatives": ["nginx"], "related": ["cdn", "cache", "ttl"] },
+    { "id": "redis", "label": "Redis", "kind": "cache", "x": 0, "y": 2, "ref": "redis",
+      "role": "Quotas, rate limits, upload sessions", "why": "Upload abuse is cheap to attempt and expensive to absorb, so per-user counters need to be checked on every URL request — a job for shared in-memory state rather than the primary database.",
+      "alternatives": ["memcached"], "related": ["redis", "rate-limiting", "ttl"] },
+    { "id": "store", "label": "Object Storage", "kind": "storage", "x": 2, "y": 2, "ref": "s3",
+      "role": "Durable bytes, addressed by key", "why": "Files are large, immutable and read far more than written — exactly the shape object storage is priced and engineered for, with durability guarantees no self-managed disk array will match cheaply.",
+      "alternatives": [], "related": ["s3", "replication", "cdn"] },
+    { "id": "metadata", "label": "PostgreSQL", "kind": "db", "x": 0, "y": 3, "ref": "postgresql",
+      "role": "Ownership, state, checksums, variants", "why": "Everything you want to query — whose file is this, is it scanned, which variants exist, how much has this tenant stored — is relational and small. Object storage cannot answer any of it.",
+      "alternatives": ["mysql", "dynamodb"], "related": ["postgresql", "indexing", "transaction"] },
+    { "id": "queue", "label": "Kafka", "kind": "queue", "x": 2, "y": 3, "ref": "kafka",
+      "role": "Fan out one upload to many workers", "why": "Scanning, transcoding and thumbnailing are independent, slow and bursty. A durable log lets each consumer work at its own pace and lets a crashed worker resume rather than lose the job.",
+      "alternatives": ["rabbitmq"], "related": ["kafka", "message-queue", "backpressure"] },
+    { "id": "dlq", "label": "Dead Letter Queue", "kind": "queue", "x": 4, "y": 3, "ref": "dead-letter-queue",
+      "role": "Jobs that failed repeatedly", "why": "A 900MB file that reliably crashes the transformer must not be retried forever at the head of a partition; parking it keeps every other upload moving and leaves an explicit list to fix.",
+      "alternatives": [], "related": ["dead-letter-queue", "retry", "message-queue"] },
+    { "id": "scanner", "label": "Virus Scanner", "kind": "worker", "x": 1, "y": 4,
+      "role": "Malware scan before the file is shareable", "why": "Any product where one user's upload is another user's download is a malware distribution channel unless something inspects the bytes. Scanning after upload rather than during it keeps the upload path fast.",
+      "alternatives": [], "related": ["threat-modeling", "authentication"] },
+    { "id": "transformer", "label": "Image / Video Transformer", "kind": "worker", "x": 3, "y": 4,
+      "role": "Thumbnails, resizes, transcodes", "why": "Deriving variants once at upload is far cheaper than resizing on every request, and it lets clients fetch a 20KB thumbnail instead of a 6MB original — usually the single biggest win for perceived speed.",
+      "alternatives": [], "related": ["cdn", "serialization"] }
+  ],
+  "edges": [
+    { "from": "browser", "to": "api", "label": "POST /uploads" },
+    { "from": "api", "to": "auth", "label": "verify token", "style": "dashed" },
+    { "from": "api", "to": "redis", "label": "quota + rate limit", "style": "dashed" },
+    { "from": "api", "to": "metadata", "label": "INSERT file (pending)" },
+    { "from": "api", "to": "browser", "label": "pre-signed PUT (15 min)", "style": "dashed" },
+    { "from": "browser", "to": "store", "label": "PUT bytes (direct)" },
+    { "from": "store", "to": "queue", "label": "ObjectCreated", "style": "dashed" },
+    { "from": "queue", "to": "scanner", "label": "scan job", "style": "dashed" },
+    { "from": "queue", "to": "transformer", "label": "transform job", "style": "dashed" },
+    { "from": "scanner", "to": "metadata", "label": "clean / infected" },
+    { "from": "transformer", "to": "store", "label": "write variants" },
+    { "from": "transformer", "to": "metadata", "label": "mark ready" },
+    { "from": "scanner", "to": "dlq", "label": "give up", "style": "dashed" },
+    { "from": "transformer", "to": "dlq", "label": "give up", "style": "dashed" },
+    { "from": "browser", "to": "cdn", "label": "GET /files/… (signed)" },
+    { "from": "cdn", "to": "store", "label": "origin fetch on miss", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "upload",
+      "name": "Upload to CDN-served download",
+      "path": ["browser", "api", "store", "queue", "scanner", "transformer", "cdn"],
+      "steps": [
+        "The app asks for permission to upload, sending only the filename, declared content type and size — not the bytes.",
+        "The API checks the caller's token and quota, inserts a metadata row in state 'pending' with a generated storage key, and returns a pre-signed PUT URL valid for fifteen minutes and constrained to that key, content type and maximum size.",
+        "The browser PUTs the file straight to object storage, retrying or resuming on its own; the API is not involved and never buffers a byte.",
+        "Storage emits an ObjectCreated notification onto the topic, keyed by storage key so all jobs for one file stay ordered.",
+        "The scanner downloads the object, scans it, and records the verdict; an infected file is quarantined and the row is marked so nothing will ever serve it.",
+        "The transformer produces a thumbnail and web-sized variants, writes them back under derived keys, and flips the row to 'ready'.",
+        "The client now requests the thumbnail through the CDN, which fetches once from origin and serves every subsequent viewer from the edge."
+      ]
+    },
+    {
+      "id": "private-download",
+      "name": "Downloading a private file",
+      "path": ["browser", "api", "metadata", "cdn", "store"],
+      "steps": [
+        "The user opens a document they own; the client asks the API for a download link rather than constructing one.",
+        "The API authorises the request against the caller's identity and returns a signed URL valid for a few minutes, pointing at the CDN and scoped to that single object.",
+        "Ownership and scan state come from the metadata row — a file still pending or flagged infected never gets a URL, regardless of who asks.",
+        "The browser fetches the signed URL; the CDN validates the signature and expiry at the edge, so an expired or tampered link is rejected without touching origin.",
+        "On a cache miss the CDN fetches from object storage using its own origin credentials; the bucket itself stays private, with no public read access anywhere."
+      ]
+    },
+    {
+      "id": "retry",
+      "name": "Processing fails and is retried",
+      "path": ["queue", "transformer", "dlq", "metadata"],
+      "steps": [
+        "The transform job is delivered; because delivery is at-least-once, the worker first checks whether variants for this key already exist and exits early if they do.",
+        "Decoding a corrupt video fails after three attempts with exponential backoff — the same input will fail the same way, so retrying harder achieves nothing.",
+        "The job is dead-lettered with the storage key, the error and the attempt count, and the partition keeps flowing for every other upload.",
+        "The metadata row stays in 'processing', so the UI shows the file as still being prepared rather than pretending it is ready; once the codec is fixed the dead-lettered jobs are replayed and the row completes normally."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Pre-signed direct upload instead of proxying bytes through the API",
+      "why": "Proxying makes every application server a bandwidth and memory bottleneck: a hundred concurrent 500MB uploads means holding or spooling 50GB somewhere. Handing the client a scoped, expiring URL removes the data path from your servers entirely and makes the API's cost independent of file size.",
+      "alternatives": ["s3", "nginx"],
+      "tradeoff": "You lose the ability to inspect content inline — the declared content type is a claim, not a fact, so validation and scanning must happen after the fact and the file must not be shareable until they do. The URL is also a bearer credential: leak it and anyone can write that key until it expires, so expiry must be short and the signature must pin key, size and type."
+    },
+    {
+      "decision": "Metadata in a relational database, bytes in object storage",
+      "why": "The two have nothing in common operationally. Bytes want cheap, durable, immutable, read-heavy storage; metadata wants transactions, indexes and joins for listing, quotas and permissions. Storing files as database blobs bloats backups and turns every restore into an ordeal.",
+      "alternatives": ["postgresql", "mongodb"],
+      "tradeoff": "Two systems can disagree. An upload that never completes leaves an orphaned pending row; a failed delete leaves an orphaned object paying storage forever. Both need a reconciliation job that sweeps pending rows past their expiry and lists storage for keys no row references — unglamorous work that is easy to skip and expensive to skip."
+    },
+    {
+      "decision": "Scan and transform asynchronously after upload",
+      "why": "Scanning and transcoding take seconds to minutes and fail in ways a user cannot fix. Doing them inline would hold the upload request open, tie worker capacity to upload bursts, and turn one bad codec into a user-visible upload failure.",
+      "alternatives": ["event-driven-architecture", "kafka"],
+      "tradeoff": "The file exists before it is safe or complete, so every read path must respect the state column and the UI must have a genuine 'processing' state — the most common bug in this design is a client that assumes the thumbnail is there. It also means the honest answer to 'is this file clean' is 'not yet' for a while after upload."
+    },
+    {
+      "decision": "Serve downloads through a CDN with short-lived signed URLs",
+      "why": "Edge caching removes most origin reads and most egress cost, and signature validation at the edge means private files can be cached without opening the bucket. The API stays out of the byte path on downloads as well as uploads.",
+      "alternatives": ["cdn", "nginx"],
+      "tradeoff": "Revocation is not immediate: a URL stays valid until it expires, and a cached object can outlive a permission change, so sensitive content needs short expiries, per-user cache keys, or explicit invalidation. Caching private content also invites configuration mistakes where one user's file is served to another from a shared cache key — the kind of bug that only shows up under real traffic."
+    }
+  ],
+  "versions": [
+    { "version": "v1", "title": "Files through the app", "summary": "The API receives multipart uploads, writes them to object storage itself, and serves downloads by streaming from storage. Simple and correct, and it falls over the first time someone uploads video.", "nodes": ["browser", "api", "metadata", "store"] },
+    { "version": "v2", "title": "Direct upload and async processing", "summary": "Clients upload straight to storage with pre-signed URLs; an upload notification drives a queue, and workers scan the file and build variants while the metadata row tracks state.", "nodes": ["browser", "auth", "api", "store", "queue", "metadata", "scanner", "transformer"] },
+    { "version": "v3", "title": "Edge delivery, quotas and dead letters", "summary": "A CDN serves signed downloads at the edge, Redis enforces per-tenant quotas and upload rate limits, and jobs that cannot succeed are dead-lettered instead of blocking a partition.", "nodes": ["browser", "auth", "api", "cdn", "redis", "store", "metadata", "queue", "dlq", "scanner", "transformer"] }
+  ],
+  "textAlternative": "A browser at the top talks to a File API in the middle of the second row, with an auth service on its left and a CDN on its right. The API checks Redis for quotas on the left and inserts a metadata row into PostgreSQL below it, then returns a pre-signed URL to the browser, which uploads bytes directly to object storage in the centre. Object storage publishes an upload event to Kafka below it, which fans jobs out to a virus scanner and an image and video transformer on the bottom row; both update the metadata row and send jobs they cannot process to a dead letter queue on the right. The transformer writes derived variants back to object storage. For downloads the browser goes to the CDN, which fetches from object storage on a cache miss.",
+  "related": [
+    { "to": "s3", "rel": "RELATED_TO" },
+    { "to": "cdn", "rel": "RELATED_TO" },
+    { "to": "authentication", "rel": "RELATED_TO" },
+    { "to": "rate-limiting", "rel": "RELATED_TO" },
+    { "to": "dead-letter-queue", "rel": "RELATED_TO" },
+    { "to": "event-driven-architecture", "rel": "RELATED_TO" }
+  ]
+}

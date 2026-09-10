@@ -1,0 +1,140 @@
+{
+  "id": "observability-stack",
+  "name": "Observability Stack",
+  "tagline": "Traces, metrics and logs through one collector, with SLO burn-rate alerting",
+  "summary": "Instrumented services emit traces, metrics and logs in one wire format to a collector that batches, enriches and fans them out to three storage backends chosen for their very different query shapes. Alerting is driven by SLO burn-rate rules evaluated against metrics, so a page means users are being harmed rather than that a disk is 80% full. When an engineer is paged, the trace id carried on every signal is what links a slow request to its spans and then to the exact log lines it produced.",
+  "category": "system",
+  "tags": ["Observability", "Operations", "Monitoring", "Reliability"],
+  "difficulty": 4,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "nodes": [
+    { "id": "app", "label": "Instrumented Service", "kind": "service", "x": 2, "y": 0, "ref": "observability",
+      "role": "Emits traces, metrics and logs", "why": "Observability is a property of the application, not of the tooling around it. Auto-instrumentation gives HTTP and database spans for free; the spans that actually explain an incident are the ones a developer added around their own business logic.",
+      "alternatives": [], "related": ["observability", "opentelemetry", "backend"] },
+    { "id": "k8s", "label": "Kubernetes", "kind": "service", "x": 4, "y": 0, "ref": "kubernetes",
+      "role": "Infra metrics and scrape target discovery", "why": "Pods come and go, so a static list of targets is useless. The orchestrator is both the source of infrastructure metrics and the service-discovery mechanism that tells the collector what exists right now.",
+      "alternatives": ["docker"], "related": ["kubernetes", "docker", "health-check"] },
+    { "id": "collector", "label": "OTel Collector", "kind": "service", "x": 2, "y": 1, "ref": "opentelemetry",
+      "role": "Receive, batch, enrich, route", "why": "One hop between applications and backends. It adds resource attributes, drops or samples what is not worth keeping, retries on backend failure, and — most valuable of all — means switching a backend is a config change instead of a redeploy of every service.",
+      "alternatives": [], "related": ["opentelemetry", "backpressure", "sidecar"] },
+    { "id": "probe", "label": "Uptime Prober", "kind": "service", "x": 4, "y": 1, "ref": "health-check",
+      "role": "Black-box checks from outside", "why": "Internal metrics go silent exactly when things are worst. An external prober hitting the health endpoint and a real user journey answers 'is it up from outside' independently of the stack being observed.",
+      "alternatives": [], "related": ["health-check", "availability", "load-balancing"] },
+    { "id": "metrics", "label": "Prometheus", "kind": "db", "x": 0, "y": 2, "ref": "prometheus",
+      "role": "Time-series store for aggregates", "why": "Numeric series compress extremely well and answer 'how many, how fast, how often' over long windows cheaply. This is the only signal cheap enough to keep at full resolution for every request.",
+      "alternatives": ["clickhouse"], "related": ["prometheus", "observability", "partitioning"] },
+    { "id": "traces", "label": "Trace Store", "kind": "db", "x": 2, "y": 2,
+      "role": "Spans indexed by trace id", "why": "Traces answer 'where did those 900ms go' for one specific request. The access pattern is a key lookup by trace id plus a narrow search by service and duration, which is why it is a separate store from metrics.",
+      "alternatives": ["elasticsearch", "s3"], "related": ["opentelemetry", "s3", "partitioning"] },
+    { "id": "logs", "label": "Log Store", "kind": "db", "x": 4, "y": 2,
+      "role": "Full-text and label search over events", "why": "Logs carry the detail no aggregate can: the stack trace, the offending id, the third-party error body. They are also the most expensive signal per byte, so retention is shorter and sampling is normal.",
+      "alternatives": ["elasticsearch", "clickhouse"], "related": ["elasticsearch", "s3", "serialization"] },
+    { "id": "slo", "label": "SLO / Burn-rate Rules", "kind": "service", "x": 0, "y": 3, "ref": "slo",
+      "role": "Turn metrics into user-facing objectives", "why": "A rule that fires on high CPU wakes people for something users never noticed. A burn-rate rule fires when the error budget is being consumed fast enough to miss the objective, which is the same thing as 'users are being hurt now'.",
+      "alternatives": [], "related": ["slo", "observability"] },
+    { "id": "alerts", "label": "Alert Manager", "kind": "service", "x": 0, "y": 4,
+      "role": "Deduplicate, group, route, silence", "why": "Twenty pods failing the same way is one incident. Grouping, inhibition and silences are what stop a single outage from producing two hundred notifications and training everyone to ignore them.",
+      "alternatives": [], "related": ["slo", "observability", "webhook"] },
+    { "id": "dashboard", "label": "Dashboards", "kind": "client", "x": 2, "y": 4, "ref": "react",
+      "role": "Charts, trace search, log search", "why": "One place that can pivot between the three signals. Its real job during an incident is not pretty graphs but letting someone go from a metric spike to a trace to a log line in three clicks.",
+      "alternatives": [], "related": ["react", "observability"] },
+    { "id": "pager", "label": "On-call Pager", "kind": "external", "x": 0, "y": 5,
+      "role": "Escalation to a human", "why": "The escalation policy, not the alert rule, decides whether anyone actually responds at 3am. It is external on purpose: paging must survive the failure of the system being monitored.",
+      "alternatives": [], "related": ["webhook", "notification-system"] },
+    { "id": "engineer", "label": "On-call Engineer", "kind": "client", "x": 2, "y": 6,
+      "role": "Diagnoses and mitigates", "why": "The whole stack exists to shorten this person's path from 'something is wrong' to 'this is the cause'. Every design choice above should be judged by how much it shortens that path.",
+      "alternatives": [], "related": ["observability"] }
+  ],
+  "edges": [
+    { "from": "app", "to": "collector", "label": "OTLP: traces, metrics, logs" },
+    { "from": "k8s", "to": "collector", "label": "pod & node metrics", "style": "dashed" },
+    { "from": "probe", "to": "app", "label": "GET /healthz", "style": "dashed" },
+    { "from": "probe", "to": "metrics", "label": "probe results" },
+    { "from": "collector", "to": "metrics", "label": "remote write" },
+    { "from": "collector", "to": "traces", "label": "spans (sampled)" },
+    { "from": "collector", "to": "logs", "label": "logs + trace id" },
+    { "from": "metrics", "to": "slo", "label": "burn-rate query", "style": "dashed" },
+    { "from": "slo", "to": "alerts", "label": "alert fires" },
+    { "from": "alerts", "to": "pager", "label": "page on-call" },
+    { "from": "pager", "to": "engineer", "label": "notify", "style": "dashed" },
+    { "from": "engineer", "to": "dashboard", "label": "investigate" },
+    { "from": "dashboard", "to": "metrics", "label": "range query" },
+    { "from": "dashboard", "to": "traces", "label": "trace lookup" },
+    { "from": "traces", "to": "logs", "label": "trace id → logs", "style": "dashed" },
+    { "from": "dashboard", "to": "logs", "label": "log search" }
+  ],
+  "flows": [
+    {
+      "id": "signals",
+      "name": "One request becomes three signals",
+      "path": ["app", "collector", "metrics", "traces", "dashboard"],
+      "steps": [
+        "A request enters the service; instrumentation starts a trace, records latency and status in a histogram, and stamps the trace id onto every log line the handler writes.",
+        "The collector receives all three signals over OTLP, attaches resource attributes such as service name, version and pod, and buffers them so a slow backend does not push back into the request path.",
+        "Metrics are written to Prometheus at full resolution — cheap enough that every request counts toward the latency histogram and the error rate.",
+        "The trace is kept only if sampling selected it, or if it was slow or errored; the span tree lands in the trace store keyed by trace id.",
+        "The dashboard renders p99 latency from the metrics and offers a direct jump to an exemplar trace from the same time window."
+      ]
+    },
+    {
+      "id": "burn",
+      "name": "An SLO burn-rate rule pages someone",
+      "path": ["app", "collector", "metrics", "slo", "alerts", "pager"],
+      "steps": [
+        "A bad deploy makes 4% of checkout requests return 500; the error counter starts climbing immediately.",
+        "The collector forwards the metric stream unchanged — no sampling here, because an aggregate that is sampled cannot be trusted for alerting.",
+        "Prometheus holds the success and total counters that define the service level indicator.",
+        "The burn-rate rule compares recent error rate against the monthly error budget over both a short and a long window; both must exceed the threshold, which is what filters out one-minute blips.",
+        "The alert manager groups every affected pod into a single incident, checks that no deploy silence is active, and routes it by service ownership.",
+        "The pager escalates to whoever is on call, with the SLO, the current burn rate and a link straight to the dashboard for that service."
+      ]
+    },
+    {
+      "id": "debug",
+      "name": "From page to root cause",
+      "path": ["pager", "engineer", "dashboard", "traces", "logs"],
+      "steps": [
+        "The page arrives with the service name, the failing SLO and the time the burn started — enough to skip the 'what is broken' phase entirely.",
+        "The engineer opens the linked dashboard and confirms the shape: errors began four minutes after a rollout, on one endpoint only.",
+        "Filtering the latency chart to failing requests surfaces an exemplar trace id from the same minute.",
+        "The trace shows 3.1 seconds spent in a single downstream call that then timed out — the span tree localises the fault to one dependency.",
+        "Querying logs by that trace id returns the exception and the connection-pool exhaustion message behind it, and the mitigation is a rollback."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "One collector between the applications and every backend",
+      "why": "Applications should emit signals once, in one format, and know nothing about where they are stored. Putting enrichment, batching, sampling and retry in the collector means changing vendor or adding a backend is a configuration change rather than a redeploy of every service.",
+      "alternatives": ["opentelemetry", "sidecar"],
+      "tradeoff": "It is another tier to run and scale, and if it is down or its queue is full, telemetry is lost precisely when you need it. Agents pushing straight to each backend removes that failure point but hard-codes vendors into application config and multiplies the work of any change."
+    },
+    {
+      "decision": "Sample traces aggressively, keep all metrics",
+      "why": "Traces are the most expensive signal per request and the most redundant — a thousand identical fast requests teach nothing. Metrics are cheap and must be complete, because an alert computed from sampled data is not trustworthy.",
+      "alternatives": ["prometheus"],
+      "tradeoff": "The trace you want is sometimes the one that was dropped. Tail-based sampling (decide after the trace finishes, keeping slow and errored ones) fixes most of that but needs the collector to buffer whole traces in memory, which costs memory and adds a window where a burst can overflow."
+    },
+    {
+      "decision": "Alert on SLO burn rate, not on resource thresholds",
+      "why": "Threshold alerts on CPU, memory and disk fire constantly for conditions users never experience, and stay silent when a dependency returns wrong answers quickly. A burn-rate rule ties paging directly to the user-visible objective and its error budget.",
+      "alternatives": ["slo"],
+      "tradeoff": "It requires honest SLIs and a real conversation about the objective, which is organisational work, not configuration. It is also slower to catch narrow failures that affect few requests, so resource alerts still belong as low-priority tickets rather than pages."
+    },
+    {
+      "decision": "Three stores instead of one",
+      "why": "The three signals have incompatible access patterns: aggregate scans over long windows, point lookup by trace id, and full-text search. A single engine forced to serve all three is either expensive or slow at two of them.",
+      "alternatives": ["elasticsearch", "clickhouse"],
+      "tradeoff": "Three systems to operate, three retention policies, three bills — and correlation only works if the trace id is genuinely propagated everywhere, which takes discipline. A single all-in-one store is a very reasonable choice for a small team; the cost usually shows up as log retention shrinking to days."
+    }
+  ],
+  "textAlternative": "At the top, an instrumented service and a Kubernetes cluster both send telemetry down into an OpenTelemetry collector in the middle, with an external uptime prober on the right that also probes the service and writes results to metrics. The collector fans out to three stores in one row: Prometheus on the left for metrics, a trace store in the centre, and a log store on the right; a dashed link from traces to logs represents trace-id correlation. Below Prometheus, SLO burn-rate rules feed an alert manager, which pages an on-call service at the bottom left. The pager notifies the on-call engineer at the bottom centre, who queries the dashboards, and from there the metrics, traces and logs.",
+  "related": [
+    { "to": "observability", "rel": "RELATED_TO" },
+    { "to": "opentelemetry", "rel": "RELATED_TO" },
+    { "to": "prometheus", "rel": "RELATED_TO" },
+    { "to": "slo", "rel": "RELATED_TO" },
+    { "to": "health-check", "rel": "RELATED_TO" },
+    { "to": "kubernetes", "rel": "RELATED_TO" }
+  ]
+}

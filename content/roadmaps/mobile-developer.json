@@ -1,0 +1,125 @@
+{
+  "id": "mobile-developer",
+  "name": "Mobile Developer Roadmap",
+  "tagline": "From one native platform to offline-capable, push-enabled apps that pass review",
+  "summary": "An ordered path for building production mobile applications. It starts with one platform learned properly — the language, its declarative UI toolkit and the lifecycle the operating system imposes — then adds the networking layer, because a mobile app is mostly a client for someone else's API on an unreliable connection. From there it moves through on-device storage and offline sync, the identity flows that differ from the web, live features such as push and sockets, and finally the release machinery: crash reporting, CI/CD and store review.",
+  "category": "career",
+  "tags": ["Mobile", "Career", "Learning Path", "iOS", "Android"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "steps": [
+    {
+      "ref": "programming-fundamentals",
+      "label": "Programming fundamentals",
+      "stage": "Foundations",
+      "note": "Data structures, control flow and asynchrony come first because every mobile UI framework is built on callbacks, coroutines or async/await."
+    },
+    {
+      "ref": "git",
+      "label": "Git & version control",
+      "stage": "Foundations",
+      "note": "Branching and reviewing diffs are needed from the first team project, and mobile releases are cut from tags so the history has to be clean."
+    },
+    {
+      "label": "Swift or Kotlin",
+      "stage": "One platform first",
+      "note": "Pick iOS or Android and learn its language properly; splitting attention across both before either is comfortable produces two shallow skill sets."
+    },
+    {
+      "label": "Declarative UI, navigation & app state",
+      "stage": "One platform first",
+      "note": "SwiftUI and Jetpack Compose both re-render from state, so learning that model plus the platform's navigation stack and lifecycle callbacks unlocks most of the SDK."
+    },
+    {
+      "label": "React Native or Flutter",
+      "stage": "Cross-platform",
+      "note": "Worth learning after one native platform, so you can judge what a cross-platform runtime actually costs you and still drop to native code when it matters."
+    },
+    {
+      "ref": "http",
+      "label": "HTTP",
+      "stage": "Talking to a server",
+      "note": "Status codes, headers, caching and timeouts explain nearly every 'works on Wi-Fi, fails on cellular' bug report."
+    },
+    {
+      "ref": "rest",
+      "label": "REST APIs",
+      "stage": "Talking to a server",
+      "note": "Most of an app's code consumes an API, so learn how resources, pagination and error bodies are conventionally shaped before designing screens around them."
+    },
+    {
+      "ref": "serialization",
+      "label": "JSON & serialization",
+      "stage": "Talking to a server",
+      "note": "Decoding into typed models is where a surprising share of crashes live: missing fields, nulls and schema changes shipped by the backend after your app is on devices."
+    },
+    {
+      "label": "Networking on mobile",
+      "stage": "Talking to a server",
+      "note": "Comes right after the basics because mobile networks are the differentiator: request coalescing, retries with backoff, timeouts, radio wake-up cost and battery all change how you call an API."
+    },
+    {
+      "ref": "sqlite",
+      "label": "Local storage with SQLite",
+      "stage": "Data on device",
+      "note": "Once the app must show something before the network answers, you need a real local database rather than a pile of key-value preferences."
+    },
+    {
+      "ref": "cache",
+      "label": "Caching on device",
+      "stage": "Data on device",
+      "note": "Images, API responses and rendered lists all need a cache with a size cap and an expiry policy, because device storage and memory are far smaller than a server's."
+    },
+    {
+      "label": "Offline-first & sync",
+      "stage": "Data on device",
+      "note": "The hardest mobile problem, and it only makes sense after storage and caching: queueing local writes, resolving conflicts on reconnect and keeping the UI honest about what has not synced yet."
+    },
+    {
+      "ref": "authentication",
+      "label": "Authentication",
+      "stage": "Identity",
+      "note": "Login has to work across app restarts and long gaps, so sessions, refresh and biometric re-entry are designed differently from a web form."
+    },
+    {
+      "ref": "oauth",
+      "label": "OAuth 2.0 in the system browser",
+      "stage": "Identity",
+      "note": "Third-party sign-in on mobile means an authorisation code flow with PKCE in the system browser, not a webview — this is where most first attempts get it wrong."
+    },
+    {
+      "ref": "jwt",
+      "label": "JWT & secure token storage",
+      "stage": "Identity",
+      "note": "A shipped binary is on someone else's hardware, so tokens belong in the platform keychain or keystore and short expiry with silent refresh is the norm."
+    },
+    {
+      "label": "Push notifications",
+      "stage": "Live features",
+      "note": "Placed after identity because a device token must be tied to a user, and after networking because delivery is best-effort — a push is a hint to sync, never the data itself."
+    },
+    {
+      "ref": "websocket",
+      "label": "WebSocket",
+      "stage": "Live features",
+      "note": "Chat, presence and live scores need a persistent channel, and on mobile you also own reconnect on network change and teardown when the app is backgrounded."
+    },
+    {
+      "ref": "observability",
+      "label": "Crash reporting & observability",
+      "stage": "Shipping",
+      "note": "You cannot attach a debugger to a user's phone, so symbolicated crash reports, breadcrumbs and adoption-per-version dashboards are the only view you get."
+    },
+    {
+      "ref": "ci-cd",
+      "label": "CI/CD for mobile",
+      "stage": "Shipping",
+      "note": "Signing certificates, provisioning profiles and store uploads are too error-prone to do by hand; automate the build and distribute to testers on every merge."
+    },
+    {
+      "label": "App Store & Play review",
+      "stage": "Shipping",
+      "note": "Last because it constrains everything before it: review guidelines, privacy disclosures, staged rollout and the fact that a bad release cannot be rolled back like a server deploy."
+    }
+  ]
+}
