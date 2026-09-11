@@ -1,0 +1,94 @@
+{
+  "id": "mobile-app",
+  "name": "Mobile Product",
+  "tagline": "One app on both platforms, usable offline, with a server-side switch for when a build is wrong",
+  "summary": "A stack for a consumer or business app on iOS and Android. Every choice here follows from three constraints the web does not have: the network fails mid-request, the OS can suspend you, and you cannot hotfix a shipped binary.",
+  "basis": "TechFlow archetype, not a specific company's stack. It reflects the defaults we would pick for a product team shipping both platforms with a small mobile group and an existing backend.",
+  "updated": "2026-09-10",
+  "confidence": "medium",
+  "layers": [
+    {
+      "label": "Client",
+      "items": [
+        { "ref": "react-native", "note": "One codebase and real platform views when the team already writes React." },
+        { "ref": "swift", "note": "Native where platform capability or interface fidelity is the product." },
+        { "ref": "kotlin", "note": "The Android half of the same decision." },
+        { "ref": "react-native-vs-flutter", "note": "Read this before committing — the choice is architectural, not a feature comparison." }
+      ]
+    },
+    {
+      "label": "On device",
+      "items": [
+        { "ref": "sqlite", "note": "The screen renders from local rows; the network only updates them." },
+        { "ref": "offline-first", "note": "Not a feature. It is what stops a lift from emptying the app." },
+        { "ref": "optimistic-ui", "note": "Apply the write locally, reconcile later — the only way a tap feels instant on cellular." }
+      ]
+    },
+    {
+      "label": "Network",
+      "items": [
+        { "ref": "mobile-networking", "note": "Short timeouts, batched requests, transfers handed to the OS." },
+        { "ref": "idempotency", "note": "Every write carries a key, because a retry is unavoidable and a double charge is not." },
+        { "ref": "retry", "note": "Backoff with jitter, so a tower blip does not become a thundering herd." }
+      ]
+    },
+    {
+      "label": "Backend",
+      "items": [
+        { "ref": "mobile-app-backend", "note": "Delta sync, presigned uploads, push fan-out and a version gate." },
+        { "ref": "api-gateway", "note": "One place for TLS, token checks, rate limits and the app-version header." },
+        { "ref": "api-versioning", "note": "Two-year-old builds are still in production traffic. Plan for it or break them." }
+      ]
+    },
+    {
+      "label": "Identity",
+      "items": [
+        { "ref": "oauth", "note": "Sign-in in the system browser; refresh token in the platform keystore." },
+        { "ref": "jwt", "note": "Short-lived access tokens, revocable refresh — never a long-lived token in app storage." }
+      ]
+    },
+    {
+      "label": "Media",
+      "items": [
+        { "ref": "s3", "note": "Direct upload with a presigned URL so large files never pass through the API." },
+        { "ref": "cdn", "note": "Images dominate mobile bytes; serve them from an edge and keep egress off the origin." }
+      ]
+    },
+    {
+      "label": "Engagement",
+      "items": [
+        { "ref": "push-notification", "note": "A pointer, not a payload — delivery is best effort and lands on a lock screen." },
+        { "ref": "notification-system", "note": "The queue and worker behind it, so a gateway outage is a backlog." }
+      ]
+    },
+    {
+      "label": "Release",
+      "items": [
+        { "ref": "app-store-review", "note": "Someone else approves the build; plan the cadence around it." },
+        { "ref": "feature-flag", "note": "Ship dark, release with a switch. The only recovery path for a bad binary." },
+        { "ref": "ci-cd", "note": "Signing, screenshots and upload automated — manual release engineering rots." }
+      ]
+    },
+    {
+      "label": "Visibility",
+      "items": [
+        { "label": "Crash reporting per app version", "note": "Crash-free rate of the *new* version, not the average across all of them." },
+        { "ref": "observability", "note": "Client-side request timing segmented by connection type — p95 on cellular is the real number." }
+      ]
+    }
+  ],
+  "whenToUse": [
+    "The product needs to be usable with no connection, or on a bad one",
+    "You ship to both iOS and Android and want one team to maintain it",
+    "The app writes data, so retries and conflicts are real rather than theoretical",
+    "Release cadence matters and you cannot afford a review cycle per fix"
+  ],
+  "tradeoffs": [
+    "Offline sync is the most expensive part of a mobile product, and there is no cheap version",
+    "Every feature flag is a code path that stays in the binary and eventually needs removing",
+    "Cross-platform saves implementation time and spends it on per-platform polish and native dependencies",
+    "Supporting old app versions constrains every API you ship, for years",
+    "A local database means schema migrations on devices you do not control"
+  ],
+  "related": ["mobile-app-backend", "offline-first", "push-notification", "app-store-review", "mobile-networking"]
+}

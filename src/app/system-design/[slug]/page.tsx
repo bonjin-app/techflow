@@ -5,6 +5,7 @@ import { buildRefMap, collectArchRefs } from "@/lib/content/refs";
 import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { StepJourney } from "@/components/canvas/StepJourney";
 import { GraphLoader } from "@/components/graph/GraphLoader";
+import { MindMapLink } from "@/components/graph/MindMapLink";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
 import { TrackVisit } from "@/components/detail/TrackVisit";
@@ -66,6 +67,7 @@ export default async function Page({ params }: PageProps<"/system-design/[slug]"
         <section>
           <SectionHeading eyebrow="Knowledge graph" title="Everything this design touches" />
           <GraphLoader data={ego} height={400} mode="ego" />
+          <MindMapLink id={node.id} name={node.name} className="mt-3" />
         </section>
         <section>
           <SectionHeading eyebrow="Keep exploring" title="Related" />

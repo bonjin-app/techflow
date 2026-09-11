@@ -47,6 +47,8 @@ const GOAL_WORDS: [string[], string][] = [
   [["search engine", "search feature", "autocomplete", "full-text search", "site search"], "search-engine"],
   [["analytics", "data platform", "dashboard", "reporting", "event pipeline", "warehouse"], "data-platform"],
   [["iot", "telemetry", "devices", "sensors"], "iot-product"],
+  [["mobile app", "mobile application", "ios app", "android app", "phone app", "native app",
+    "cross platform app", "cross-platform app", "app store"], "mobile-app"],
 ];
 
 const KIND_WORDS: [string[], IntentKind][] = [

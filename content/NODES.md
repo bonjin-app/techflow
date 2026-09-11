@@ -178,3 +178,11 @@ domain-driven-design · architecture-decision-record
 ## comparisons/
 react-native-vs-flutter
 
+## architectures/
+mobile-app-backend
+
+Not graph nodes, added in the same wave so the new pages are reachable from the
+product's entry points rather than only from a roadmap:
+builds/ mobile-app · stacks/ mobile-app · challenges/ prompt-injection ·
+challenges/ mobile-double-submit
+

@@ -1,0 +1,293 @@
+{
+  "id": "mobile-app-backend",
+  "name": "Mobile App Backend",
+  "tagline": "The server side of a phone app: delta sync, presigned uploads, push and a version gate",
+  "summary": "A backend for an iOS and Android client, built around the three facts that make mobile different from the web: the network is unreliable, the app on the device may be two years old, and you cannot hotfix it. Everything here exists to make those survivable — delta sync so a screen renders offline, a remote config carrying a minimum supported version, and push as a pointer rather than a payload.",
+  "category": "system",
+  "tags": ["Mobile", "Offline", "Sync", "Push", "API"],
+  "difficulty": 3,
+  "meta": { "lastReviewed": "2026-09-10", "confidence": "medium" },
+  "nodes": [
+    {
+      "id": "app",
+      "label": "Mobile App",
+      "kind": "client",
+      "x": 0,
+      "y": 2,
+      "ref": "mobile-networking",
+      "role": "iOS and Android client",
+      "why": "Renders from a local database first, then reconciles with the server, so a weak signal never produces an empty screen.",
+      "alternatives": ["react-native", "flutter"],
+      "related": ["swift", "kotlin", "offline-first", "sqlite"]
+    },
+    {
+      "id": "cdn",
+      "label": "CDN",
+      "kind": "edge",
+      "x": 1,
+      "y": 0,
+      "ref": "cdn",
+      "role": "Static assets and user media",
+      "why": "Images dominate mobile bytes; serving them from an edge cache cuts latency on cellular and keeps egress off the origin.",
+      "alternatives": [],
+      "related": ["cache", "cost-optimization"]
+    },
+    {
+      "id": "gw",
+      "label": "API Gateway",
+      "kind": "edge",
+      "x": 1,
+      "y": 2,
+      "ref": "api-gateway",
+      "role": "TLS, token check, rate limit, routing",
+      "why": "One entry point so authentication, throttling and version headers are enforced once rather than in every service.",
+      "alternatives": ["nginx"],
+      "related": ["rate-limiting", "tls", "https"]
+    },
+    {
+      "id": "config",
+      "label": "Config & Flags",
+      "kind": "service",
+      "x": 2,
+      "y": 0,
+      "ref": "feature-flag",
+      "role": "Remote config, feature flags, minimum supported version",
+      "why": "The only way to change a shipped app's behaviour without a store release — which is also the only recovery path for a bad build.",
+      "alternatives": [],
+      "related": ["app-store-review", "canary-release"]
+    },
+    {
+      "id": "auth",
+      "label": "Auth Service",
+      "kind": "service",
+      "x": 2,
+      "y": 1,
+      "ref": "oauth",
+      "role": "Sign-in and token refresh",
+      "why": "Login runs in the system browser and returns a short-lived access token with a refresh token in the platform keystore, so a stolen device backup is not a stolen session.",
+      "alternatives": ["session", "jwt"],
+      "related": ["authentication", "jwt", "cryptography"]
+    },
+    {
+      "id": "api",
+      "label": "Product API",
+      "kind": "service",
+      "x": 2,
+      "y": 2,
+      "ref": "rest",
+      "role": "Reads and writes for product features",
+      "why": "Screen-shaped endpoints rather than fragments: one request per screen keeps the radio asleep and the battery alive.",
+      "alternatives": ["graphql"],
+      "related": ["api-versioning", "idempotency"]
+    },
+    {
+      "id": "sync",
+      "label": "Sync Endpoint",
+      "kind": "service",
+      "x": 2,
+      "y": 3,
+      "ref": "offline-first",
+      "role": "Changes since a cursor, and queued writes in",
+      "why": "A delta rather than a full refresh: the client sends its cursor and receives only what changed, which is what makes sync affordable on a metered connection.",
+      "alternatives": [],
+      "related": ["idempotency", "eventual-consistency"]
+    },
+    {
+      "id": "cache",
+      "label": "Redis",
+      "kind": "cache",
+      "x": 3,
+      "y": 2,
+      "ref": "redis",
+      "role": "Hot reads and rate-limit counters",
+      "why": "Feed and catalogue reads are repeated across every client; the counters behind per-device throttling need to be shared and fast.",
+      "alternatives": ["memcached"],
+      "related": ["cache-aside", "rate-limiting"]
+    },
+    {
+      "id": "db",
+      "label": "PostgreSQL",
+      "kind": "db",
+      "x": 4,
+      "y": 2,
+      "ref": "postgresql",
+      "role": "System of record",
+      "why": "Every row carries an updated-at and a soft-delete marker, because a client asking 'what changed?' needs to learn about deletions too.",
+      "alternatives": ["mysql"],
+      "related": ["transaction", "indexing"]
+    },
+    {
+      "id": "store",
+      "label": "Object Storage",
+      "kind": "storage",
+      "x": 4,
+      "y": 3,
+      "ref": "s3",
+      "role": "Photos, videos, attachments",
+      "why": "The app uploads directly with a presigned URL, so a 20MB video never passes through the API and a failed upload can resume.",
+      "alternatives": [],
+      "related": ["file-storage-service", "cdn"]
+    },
+    {
+      "id": "queue",
+      "label": "Message Queue",
+      "kind": "queue",
+      "x": 3,
+      "y": 4,
+      "ref": "message-queue",
+      "role": "Decouples the request from the fan-out",
+      "why": "A push gateway outage should become a backlog, not a failed user request or a lost notification.",
+      "alternatives": ["kafka", "rabbitmq"],
+      "related": ["dead-letter-queue", "backpressure"]
+    },
+    {
+      "id": "push",
+      "label": "Push Worker",
+      "kind": "worker",
+      "x": 4,
+      "y": 4,
+      "ref": "push-notification",
+      "role": "Token lookup, preferences, gateway send",
+      "why": "Keeps the device-token table alive: it consumes unregistered-token feedback and deletes dead tokens instead of sending to them forever.",
+      "alternatives": [],
+      "related": ["notification-system", "idempotency"]
+    },
+    {
+      "id": "gateway",
+      "label": "APNs / FCM",
+      "kind": "external",
+      "x": 5,
+      "y": 4,
+      "role": "Platform push gateways",
+      "why": "Delivery is best effort and unacknowledged, which is why the payload carries an id and the app fetches the real state.",
+      "alternatives": [],
+      "related": ["push-notification"]
+    },
+    {
+      "id": "obs",
+      "label": "Crash & Analytics",
+      "kind": "external",
+      "x": 5,
+      "y": 0,
+      "ref": "observability",
+      "role": "Crash reports, client timings, events",
+      "why": "Client-side request timing segmented by app version and connection type is the only place p95 on cellular is visible.",
+      "alternatives": [],
+      "related": ["slo", "app-store-review"]
+    }
+  ],
+  "edges": [
+    { "from": "app", "to": "cdn", "label": "assets, media" },
+    { "from": "app", "to": "gw", "label": "HTTPS" },
+    { "from": "gw", "to": "config", "label": "GET /config" },
+    { "from": "gw", "to": "auth", "label": "refresh" },
+    { "from": "gw", "to": "api", "label": "product calls" },
+    { "from": "gw", "to": "sync", "label": "GET /changes?since=" },
+    { "from": "api", "to": "cache", "label": "read-through" },
+    { "from": "api", "to": "db", "label": "SQL" },
+    { "from": "sync", "to": "db", "label": "changed rows" },
+    { "from": "auth", "to": "db", "label": "accounts" },
+    { "from": "api", "to": "store", "label": "presign" },
+    { "from": "app", "to": "store", "label": "direct upload", "style": "dashed" },
+    { "from": "store", "to": "cdn", "label": "origin", "style": "dashed" },
+    { "from": "api", "to": "queue", "label": "event", "style": "dashed" },
+    { "from": "queue", "to": "push", "label": "deliver" },
+    { "from": "push", "to": "db", "label": "device tokens" },
+    { "from": "push", "to": "gateway", "label": "token + payload" },
+    { "from": "gateway", "to": "app", "label": "notification", "style": "dashed" },
+    { "from": "app", "to": "obs", "label": "crashes, timings", "style": "dashed" }
+  ],
+  "flows": [
+    {
+      "id": "cold-start",
+      "name": "Cold start on a bad network",
+      "path": ["app", "gw", "config", "auth", "sync", "db"],
+      "steps": [
+        "The app renders immediately from its local SQLite copy — no spinner, no network needed.",
+        "It calls the gateway, which enforces TLS, the rate limit and the app-version header.",
+        "Remote config returns feature flags and the minimum supported version; too old, and the app shows an upgrade wall.",
+        "The access token has expired, so the refresh token is exchanged for a new one in the background.",
+        "The sync endpoint is called with the client's cursor: 'what changed since this point?'",
+        "PostgreSQL returns changed and deleted rows; the app merges them and the screen updates in place."
+      ]
+    },
+    {
+      "id": "upload",
+      "name": "Upload a photo",
+      "path": ["app", "gw", "api", "store", "cdn"],
+      "steps": [
+        "The app records the pending upload durably, then hands it to the OS background transfer session.",
+        "It asks the API for a presigned URL through the gateway — a small, fast request.",
+        "The API returns a URL scoped to one object key with a short expiry; nothing large touches the API.",
+        "The device uploads straight to object storage and the OS resumes it after the app is suspended.",
+        "The CDN serves the stored object to every other client from an edge near them."
+      ]
+    },
+    {
+      "id": "notify",
+      "name": "Notify a user who is not in the app",
+      "path": ["api", "queue", "push", "gateway", "app"],
+      "steps": [
+        "A product action produces an event; the request returns without waiting for any notification.",
+        "The queue holds it, so a gateway outage becomes a backlog rather than a lost notification.",
+        "The worker looks up this user's live device tokens, applies preferences and quiet hours, and deduplicates on the event id.",
+        "APNs or FCM accepts the payload — accepted, not delivered; unregistered tokens come back as feedback and are deleted.",
+        "The device shows the alert; tapping it deep-links into the app, which fetches the real state because the payload was only a pointer."
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Sync a delta against a cursor, not a full refresh",
+      "why": "A client on cellular cannot afford to re-download a dataset it already has, and a full refresh makes the first screen slow exactly when the network is worst. A cursor turns sync into a small, resumable request.",
+      "alternatives": ["rest"],
+      "tradeoff": "Every table now needs an updated-at and a soft-delete marker, and the client needs merge logic. Deletions are the part teams forget, and the symptom is rows that never disappear."
+    },
+    {
+      "decision": "Upload media directly to object storage with a presigned URL",
+      "why": "Large uploads through the API tie up request capacity, cannot resume, and fail entirely when the app is suspended mid-transfer. A presigned URL lets the OS background transfer own it.",
+      "alternatives": ["s3"],
+      "tradeoff": "The API no longer sees the bytes, so validation, virus scanning and thumbnailing move to a storage event handler — and the URL's scope and expiry become a security boundary you must get right."
+    },
+    {
+      "decision": "Remote config carries a minimum supported version",
+      "why": "You cannot recall a shipped build. A server-controlled version gate plus feature flags is the only mechanism that can turn off a broken feature or require an upgrade, and it has to exist in the first release to be useful later.",
+      "alternatives": ["canary-release"],
+      "tradeoff": "An upgrade wall is a hostile experience and locks out users who cannot update, so the bar for using it must be high — and every flag is a code path that stays in the binary."
+    },
+    {
+      "decision": "Push carries an identifier, not the state",
+      "why": "Push is best effort, unordered and size-limited, and the payload renders on a locked screen after passing through a third party. Sending an id means a dropped notification costs one round trip instead of correctness.",
+      "alternatives": ["websocket"],
+      "tradeoff": "Every notification tap costs a request, and the app must handle the case where the referenced entity has since changed or been deleted."
+    }
+  ],
+  "versions": [
+    {
+      "version": "v1",
+      "title": "One API",
+      "summary": "The app calls a REST API which reads the database. Fine until the first user opens it on a train and sees an empty screen.",
+      "nodes": ["app", "gw", "api", "db"]
+    },
+    {
+      "version": "v2",
+      "title": "Offline and media",
+      "summary": "A sync endpoint with cursors makes the app usable offline, media moves to object storage behind a CDN, and a cache absorbs repeated reads.",
+      "nodes": ["app", "cdn", "gw", "api", "sync", "cache", "db", "store"]
+    },
+    {
+      "version": "v3",
+      "title": "Push, config and visibility",
+      "summary": "Notifications go through a queue and a worker that owns the token table, remote config adds a version gate and flags, and client crashes and timings are collected per app version.",
+      "nodes": ["app", "cdn", "gw", "config", "auth", "api", "sync", "cache", "db", "store", "queue", "push", "gateway", "obs"]
+    }
+  ],
+  "textAlternative": "A mobile app on the left talks to an API gateway, which fronts four services: remote config and feature flags (including a minimum supported version), an auth service for sign-in and token refresh, a product API, and a sync endpoint that returns changes since a client-supplied cursor. The product API reads through a Redis cache to a PostgreSQL system of record; the sync endpoint reads changed and deleted rows from the same database. Media is uploaded by the device directly to object storage using a presigned URL obtained from the API, and served back through a CDN. Product actions publish events to a message queue, which a push worker consumes: it looks up device tokens, applies user preferences, and sends to APNs or FCM, which delivers a pointer-shaped notification to the device. The app also reports crashes and client-side request timings to an analytics and crash ingest service.",
+  "related": [
+    { "to": "mobile-networking", "rel": "RELATED_TO" },
+    { "to": "offline-first", "rel": "RELATED_TO" },
+    { "to": "push-notification", "rel": "RELATED_TO" },
+    { "to": "app-store-review", "rel": "RELATED_TO" },
+    { "to": "api-versioning", "rel": "RELATED_TO" }
+  ]
+}

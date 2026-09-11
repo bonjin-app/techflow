@@ -8,6 +8,7 @@ import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } fro
 import { Markdown } from "@/components/md/Markdown";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
+import { MindMapLink } from "@/components/graph/MindMapLink";
 import { TrackVisit } from "@/components/detail/TrackVisit";
 import { Difficulty, SectionHeading } from "@/components/ui/Badge";
 import { JsonLd } from "@/components/ui/JsonLd";
@@ -89,6 +90,7 @@ export default async function Page({ params }: PageProps<"/compare/[slug]">) {
           <SectionHeading eyebrow="Keep exploring" title="Related" />
           {s["Related"] && <Markdown source={s["Related"]} refs={refs} className="mb-6" />}
           <NeighborList neighbors={neighbors} exclude={node.subjects} />
+          <MindMapLink id={node.id} name={node.name} className="mt-4" />
         </section>
       </div>
     </article>

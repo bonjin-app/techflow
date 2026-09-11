@@ -103,6 +103,23 @@
       ]
     },
     {
+      "label": "Safety",
+      "items": [
+        {
+          "ref": "ai-safety",
+          "note": "Retrieved content can carry instructions, so tools are narrow and model output is treated as untrusted."
+        },
+        {
+          "ref": "rbac",
+          "note": "Retrieval is filtered in the index by the asking user's permissions, never by asking the model nicely."
+        },
+        {
+          "ref": "secrets-management",
+          "note": "Provider keys rotate; a leaked one lets anyone spend your budget as you."
+        }
+      ]
+    },
+    {
       "label": "Visibility",
       "items": [
         {
@@ -130,7 +147,8 @@
     "Retrieval quality, not the model, is usually the limiting factor — and it is hard to measure",
     "Cost scales with tokens, so caching and prompt size become product decisions",
     "Model and vendor churn means this layer changes faster than the rest of your stack",
-    "Streaming responses complicate error handling, retries and idempotency"
+    "Streaming responses complicate error handling, retries and idempotency",
+    "Guardrails have false positives, so some legitimate requests will be refused or delayed"
   ],
   "related": [
     "ai-rag",
@@ -140,6 +158,7 @@
     "rag",
     "llm",
     "semantic-cache",
-    "ai-chatbot"
+    "ai-chatbot",
+    "ai-safety"
   ]
 }

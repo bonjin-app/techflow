@@ -5,6 +5,7 @@ import { getArchitectures, getEgoGraph, getNeighbors, getNode } from "@/lib/cont
 import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { ArchitectureView, DecisionRecords } from "@/components/canvas/ArchitectureView";
 import { GraphLoader } from "@/components/graph/GraphLoader";
+import { MindMapLink } from "@/components/graph/MindMapLink";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
 import { TrackVisit } from "@/components/detail/TrackVisit";
@@ -101,6 +102,7 @@ export default async function Page({ params }: PageProps<"/architecture/[slug]">
           <section>
             <SectionHeading eyebrow="Knowledge graph" title="Connected technologies & concepts" />
             <GraphLoader data={ego} height={380} mode="ego" />
+            <MindMapLink id={arch.id} name={arch.name} className="mt-3" />
           </section>
 
           <section>

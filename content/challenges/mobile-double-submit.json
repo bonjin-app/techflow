@@ -1,0 +1,33 @@
+{
+  "id": "mobile-double-submit",
+  "question": "A user taps \"Place order\" on a phone. The request reaches your server and succeeds, but the reply never arrives — they walked out of Wi-Fi range. The app retries on resume. How do you avoid a second order?",
+  "context": "The client genuinely cannot tell a lost reply from a lost request, so it must retry or risk silently losing the order. Retrying is correct behaviour; the server has to make it safe. The app may retry minutes later, after the OS suspended and resumed it.",
+  "difficulty": 3,
+  "options": [
+    {
+      "label": "The client generates a key per order attempt and sends it with every retry; the server stores it and returns the original result on a repeat",
+      "correct": true,
+      "why": "This is the only approach that works when the client cannot know what happened. The key is generated once — when the user taps, not when the request is sent — so every retry of that attempt carries the same key and the server can recognise it as the same intent. See Idempotency.",
+      "ref": "idempotency"
+    },
+    {
+      "label": "Disable the button after the first tap and show a spinner until the reply arrives",
+      "correct": false,
+      "why": "Necessary for the interface and irrelevant to this failure. The reply never arrives, so the app is stuck with a spinner and an unknown outcome; on resume it still has to decide whether to retry. UI state cannot answer a question about the server.",
+      "ref": "mobile-networking"
+    },
+    {
+      "label": "Check for a recent order with the same user, items and total, and reject it as a duplicate",
+      "correct": false,
+      "why": "A heuristic that fails in both directions: it rejects a customer legitimately ordering the same coffee twice, and it misses a duplicate whose payload differs by a timestamp. Deduplication needs an identifier for the attempt, not a guess at its shape.",
+      "ref": "transaction"
+    },
+    {
+      "label": "Wrap order creation in a database transaction so a partial write cannot happen",
+      "correct": false,
+      "why": "Right answer to a different question. The transaction makes one order atomic; it says nothing about two separate requests each creating a valid order. Atomicity is not deduplication.",
+      "ref": "transaction"
+    }
+  ],
+  "related": ["idempotency", "mobile-networking", "retry", "payment-system"]
+}

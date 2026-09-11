@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/detail/PageHeader";
 import { LearningPath } from "@/components/detail/LearningPath";
 import { TrackVisit } from "@/components/detail/TrackVisit";
 import { GraphLoader } from "@/components/graph/GraphLoader";
+import { MindMapLink } from "@/components/graph/MindMapLink";
 import { getEgoGraph } from "@/lib/content/graph";
 import { SectionHeading } from "@/components/ui/Badge";
 import { JsonLd } from "@/components/ui/JsonLd";
@@ -65,6 +66,7 @@ export default async function Page({ params }: PageProps<"/roadmap/[slug]">) {
         <section>
           <SectionHeading eyebrow="Knowledge graph" title="Topics on this roadmap" />
           <GraphLoader data={ego} height={520} mode="ego" />
+          <MindMapLink id={node.id} name={node.name} className="mt-3" />
         </section>
       </div>
     </article>

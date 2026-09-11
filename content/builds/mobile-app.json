@@ -1,0 +1,10 @@
+{
+  "id": "mobile-app",
+  "name": "Mobile App",
+  "tagline": "An iOS and Android app that works offline, syncs when it can and survives a store review",
+  "architecture": "mobile-app-backend",
+  "technologies": ["swift", "kotlin", "react-native", "flutter", "sqlite", "postgresql", "s3"],
+  "concepts": ["mobile-networking", "push-notification", "app-store-review", "oauth", "jwt", "idempotency", "cache"],
+  "patterns": ["offline-first", "optimistic-ui", "retry", "feature-flag", "api-versioning"],
+  "learningPath": ["http", "rest", "mobile-networking", "swift", "sqlite", "offline-first", "push-notification", "app-store-review", "mobile-app-backend"]
+}
