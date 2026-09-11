@@ -3,8 +3,42 @@
   "name": "Search Engine",
   "tagline": "Full-text and faceted search over your data kept in sync with the source of truth",
   "architecture": "search-system",
-  "technologies": ["elasticsearch", "postgresql", "kafka", "redis", "nodejs", "docker"],
-  "concepts": ["http", "rest", "database", "sharding", "replication", "eventual-consistency", "cache"],
-  "patterns": ["cqrs", "outbox", "event-driven-architecture", "cache-aside", "retry"],
-  "learningPath": ["http", "rest", "database", "sql", "elasticsearch", "cache", "kafka", "outbox", "cqrs", "sharding", "search-system"]
+  "systemDesign": "search-autocomplete",
+  "technologies": [
+    "elasticsearch",
+    "postgresql",
+    "kafka",
+    "redis",
+    "nodejs",
+    "docker"
+  ],
+  "concepts": [
+    "http",
+    "rest",
+    "database",
+    "sharding",
+    "replication",
+    "eventual-consistency",
+    "cache"
+  ],
+  "patterns": [
+    "cqrs",
+    "outbox",
+    "event-driven-architecture",
+    "cache-aside",
+    "retry"
+  ],
+  "learningPath": [
+    "http",
+    "rest",
+    "database",
+    "sql",
+    "elasticsearch",
+    "cache",
+    "kafka",
+    "outbox",
+    "cqrs",
+    "sharding",
+    "search-system"
+  ]
 }

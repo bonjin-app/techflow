@@ -4,9 +4,19 @@
   "tagline": "Grow an assistant from one prompt to grounded, streamed, budgeted and evaluated",
   "summary": "An assistant that answers questions about your own documents. The prototype is one HTTP call to a model and fits on a page. Everything after that is added because something broke: answers arrived too slowly to read, the assistant forgot the previous turn, it invented facts it had never been given, the bill grew with usage rather than with revenue, and nobody could tell whether a change made it better or worse. Each step keeps the previous design and adds only what the new failure demands, with retrieval quality, cost per conversation and evaluation as the three things that decide whether it survives contact with users.",
   "category": "design",
-  "tags": ["System Design", "AI", "RAG", "LLM", "Streaming", "Cost"],
+  "tags": [
+    "System Design",
+    "AI",
+    "RAG",
+    "LLM",
+    "Streaming",
+    "Cost"
+  ],
   "difficulty": 4,
-  "meta": { "lastReviewed": "2026-09-10", "confidence": "medium" },
+  "meta": {
+    "lastReviewed": "2026-09-10",
+    "confidence": "medium"
+  },
   "requirements": [
     "A user asks questions in natural language and gets answers about the organisation's own documents.",
     "The first token of an answer appears in under a second; a full answer may take many seconds.",
@@ -22,148 +32,625 @@
       "scale": "Prototype · a handful of internal users",
       "problem": "Nothing has broken yet — this is the starting point. Somebody wants to know whether a language model is useful for this at all, and the smallest system that answers that question is a form, a backend route and one model call.",
       "why": "Keep it to three components on purpose: the browser posts a question, the API adds a short system prompt and forwards it, and the answer is returned as one JSON response. No database, no retrieval, no cache — every one of those would be added on a guess rather than on evidence. The cost at this stage is measured in a few cents of tokens per question and a day of work, which is exactly what makes it a fair test. Two limits are already visible and will drive the next two steps: the model answers only from its training data, so anything about the organisation's own documents is invented, and the whole answer is withheld until generation finishes, which for a long answer means the user stares at a spinner for ten seconds.",
-      "alternatives": ["llm", "simple-web-app", "backend"],
+      "alternatives": [
+        "llm",
+        "simple-web-app",
+        "backend"
+      ],
       "nodes": [
-        { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "http",
-          "role": "Question form", "why": "POSTs a question and waits for the whole JSON answer; no session, no history.",
-          "alternatives": [], "related": ["http", "rest"] },
-        { "id": "api", "label": "API Server", "kind": "service", "x": 2, "y": 2, "ref": "backend",
-          "role": "Prompt assembly", "why": "Stateless: wraps the question in a system prompt, calls the model, returns the text.",
-          "alternatives": [], "related": ["backend", "rest"] },
-        { "id": "llm", "label": "Model", "kind": "external", "x": 2, "y": 4, "ref": "llm",
-          "role": "Generate the answer", "why": "Answers from training data only; the API has given it no information about the organisation.",
-          "alternatives": [], "related": ["llm", "context-window"] }
+        {
+          "id": "browser",
+          "label": "Browser",
+          "kind": "client",
+          "x": 2,
+          "y": 0,
+          "ref": "http",
+          "role": "Question form",
+          "why": "POSTs a question and waits for the whole JSON answer; no session, no history.",
+          "alternatives": [],
+          "related": [
+            "http",
+            "rest"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "API Server",
+          "kind": "service",
+          "x": 2,
+          "y": 2,
+          "ref": "backend",
+          "role": "Prompt assembly",
+          "why": "Stateless: wraps the question in a system prompt, calls the model, returns the text.",
+          "alternatives": [],
+          "related": [
+            "backend",
+            "rest"
+          ]
+        },
+        {
+          "id": "llm",
+          "label": "Model",
+          "kind": "external",
+          "x": 2,
+          "y": 4,
+          "ref": "llm",
+          "role": "Generate the answer",
+          "why": "Answers from training data only; the API has given it no information about the organisation.",
+          "alternatives": [],
+          "related": [
+            "llm",
+            "context-window"
+          ]
+        }
       ],
       "edges": [
-        { "from": "browser", "to": "api", "label": "POST /ask" },
-        { "from": "api", "to": "llm", "label": "prompt" }
+        {
+          "from": "browser",
+          "to": "api",
+          "label": "POST /ask"
+        },
+        {
+          "from": "api",
+          "to": "llm",
+          "label": "prompt"
+        }
       ]
     },
     {
       "title": "Streaming answers and conversation history",
       "scale": "Hundreds of users · thousands of conversations",
       "problem": "Two complaints, both about the experience rather than the answers. A ten-second blank spinner reads as broken, and users abandon before the response arrives. And the assistant has no memory: every follow-up has to restate the whole question, because each request is independent and the previous turn is gone.",
-      "why": "Stream the answer and persist the conversation. Generation is inherently incremental, so the API forwards tokens as they arrive over [SSE](/technology/sse) rather than buffering the response: perceived latency drops to the time-to-first-token, a few hundred milliseconds, even though total generation time is unchanged. SSE rather than WebSocket because the stream is strictly server-to-client, EventSource reconnects on its own, and it passes through the proxies and gateways already in place — the cost is that the client's own messages remain ordinary POSTs and that every hop in between must be configured not to buffer. Conversations, turns and token counts go into PostgreSQL, which is the boring right answer here: history is relational, needs to be queried per user and per tenant, and will later be the raw material for evaluation and feedback. The cost that arrives with memory is a token cost — replaying history on every turn means the prompt grows with the conversation, so cost per turn rises through a conversation and long threads eventually hit the context window. We cap the replay to the last N turns plus a running summary, and accept that the assistant forgets the far past rather than paying for it on every request.",
-      "alternatives": ["sse", "websocket", "postgresql", "context-window"],
+      "why": "Stream the answer and persist the conversation. Generation is inherently incremental, so the API forwards tokens as they arrive over SSE rather than buffering the response: perceived latency drops to the time-to-first-token, a few hundred milliseconds, even though total generation time is unchanged. SSE rather than WebSocket because the stream is strictly server-to-client, EventSource reconnects on its own, and it passes through the proxies and gateways already in place — the cost is that the client's own messages remain ordinary POSTs and that every hop in between must be configured not to buffer. Conversations, turns and token counts go into PostgreSQL, which is the boring right answer here: history is relational, needs to be queried per user and per tenant, and will later be the raw material for evaluation and feedback. The cost that arrives with memory is a token cost — replaying history on every turn means the prompt grows with the conversation, so cost per turn rises through a conversation and long threads eventually hit the context window. We cap the replay to the last N turns plus a running summary, and accept that the assistant forgets the far past rather than paying for it on every request.",
+      "alternatives": [
+        "sse",
+        "websocket",
+        "postgresql",
+        "context-window"
+      ],
       "nodes": [
-        { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "sse",
-          "role": "Chat UI, streamed", "why": "Opens an EventSource per answer and renders tokens as they arrive; sends turns as ordinary POSTs.",
-          "alternatives": ["websocket"], "related": ["sse", "http"] },
-        { "id": "api", "label": "Chat API", "kind": "service", "x": 2, "y": 2, "ref": "backend",
-          "role": "History + streaming proxy", "why": "Loads the last N turns, builds the prompt, forwards model tokens straight to the SSE stream and writes the finished turn.",
-          "alternatives": [], "related": ["backend", "sse"] },
-        { "id": "postgres", "label": "PostgreSQL", "kind": "db", "x": 0, "y": 3, "ref": "postgresql",
-          "role": "Conversations, turns, token counts", "why": "Relational history per user and tenant; token counts per turn are what makes cost per conversation measurable later.",
-          "alternatives": ["mongodb"], "related": ["postgresql", "database", "sql"] },
-        { "id": "llm", "label": "Model", "kind": "external", "x": 2, "y": 4, "ref": "llm",
-          "role": "Streamed generation", "why": "Emits tokens incrementally; still answers only from training data, which is the next failure.",
-          "alternatives": [], "related": ["llm", "context-window"] }
+        {
+          "id": "browser",
+          "label": "Browser",
+          "kind": "client",
+          "x": 2,
+          "y": 0,
+          "ref": "sse",
+          "role": "Chat UI, streamed",
+          "why": "Opens an EventSource per answer and renders tokens as they arrive; sends turns as ordinary POSTs.",
+          "alternatives": [
+            "websocket"
+          ],
+          "related": [
+            "sse",
+            "http"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "Chat API",
+          "kind": "service",
+          "x": 2,
+          "y": 2,
+          "ref": "backend",
+          "role": "History + streaming proxy",
+          "why": "Loads the last N turns, builds the prompt, forwards model tokens straight to the SSE stream and writes the finished turn.",
+          "alternatives": [],
+          "related": [
+            "backend",
+            "sse"
+          ]
+        },
+        {
+          "id": "postgres",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 0,
+          "y": 3,
+          "ref": "postgresql",
+          "role": "Conversations, turns, token counts",
+          "why": "Relational history per user and tenant; token counts per turn are what makes cost per conversation measurable later.",
+          "alternatives": [
+            "mongodb"
+          ],
+          "related": [
+            "postgresql",
+            "database",
+            "sql"
+          ]
+        },
+        {
+          "id": "llm",
+          "label": "Model",
+          "kind": "external",
+          "x": 2,
+          "y": 4,
+          "ref": "llm",
+          "role": "Streamed generation",
+          "why": "Emits tokens incrementally; still answers only from training data, which is the next failure.",
+          "alternatives": [],
+          "related": [
+            "llm",
+            "context-window"
+          ]
+        }
       ],
       "edges": [
-        { "from": "browser", "to": "api", "label": "POST /turn · GET /stream (SSE)" },
-        { "from": "api", "to": "postgres", "label": "load last N turns · insert turn" },
-        { "from": "api", "to": "llm", "label": "prompt + history", "style": "dashed" },
-        { "from": "llm", "to": "api", "label": "token stream", "style": "dashed" }
+        {
+          "from": "browser",
+          "to": "api",
+          "label": "POST /turn · GET /stream (SSE)"
+        },
+        {
+          "from": "api",
+          "to": "postgres",
+          "label": "load last N turns · insert turn"
+        },
+        {
+          "from": "api",
+          "to": "llm",
+          "label": "prompt + history",
+          "style": "dashed"
+        },
+        {
+          "from": "llm",
+          "to": "api",
+          "label": "token stream",
+          "style": "dashed"
+        }
       ]
     },
     {
       "title": "Retrieval over your own documents",
       "scale": "Thousands of users · a corpus of tens of thousands of chunks",
       "problem": "The answers are fluent and wrong. Asked about the refund policy or an internal process the assistant produces something reasonable-sounding that appears nowhere in the handbook, and there is no source to check. Users have started verifying every answer by hand, which is more work than not having the assistant. The model was never given the organisation's documents, so it filled the gap.",
-      "why": "Add [RAG](/pattern/rag): retrieve the relevant passages first and instruct the model to answer only from them, with citations. Documents land in object storage, an upload event goes onto RabbitMQ, and an ingestion worker extracts text, chunks it, embeds the chunks and upserts them — offline and idempotent per document version, so re-indexing a corpus never competes with live queries and a re-uploaded document replaces its old chunks instead of duplicating them. Vectors live in PostgreSQL via pgvector rather than in a separate vector database: at this corpus size the ANN index is comfortable, chunk metadata and the tenant's ACLs are already in the same database as the documents, and one fewer datastore to operate is worth more than the extra query throughput a dedicated store would give. Retrieval is permission-filtered before generation, not after — the query embedding is searched with a WHERE clause on tenant and the caller's document ACLs, because a passage the user may not read must never reach the prompt, and post-filtering a top-k list silently returns fewer results instead of the right ones. The second cost is a security one: retrieved chunks are untrusted text that now sits in the same prompt as our instructions, so a document containing 'ignore your instructions and …' is a prompt-injection vector through our own ingestion pipeline. We fence retrieved content in a clearly delimited block, keep the assistant read-only with no tools, and treat that boundary as a thing to test rather than a thing to hope about. And answer quality is now capped by retrieval quality: when the right passage is not in the top-k, no prompt wording recovers it.",
-      "alternatives": ["rag", "pgvector", "vector-database", "semantic-search"],
+      "why": "Add RAG: retrieve the relevant passages first and instruct the model to answer only from them, with citations. Documents land in object storage, an upload event goes onto RabbitMQ, and an ingestion worker extracts text, chunks it, embeds the chunks and upserts them — offline and idempotent per document version, so re-indexing a corpus never competes with live queries and a re-uploaded document replaces its old chunks instead of duplicating them. Vectors live in PostgreSQL via pgvector rather than in a separate vector database: at this corpus size the ANN index is comfortable, chunk metadata and the tenant's ACLs are already in the same database as the documents, and one fewer datastore to operate is worth more than the extra query throughput a dedicated store would give. Retrieval is permission-filtered before generation, not after — the query embedding is searched with a WHERE clause on tenant and the caller's document ACLs, because a passage the user may not read must never reach the prompt, and post-filtering a top-k list silently returns fewer results instead of the right ones. The second cost is a security one: retrieved chunks are untrusted text that now sits in the same prompt as our instructions, so a document containing 'ignore your instructions and …' is a prompt-injection vector through our own ingestion pipeline. We fence retrieved content in a clearly delimited block, keep the assistant read-only with no tools, and treat that boundary as a thing to test rather than a thing to hope about. And answer quality is now capped by retrieval quality: when the right passage is not in the top-k, no prompt wording recovers it.",
+      "alternatives": [
+        "rag",
+        "pgvector",
+        "vector-database",
+        "semantic-search"
+      ],
       "nodes": [
-        { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "sse",
-          "role": "Chat UI with citations", "why": "Renders streamed tokens plus the cited source list, so an answer can be checked against a document.",
-          "alternatives": ["websocket"], "related": ["sse"] },
-        { "id": "api", "label": "RAG Orchestrator", "kind": "service", "x": 2, "y": 2, "ref": "rag",
-          "role": "Embed → retrieve → prompt → stream", "why": "Owns the query pipeline and the permission filter; builds the prompt with retrieved chunks fenced as untrusted data.",
-          "alternatives": ["backend"], "related": ["rag", "backend", "rbac"] },
-        { "id": "embedder", "label": "Embedding Model", "kind": "external", "x": 0, "y": 2, "ref": "embedding",
-          "role": "Text → vector", "why": "The same model embeds documents and queries; changing it means re-embedding the whole corpus.",
-          "alternatives": [], "related": ["embedding", "retry"] },
-        { "id": "postgres", "label": "PostgreSQL + pgvector", "kind": "db", "x": 1, "y": 4, "ref": "pgvector",
-          "role": "History, chunks, vectors, ACLs", "why": "One database holds conversations and embeddings, so retrieval can filter by tenant and document ACL in the same query.",
-          "alternatives": ["vector-database", "elasticsearch"], "related": ["pgvector", "postgresql", "indexing"] },
-        { "id": "llm", "label": "Model", "kind": "external", "x": 3, "y": 4, "ref": "llm",
-          "role": "Grounded generation", "why": "Instructed to answer only from the supplied passages, to cite them, and to say it does not know otherwise.",
-          "alternatives": [], "related": ["llm", "context-window"] },
-        { "id": "storage", "label": "Object Storage", "kind": "storage", "x": 4, "y": 0, "ref": "s3",
-          "role": "Source documents", "why": "PDFs, wiki exports and tickets land here; an upload event starts ingestion. Cheap, durable, and the only copy of the original.",
-          "alternatives": [], "related": ["s3"] },
-        { "id": "queue", "label": "RabbitMQ", "kind": "queue", "x": 4, "y": 1, "ref": "rabbitmq",
-          "role": "Ingestion jobs", "why": "Decouples uploads from indexing; a bulk import becomes a backlog workers drain rather than a timeout.",
-          "alternatives": ["kafka"], "related": ["rabbitmq", "message-queue"] },
-        { "id": "ingest", "label": "Ingestion Worker", "kind": "worker", "x": 4, "y": 3, "ref": "message-queue",
-          "role": "Chunk, embed, upsert", "why": "Idempotent per document version: re-ingesting replaces that document's chunks, so retries and re-uploads cannot duplicate them.",
-          "alternatives": [], "related": ["message-queue", "idempotency", "retry"] }
+        {
+          "id": "browser",
+          "label": "Browser",
+          "kind": "client",
+          "x": 2,
+          "y": 0,
+          "ref": "sse",
+          "role": "Chat UI with citations",
+          "why": "Renders streamed tokens plus the cited source list, so an answer can be checked against a document.",
+          "alternatives": [
+            "websocket"
+          ],
+          "related": [
+            "sse"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "RAG Orchestrator",
+          "kind": "service",
+          "x": 2,
+          "y": 2,
+          "ref": "rag",
+          "role": "Embed → retrieve → prompt → stream",
+          "why": "Owns the query pipeline and the permission filter; builds the prompt with retrieved chunks fenced as untrusted data.",
+          "alternatives": [
+            "backend"
+          ],
+          "related": [
+            "rag",
+            "backend",
+            "rbac"
+          ]
+        },
+        {
+          "id": "embedder",
+          "label": "Embedding Model",
+          "kind": "external",
+          "x": 0,
+          "y": 2,
+          "ref": "embedding",
+          "role": "Text → vector",
+          "why": "The same model embeds documents and queries; changing it means re-embedding the whole corpus.",
+          "alternatives": [],
+          "related": [
+            "embedding",
+            "retry"
+          ]
+        },
+        {
+          "id": "postgres",
+          "label": "PostgreSQL + pgvector",
+          "kind": "db",
+          "x": 1,
+          "y": 4,
+          "ref": "pgvector",
+          "role": "History, chunks, vectors, ACLs",
+          "why": "One database holds conversations and embeddings, so retrieval can filter by tenant and document ACL in the same query.",
+          "alternatives": [
+            "vector-database",
+            "elasticsearch"
+          ],
+          "related": [
+            "pgvector",
+            "postgresql",
+            "indexing"
+          ]
+        },
+        {
+          "id": "llm",
+          "label": "Model",
+          "kind": "external",
+          "x": 3,
+          "y": 4,
+          "ref": "llm",
+          "role": "Grounded generation",
+          "why": "Instructed to answer only from the supplied passages, to cite them, and to say it does not know otherwise.",
+          "alternatives": [],
+          "related": [
+            "llm",
+            "context-window"
+          ]
+        },
+        {
+          "id": "storage",
+          "label": "Object Storage",
+          "kind": "storage",
+          "x": 4,
+          "y": 0,
+          "ref": "s3",
+          "role": "Source documents",
+          "why": "PDFs, wiki exports and tickets land here; an upload event starts ingestion. Cheap, durable, and the only copy of the original.",
+          "alternatives": [],
+          "related": [
+            "s3"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "RabbitMQ",
+          "kind": "queue",
+          "x": 4,
+          "y": 1,
+          "ref": "rabbitmq",
+          "role": "Ingestion jobs",
+          "why": "Decouples uploads from indexing; a bulk import becomes a backlog workers drain rather than a timeout.",
+          "alternatives": [
+            "kafka"
+          ],
+          "related": [
+            "rabbitmq",
+            "message-queue"
+          ]
+        },
+        {
+          "id": "ingest",
+          "label": "Ingestion Worker",
+          "kind": "worker",
+          "x": 4,
+          "y": 3,
+          "ref": "message-queue",
+          "role": "Chunk, embed, upsert",
+          "why": "Idempotent per document version: re-ingesting replaces that document's chunks, so retries and re-uploads cannot duplicate them.",
+          "alternatives": [],
+          "related": [
+            "message-queue",
+            "idempotency",
+            "retry"
+          ]
+        }
       ],
       "edges": [
-        { "from": "browser", "to": "api", "label": "POST /turn · SSE stream" },
-        { "from": "api", "to": "embedder", "label": "embed question" },
-        { "from": "api", "to": "postgres", "label": "top-k WHERE tenant + acl · history" },
-        { "from": "api", "to": "llm", "label": "instructions + fenced chunks + question" },
-        { "from": "storage", "to": "queue", "label": "upload event", "style": "dashed" },
-        { "from": "queue", "to": "ingest", "label": "consume", "style": "dashed" },
-        { "from": "ingest", "to": "storage", "label": "fetch document" },
-        { "from": "ingest", "to": "embedder", "label": "embed chunks" },
-        { "from": "ingest", "to": "postgres", "label": "upsert chunks + vectors" }
+        {
+          "from": "browser",
+          "to": "api",
+          "label": "POST /turn · SSE stream"
+        },
+        {
+          "from": "api",
+          "to": "embedder",
+          "label": "embed question"
+        },
+        {
+          "from": "api",
+          "to": "postgres",
+          "label": "top-k WHERE tenant + acl · history"
+        },
+        {
+          "from": "api",
+          "to": "llm",
+          "label": "instructions + fenced chunks + question"
+        },
+        {
+          "from": "storage",
+          "to": "queue",
+          "label": "upload event",
+          "style": "dashed"
+        },
+        {
+          "from": "queue",
+          "to": "ingest",
+          "label": "consume",
+          "style": "dashed"
+        },
+        {
+          "from": "ingest",
+          "to": "storage",
+          "label": "fetch document"
+        },
+        {
+          "from": "ingest",
+          "to": "embedder",
+          "label": "embed chunks"
+        },
+        {
+          "from": "ingest",
+          "to": "postgres",
+          "label": "upsert chunks + vectors"
+        }
       ]
     },
     {
       "title": "Cost and latency controls",
       "scale": "Tens of thousands of users · many tenants",
       "problem": "The assistant works and the bill is now the problem. Cost scales with tokens, so it tracks usage rather than revenue: long histories and generous top-k retrieval mean a single conversation can cost more than the seat it sits on. A handful of tenants generate most of the spend, one integration loop was discovered re-asking the same question every minute for a week, and the same few dozen questions are being answered from scratch hundreds of times a day.",
-      "why": "Put a gateway in front and a cache beside. The [API gateway](/concept/api-gateway) authenticates, resolves the tenant and applies per-tenant rate limits with counters in Redis — cheaper and far earlier in the request path than discovering a runaway client on an invoice, at the cost of legitimate bursts occasionally getting 429s and limits needing to be tuned per plan. Token budgets are enforced in the orchestrator, not the gateway, because only it knows the shape of a request: a cap on retrieved context, a cap on history replay, a max output length, and a per-tenant daily token ceiling that degrades to a clear refusal rather than a silent overspend. That makes cost per conversation a number we set rather than a number we discover. Then a [semantic cache](/pattern/semantic-cache): embed the incoming question, look for a stored question above a similarity threshold within the same tenant, prompt version and locale, and return its answer without retrieval or generation. It is deliberately conservative. Two questions can sit close in embedding space and mean different things, so the threshold is a correctness knob rather than a performance knob — it is set from labelled real question pairs, every hit is logged with both questions, personalised and conversational turns are not cached at all, and the TTL is short because the documents change. Its bigger cost is that a cached answer arrives instantly instead of streaming, which is a visible UX difference we chose on purpose. Caching also cannot ship responsibly before step 5 exists, because without an evaluation set a rising hit rate is indistinguishable from a rising rate of confidently wrong answers.",
-      "alternatives": ["semantic-cache", "rate-limiting", "api-gateway", "cache-aside"],
+      "why": "Put a gateway in front and a cache beside. The API gateway authenticates, resolves the tenant and applies per-tenant rate limits with counters in Redis — cheaper and far earlier in the request path than discovering a runaway client on an invoice, at the cost of legitimate bursts occasionally getting 429s and limits needing to be tuned per plan. Token budgets are enforced in the orchestrator, not the gateway, because only it knows the shape of a request: a cap on retrieved context, a cap on history replay, a max output length, and a per-tenant daily token ceiling that degrades to a clear refusal rather than a silent overspend. That makes cost per conversation a number we set rather than a number we discover. Then a semantic cache: embed the incoming question, look for a stored question above a similarity threshold within the same tenant, prompt version and locale, and return its answer without retrieval or generation. It is deliberately conservative. Two questions can sit close in embedding space and mean different things, so the threshold is a correctness knob rather than a performance knob — it is set from labelled real question pairs, every hit is logged with both questions, personalised and conversational turns are not cached at all, and the TTL is short because the documents change. Its bigger cost is that a cached answer arrives instantly instead of streaming, which is a visible UX difference we chose on purpose. Caching also cannot ship responsibly before step 5 exists, because without an evaluation set a rising hit rate is indistinguishable from a rising rate of confidently wrong answers.",
+      "alternatives": [
+        "semantic-cache",
+        "rate-limiting",
+        "api-gateway",
+        "cache-aside"
+      ],
       "nodes": [
-        { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "sse",
-          "role": "Chat UI", "why": "Unchanged, except that a cached answer arrives in one piece instead of streaming.",
-          "alternatives": ["websocket"], "related": ["sse"] },
-        { "id": "gateway", "label": "API Gateway", "kind": "edge", "x": 2, "y": 1, "ref": "api-gateway",
-          "role": "Auth, tenant, rate limits", "why": "Rejects unauthenticated and over-quota traffic before it can cost a model call; limits are per tenant and per plan.",
-          "alternatives": ["load-balancing", "nginx"], "related": ["api-gateway", "rate-limiting", "authentication"] },
-        { "id": "cache", "label": "Semantic Cache", "kind": "cache", "x": 0, "y": 2, "ref": "semantic-cache",
-          "role": "Nearest cached question", "why": "Returns a stored answer only above a threshold set from labelled data, scoped to tenant, prompt version and locale.",
-          "alternatives": ["cache-aside"], "related": ["semantic-cache", "cache", "ttl"] },
-        { "id": "api", "label": "RAG Orchestrator", "kind": "service", "x": 2, "y": 2, "ref": "rag",
-          "role": "Pipeline + token budgets", "why": "Caps retrieved context, history replay and output length per request, and refuses clearly when a tenant's daily ceiling is spent.",
-          "alternatives": ["backend"], "related": ["rag", "backend", "context-window"] },
-        { "id": "embedder", "label": "Embedding Model", "kind": "external", "x": 1, "y": 3, "ref": "embedding",
-          "role": "Text → vector", "why": "Now on the cache path too: every question is embedded once and the vector is reused for cache lookup and retrieval.",
-          "alternatives": [], "related": ["embedding"] },
-        { "id": "redis", "label": "Redis", "kind": "cache", "x": 0, "y": 3, "ref": "redis",
-          "role": "Cached answers, counters, budgets", "why": "Holds cached answers with short TTLs plus rate-limit and token-budget counters, where a millisecond read replaces a metered call.",
-          "alternatives": ["memcached"], "related": ["redis", "cache", "rate-limiting", "ttl"] },
-        { "id": "llm", "label": "Model", "kind": "external", "x": 3, "y": 3, "ref": "llm",
-          "role": "Grounded generation", "why": "Called only on a cache miss and within the request's token budget.",
-          "alternatives": [], "related": ["llm"] },
-        { "id": "postgres", "label": "PostgreSQL + pgvector", "kind": "db", "x": 2, "y": 4, "ref": "pgvector",
-          "role": "History, chunks, vectors, ACLs", "why": "Unchanged from step 3; also stores the question vectors that back the semantic cache.",
-          "alternatives": ["vector-database"], "related": ["pgvector", "postgresql"] },
-        { "id": "queue", "label": "RabbitMQ", "kind": "queue", "x": 4, "y": 1, "ref": "rabbitmq",
-          "role": "Ingestion jobs", "why": "Unchanged.",
-          "alternatives": ["kafka"], "related": ["rabbitmq", "message-queue"] },
-        { "id": "storage", "label": "Object Storage", "kind": "storage", "x": 4, "y": 0, "ref": "s3",
-          "role": "Source documents", "why": "Unchanged.",
-          "alternatives": [], "related": ["s3"] },
-        { "id": "ingest", "label": "Ingestion Worker", "kind": "worker", "x": 4, "y": 3, "ref": "message-queue",
-          "role": "Chunk, embed, upsert", "why": "Unchanged, plus it flushes that tenant's semantic cache when a document is re-indexed.",
-          "alternatives": [], "related": ["message-queue", "idempotency"] }
+        {
+          "id": "browser",
+          "label": "Browser",
+          "kind": "client",
+          "x": 2,
+          "y": 0,
+          "ref": "sse",
+          "role": "Chat UI",
+          "why": "Unchanged, except that a cached answer arrives in one piece instead of streaming.",
+          "alternatives": [
+            "websocket"
+          ],
+          "related": [
+            "sse"
+          ]
+        },
+        {
+          "id": "gateway",
+          "label": "API Gateway",
+          "kind": "edge",
+          "x": 2,
+          "y": 1,
+          "ref": "api-gateway",
+          "role": "Auth, tenant, rate limits",
+          "why": "Rejects unauthenticated and over-quota traffic before it can cost a model call; limits are per tenant and per plan.",
+          "alternatives": [
+            "load-balancing",
+            "nginx"
+          ],
+          "related": [
+            "api-gateway",
+            "rate-limiting",
+            "authentication"
+          ]
+        },
+        {
+          "id": "cache",
+          "label": "Semantic Cache",
+          "kind": "cache",
+          "x": 0,
+          "y": 2,
+          "ref": "semantic-cache",
+          "role": "Nearest cached question",
+          "why": "Returns a stored answer only above a threshold set from labelled data, scoped to tenant, prompt version and locale.",
+          "alternatives": [
+            "cache-aside"
+          ],
+          "related": [
+            "semantic-cache",
+            "cache",
+            "ttl"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "RAG Orchestrator",
+          "kind": "service",
+          "x": 2,
+          "y": 2,
+          "ref": "rag",
+          "role": "Pipeline + token budgets",
+          "why": "Caps retrieved context, history replay and output length per request, and refuses clearly when a tenant's daily ceiling is spent.",
+          "alternatives": [
+            "backend"
+          ],
+          "related": [
+            "rag",
+            "backend",
+            "context-window"
+          ]
+        },
+        {
+          "id": "embedder",
+          "label": "Embedding Model",
+          "kind": "external",
+          "x": 1,
+          "y": 3,
+          "ref": "embedding",
+          "role": "Text → vector",
+          "why": "Now on the cache path too: every question is embedded once and the vector is reused for cache lookup and retrieval.",
+          "alternatives": [],
+          "related": [
+            "embedding"
+          ]
+        },
+        {
+          "id": "redis",
+          "label": "Redis",
+          "kind": "cache",
+          "x": 0,
+          "y": 3,
+          "ref": "redis",
+          "role": "Cached answers, counters, budgets",
+          "why": "Holds cached answers with short TTLs plus rate-limit and token-budget counters, where a millisecond read replaces a metered call.",
+          "alternatives": [
+            "memcached"
+          ],
+          "related": [
+            "redis",
+            "cache",
+            "rate-limiting",
+            "ttl"
+          ]
+        },
+        {
+          "id": "llm",
+          "label": "Model",
+          "kind": "external",
+          "x": 3,
+          "y": 3,
+          "ref": "llm",
+          "role": "Grounded generation",
+          "why": "Called only on a cache miss and within the request's token budget.",
+          "alternatives": [],
+          "related": [
+            "llm"
+          ]
+        },
+        {
+          "id": "postgres",
+          "label": "PostgreSQL + pgvector",
+          "kind": "db",
+          "x": 2,
+          "y": 4,
+          "ref": "pgvector",
+          "role": "History, chunks, vectors, ACLs",
+          "why": "Unchanged from step 3; also stores the question vectors that back the semantic cache.",
+          "alternatives": [
+            "vector-database"
+          ],
+          "related": [
+            "pgvector",
+            "postgresql"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "RabbitMQ",
+          "kind": "queue",
+          "x": 4,
+          "y": 1,
+          "ref": "rabbitmq",
+          "role": "Ingestion jobs",
+          "why": "Unchanged.",
+          "alternatives": [
+            "kafka"
+          ],
+          "related": [
+            "rabbitmq",
+            "message-queue"
+          ]
+        },
+        {
+          "id": "storage",
+          "label": "Object Storage",
+          "kind": "storage",
+          "x": 4,
+          "y": 0,
+          "ref": "s3",
+          "role": "Source documents",
+          "why": "Unchanged.",
+          "alternatives": [],
+          "related": [
+            "s3"
+          ]
+        },
+        {
+          "id": "ingest",
+          "label": "Ingestion Worker",
+          "kind": "worker",
+          "x": 4,
+          "y": 3,
+          "ref": "message-queue",
+          "role": "Chunk, embed, upsert",
+          "why": "Unchanged, plus it flushes that tenant's semantic cache when a document is re-indexed.",
+          "alternatives": [],
+          "related": [
+            "message-queue",
+            "idempotency"
+          ]
+        }
       ],
       "edges": [
-        { "from": "browser", "to": "gateway", "label": "HTTPS" },
-        { "from": "gateway", "to": "api", "label": "authenticated · within quota" },
-        { "from": "gateway", "to": "redis", "label": "rate-limit counters" },
-        { "from": "api", "to": "embedder", "label": "embed question once" },
-        { "from": "api", "to": "cache", "label": "nearest cached question" },
-        { "from": "cache", "to": "redis", "label": "stored answers" },
-        { "from": "api", "to": "postgres", "label": "top-k + history" },
-        { "from": "api", "to": "llm", "label": "on miss, within budget" },
-        { "from": "storage", "to": "queue", "label": "upload event", "style": "dashed" },
-        { "from": "queue", "to": "ingest", "label": "consume", "style": "dashed" },
-        { "from": "ingest", "to": "postgres", "label": "upsert chunks" },
-        { "from": "ingest", "to": "redis", "label": "flush tenant cache", "style": "dashed" }
+        {
+          "from": "browser",
+          "to": "gateway",
+          "label": "HTTPS"
+        },
+        {
+          "from": "gateway",
+          "to": "api",
+          "label": "authenticated · within quota"
+        },
+        {
+          "from": "gateway",
+          "to": "redis",
+          "label": "rate-limit counters"
+        },
+        {
+          "from": "api",
+          "to": "embedder",
+          "label": "embed question once"
+        },
+        {
+          "from": "api",
+          "to": "cache",
+          "label": "nearest cached question"
+        },
+        {
+          "from": "cache",
+          "to": "redis",
+          "label": "stored answers"
+        },
+        {
+          "from": "api",
+          "to": "postgres",
+          "label": "top-k + history"
+        },
+        {
+          "from": "api",
+          "to": "llm",
+          "label": "on miss, within budget"
+        },
+        {
+          "from": "storage",
+          "to": "queue",
+          "label": "upload event",
+          "style": "dashed"
+        },
+        {
+          "from": "queue",
+          "to": "ingest",
+          "label": "consume",
+          "style": "dashed"
+        },
+        {
+          "from": "ingest",
+          "to": "postgres",
+          "label": "upsert chunks"
+        },
+        {
+          "from": "ingest",
+          "to": "redis",
+          "label": "flush tenant cache",
+          "style": "dashed"
+        }
       ]
     },
     {
@@ -171,76 +658,343 @@
       "scale": "Production · many tenants, changes shipping weekly",
       "problem": "Nobody can say whether a change helps. A prompt tweak fixed the three examples someone tried and broke a category nobody tested; a new chunking strategy shipped and complaints rose two weeks later with no way to attribute them; a slow answer cannot be traced to retrieval, generation or the embedding call; and the semantic cache from step 4 is unshippable at a useful threshold because there is no way to detect a false hit. The system is a black box that is changed by feel.",
       "why": "Make quality measurable in three places. First, an evaluation set in CI: a few hundred real questions with the passages that should be retrieved and the facts an answer must contain, run on every change to prompts, chunking, retrieval or model configuration. Retrieval is scored separately from generation — recall@k for retrieval, groundedness and citation correctness for the answer — because otherwise a retrieval regression hides behind a fluent answer. This is the honest part: evaluation is genuinely hard, the labels are expensive to produce and go stale as the corpus changes, and an automated judge is itself a model that can be wrong, so the set is treated as a regression net that catches obvious breakage rather than as a score to maximise. Second, tracing with OpenTelemetry: one span per turn with child spans for embedding, retrieval, reranking, cache lookup and generation, carrying latency, token counts, cost, similarity scores and the retrieved chunk ids. That is what makes a slow or wrong answer diagnosable after the fact, it turns cost per conversation into a live dashboard per tenant, and it is how false cache hits are found — the cost is real trace volume and a discipline about never putting document content or personal data into span attributes. Third, a feedback loop: thumbs down and 'this is wrong' are written to PostgreSQL with the trace id, reviewed weekly, and the clear cases are promoted into the evaluation set, so the net gets tighter where users actually get hurt. None of this makes the assistant better on its own — it makes improvement attributable, which is the only way the previous four steps keep working as the corpus, prompts and models underneath them change.",
-      "alternatives": ["llm-evaluation", "opentelemetry", "observability", "ci-cd"],
+      "alternatives": [
+        "llm-evaluation",
+        "opentelemetry",
+        "observability",
+        "ci-cd"
+      ],
       "nodes": [
-        { "id": "browser", "label": "Browser", "kind": "client", "x": 2, "y": 0, "ref": "sse",
-          "role": "Chat UI + feedback", "why": "Every answer carries citations and a thumbs up/down that is recorded against the turn's trace id.",
-          "alternatives": ["websocket"], "related": ["sse"] },
-        { "id": "eval", "label": "Eval Suite (CI)", "kind": "worker", "x": 0, "y": 0, "ref": "llm-evaluation",
-          "role": "Regression net per change", "why": "Runs the labelled question set against a staging pipeline on every prompt, chunking or model change; scores retrieval and generation separately.",
-          "alternatives": ["ci-cd", "github-actions"], "related": ["llm-evaluation", "ci-cd"] },
-        { "id": "gateway", "label": "API Gateway", "kind": "edge", "x": 2, "y": 1, "ref": "api-gateway",
-          "role": "Auth, tenant, rate limits", "why": "Unchanged from step 4; now also starts the trace and propagates the trace context.",
-          "alternatives": ["load-balancing"], "related": ["api-gateway", "rate-limiting"] },
-        { "id": "cache", "label": "Semantic Cache", "kind": "cache", "x": 0, "y": 2, "ref": "semantic-cache",
-          "role": "Nearest cached question", "why": "Now shippable at a real threshold, because every hit is traced with both questions and its score and audited against the eval set.",
-          "alternatives": ["cache-aside"], "related": ["semantic-cache", "cache"] },
-        { "id": "api", "label": "RAG Orchestrator", "kind": "service", "x": 2, "y": 2, "ref": "rag",
-          "role": "Pipeline, budgets, spans", "why": "Emits one span per stage with tokens, cost, latency, similarity scores and retrieved chunk ids — never chunk content.",
-          "alternatives": ["backend"], "related": ["rag", "observability"] },
-        { "id": "otel", "label": "Trace Collector", "kind": "service", "x": 4, "y": 2, "ref": "opentelemetry",
-          "role": "Spans, metrics, cost per tenant", "why": "Collects per-turn traces and derives latency, token and cost dashboards plus alerts on groundedness and cache-hit anomalies.",
-          "alternatives": ["prometheus"], "related": ["opentelemetry", "observability", "slo"] },
-        { "id": "embedder", "label": "Embedding Model", "kind": "external", "x": 1, "y": 3, "ref": "embedding",
-          "role": "Text → vector", "why": "Unchanged; its latency and failure rate are now visible as their own span.",
-          "alternatives": [], "related": ["embedding"] },
-        { "id": "redis", "label": "Redis", "kind": "cache", "x": 0, "y": 3, "ref": "redis",
-          "role": "Cached answers, counters, budgets", "why": "Unchanged from step 4.",
-          "alternatives": ["memcached"], "related": ["redis", "rate-limiting"] },
-        { "id": "llm", "label": "Model", "kind": "external", "x": 3, "y": 3, "ref": "llm",
-          "role": "Grounded generation", "why": "Unchanged; token usage per call is now attributed to a tenant and a conversation.",
-          "alternatives": [], "related": ["llm"] },
-        { "id": "postgres", "label": "PostgreSQL + pgvector", "kind": "db", "x": 2, "y": 4, "ref": "pgvector",
-          "role": "History, chunks, vectors, feedback", "why": "Also stores per-turn feedback with its trace id, which is the pipeline that feeds new cases into the eval set.",
-          "alternatives": ["vector-database"], "related": ["pgvector", "postgresql"] },
-        { "id": "storage", "label": "Object Storage", "kind": "storage", "x": 4, "y": 0, "ref": "s3",
-          "role": "Source documents", "why": "Unchanged.",
-          "alternatives": [], "related": ["s3"] },
-        { "id": "queue", "label": "RabbitMQ", "kind": "queue", "x": 4, "y": 1, "ref": "rabbitmq",
-          "role": "Ingestion jobs", "why": "Unchanged.",
-          "alternatives": ["kafka"], "related": ["rabbitmq", "message-queue"] },
-        { "id": "ingest", "label": "Ingestion Worker", "kind": "worker", "x": 4, "y": 3, "ref": "message-queue",
-          "role": "Chunk, embed, upsert", "why": "Unchanged, and its runs are traced so a bad re-index can be correlated with a quality drop.",
-          "alternatives": [], "related": ["message-queue", "idempotency"] }
+        {
+          "id": "browser",
+          "label": "Browser",
+          "kind": "client",
+          "x": 2,
+          "y": 0,
+          "ref": "sse",
+          "role": "Chat UI + feedback",
+          "why": "Every answer carries citations and a thumbs up/down that is recorded against the turn's trace id.",
+          "alternatives": [
+            "websocket"
+          ],
+          "related": [
+            "sse"
+          ]
+        },
+        {
+          "id": "eval",
+          "label": "Eval Suite (CI)",
+          "kind": "worker",
+          "x": 0,
+          "y": 0,
+          "ref": "llm-evaluation",
+          "role": "Regression net per change",
+          "why": "Runs the labelled question set against a staging pipeline on every prompt, chunking or model change; scores retrieval and generation separately.",
+          "alternatives": [
+            "ci-cd",
+            "github-actions"
+          ],
+          "related": [
+            "llm-evaluation",
+            "ci-cd"
+          ]
+        },
+        {
+          "id": "gateway",
+          "label": "API Gateway",
+          "kind": "edge",
+          "x": 2,
+          "y": 1,
+          "ref": "api-gateway",
+          "role": "Auth, tenant, rate limits",
+          "why": "Unchanged from step 4; now also starts the trace and propagates the trace context.",
+          "alternatives": [
+            "load-balancing"
+          ],
+          "related": [
+            "api-gateway",
+            "rate-limiting"
+          ]
+        },
+        {
+          "id": "cache",
+          "label": "Semantic Cache",
+          "kind": "cache",
+          "x": 0,
+          "y": 2,
+          "ref": "semantic-cache",
+          "role": "Nearest cached question",
+          "why": "Now shippable at a real threshold, because every hit is traced with both questions and its score and audited against the eval set.",
+          "alternatives": [
+            "cache-aside"
+          ],
+          "related": [
+            "semantic-cache",
+            "cache"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "RAG Orchestrator",
+          "kind": "service",
+          "x": 2,
+          "y": 2,
+          "ref": "rag",
+          "role": "Pipeline, budgets, spans",
+          "why": "Emits one span per stage with tokens, cost, latency, similarity scores and retrieved chunk ids — never chunk content.",
+          "alternatives": [
+            "backend"
+          ],
+          "related": [
+            "rag",
+            "observability"
+          ]
+        },
+        {
+          "id": "otel",
+          "label": "Trace Collector",
+          "kind": "service",
+          "x": 4,
+          "y": 2,
+          "ref": "opentelemetry",
+          "role": "Spans, metrics, cost per tenant",
+          "why": "Collects per-turn traces and derives latency, token and cost dashboards plus alerts on groundedness and cache-hit anomalies.",
+          "alternatives": [
+            "prometheus"
+          ],
+          "related": [
+            "opentelemetry",
+            "observability",
+            "slo"
+          ]
+        },
+        {
+          "id": "embedder",
+          "label": "Embedding Model",
+          "kind": "external",
+          "x": 1,
+          "y": 3,
+          "ref": "embedding",
+          "role": "Text → vector",
+          "why": "Unchanged; its latency and failure rate are now visible as their own span.",
+          "alternatives": [],
+          "related": [
+            "embedding"
+          ]
+        },
+        {
+          "id": "redis",
+          "label": "Redis",
+          "kind": "cache",
+          "x": 0,
+          "y": 3,
+          "ref": "redis",
+          "role": "Cached answers, counters, budgets",
+          "why": "Unchanged from step 4.",
+          "alternatives": [
+            "memcached"
+          ],
+          "related": [
+            "redis",
+            "rate-limiting"
+          ]
+        },
+        {
+          "id": "llm",
+          "label": "Model",
+          "kind": "external",
+          "x": 3,
+          "y": 3,
+          "ref": "llm",
+          "role": "Grounded generation",
+          "why": "Unchanged; token usage per call is now attributed to a tenant and a conversation.",
+          "alternatives": [],
+          "related": [
+            "llm"
+          ]
+        },
+        {
+          "id": "postgres",
+          "label": "PostgreSQL + pgvector",
+          "kind": "db",
+          "x": 2,
+          "y": 4,
+          "ref": "pgvector",
+          "role": "History, chunks, vectors, feedback",
+          "why": "Also stores per-turn feedback with its trace id, which is the pipeline that feeds new cases into the eval set.",
+          "alternatives": [
+            "vector-database"
+          ],
+          "related": [
+            "pgvector",
+            "postgresql"
+          ]
+        },
+        {
+          "id": "storage",
+          "label": "Object Storage",
+          "kind": "storage",
+          "x": 4,
+          "y": 0,
+          "ref": "s3",
+          "role": "Source documents",
+          "why": "Unchanged.",
+          "alternatives": [],
+          "related": [
+            "s3"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "RabbitMQ",
+          "kind": "queue",
+          "x": 4,
+          "y": 1,
+          "ref": "rabbitmq",
+          "role": "Ingestion jobs",
+          "why": "Unchanged.",
+          "alternatives": [
+            "kafka"
+          ],
+          "related": [
+            "rabbitmq",
+            "message-queue"
+          ]
+        },
+        {
+          "id": "ingest",
+          "label": "Ingestion Worker",
+          "kind": "worker",
+          "x": 4,
+          "y": 3,
+          "ref": "message-queue",
+          "role": "Chunk, embed, upsert",
+          "why": "Unchanged, and its runs are traced so a bad re-index can be correlated with a quality drop.",
+          "alternatives": [],
+          "related": [
+            "message-queue",
+            "idempotency"
+          ]
+        }
       ],
       "edges": [
-        { "from": "browser", "to": "gateway", "label": "HTTPS · feedback" },
-        { "from": "gateway", "to": "api", "label": "authenticated + trace context" },
-        { "from": "gateway", "to": "redis", "label": "rate-limit counters" },
-        { "from": "api", "to": "cache", "label": "nearest cached question" },
-        { "from": "cache", "to": "redis", "label": "stored answers" },
-        { "from": "api", "to": "embedder", "label": "embed question" },
-        { "from": "api", "to": "postgres", "label": "top-k + history + feedback" },
-        { "from": "api", "to": "llm", "label": "on miss, within budget" },
-        { "from": "api", "to": "otel", "label": "spans per stage", "style": "dashed" },
-        { "from": "eval", "to": "api", "label": "labelled question set (staging)", "style": "dashed" },
-        { "from": "postgres", "to": "eval", "label": "promoted feedback cases", "style": "dashed" },
-        { "from": "storage", "to": "queue", "label": "upload event", "style": "dashed" },
-        { "from": "queue", "to": "ingest", "label": "consume", "style": "dashed" },
-        { "from": "ingest", "to": "postgres", "label": "upsert chunks" },
-        { "from": "ingest", "to": "otel", "label": "ingestion spans", "style": "dashed" }
+        {
+          "from": "browser",
+          "to": "gateway",
+          "label": "HTTPS · feedback"
+        },
+        {
+          "from": "gateway",
+          "to": "api",
+          "label": "authenticated + trace context"
+        },
+        {
+          "from": "gateway",
+          "to": "redis",
+          "label": "rate-limit counters"
+        },
+        {
+          "from": "api",
+          "to": "cache",
+          "label": "nearest cached question"
+        },
+        {
+          "from": "cache",
+          "to": "redis",
+          "label": "stored answers"
+        },
+        {
+          "from": "api",
+          "to": "embedder",
+          "label": "embed question"
+        },
+        {
+          "from": "api",
+          "to": "postgres",
+          "label": "top-k + history + feedback"
+        },
+        {
+          "from": "api",
+          "to": "llm",
+          "label": "on miss, within budget"
+        },
+        {
+          "from": "api",
+          "to": "otel",
+          "label": "spans per stage",
+          "style": "dashed"
+        },
+        {
+          "from": "eval",
+          "to": "api",
+          "label": "labelled question set (staging)",
+          "style": "dashed"
+        },
+        {
+          "from": "postgres",
+          "to": "eval",
+          "label": "promoted feedback cases",
+          "style": "dashed"
+        },
+        {
+          "from": "storage",
+          "to": "queue",
+          "label": "upload event",
+          "style": "dashed"
+        },
+        {
+          "from": "queue",
+          "to": "ingest",
+          "label": "consume",
+          "style": "dashed"
+        },
+        {
+          "from": "ingest",
+          "to": "postgres",
+          "label": "upsert chunks"
+        },
+        {
+          "from": "ingest",
+          "to": "otel",
+          "label": "ingestion spans",
+          "style": "dashed"
+        }
       ]
     }
   ],
   "textAlternative": "Five diagrams show an AI assistant growing. Step 1: a browser posts a question to one API server which calls a model and returns the whole answer. Step 2: the browser opens an SSE stream so tokens render as they arrive, and PostgreSQL stores conversations and per-turn token counts. Step 3: documents in object storage trigger RabbitMQ ingestion jobs; a worker chunks and embeds them into PostgreSQL with pgvector, and the orchestrator embeds each question, retrieves top-k chunks filtered by tenant and ACL, and prompts the model to answer only from them with citations. Step 4: an API gateway authenticates and rate-limits per tenant using Redis counters, the orchestrator enforces token budgets, and a semantic cache returns a stored answer when a previous question is close enough. Step 5: an evaluation suite runs a labelled question set in CI against a staging pipeline, every stage emits OpenTelemetry spans to a trace collector, and user feedback stored with trace ids in PostgreSQL is promoted into the evaluation set.",
   "related": [
-    { "to": "ai-rag", "rel": "RELATED_TO" },
-    { "to": "rag", "rel": "RELATED_TO" },
-    { "to": "semantic-cache", "rel": "RELATED_TO" },
-    { "to": "llm", "rel": "RELATED_TO" },
-    { "to": "pgvector", "rel": "RELATED_TO" },
-    { "to": "sse", "rel": "RELATED_TO" },
-    { "to": "llm-evaluation", "rel": "RELATED_TO" },
-    { "to": "rag-vs-fine-tuning", "rel": "RELATED_TO" }
+    {
+      "to": "ai-rag",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "rag",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "semantic-cache",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "llm",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "pgvector",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "sse",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "llm-evaluation",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "rag-vs-fine-tuning",
+      "rel": "RELATED_TO"
+    }
   ]
 }

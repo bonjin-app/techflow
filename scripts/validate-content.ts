@@ -4,6 +4,8 @@
  *
  *   pnpm validate
  */
+import fs from "node:fs";
+import path from "node:path";
 import { buildGraph } from "../src/lib/content/graph";
 import { hrefFor, type DocNode } from "../src/lib/content/types";
 
@@ -108,6 +110,21 @@ function main() {
       else warnings.push(`${n.id}: step '${step.label}' has no node — the path dead-ends here`);
     }
   }
+  // No JSON field is rendered as Markdown — every one of them is printed as
+  // plain text — so a link written in a .json file shows the reader raw
+  // brackets. Cheaper to catch here than in a screenshot.
+  const CONTENT = path.join(process.cwd(), "content");
+  const walk = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = path.join(dir, e.name);
+      return e.isDirectory() ? walk(full) : full.endsWith(".json") ? [full] : [];
+    });
+  for (const file of walk(CONTENT)) {
+    const text = fs.readFileSync(file, "utf8");
+    const hit = /\[[^\]\n]{1,80}\]\(\/[^)\n]{1,120}\)/.exec(text);
+    if (hit) problems.push(`${path.relative(CONTENT, file)}: Markdown link '${hit[0]}' in JSON — it renders as literal text`);
+  }
+
   for (const st of g.stacks) {
     for (const layer of st.layers) {
       for (const item of layer.items) {

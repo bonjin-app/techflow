@@ -3,8 +3,41 @@
   "name": "Video Platform",
   "tagline": "Upload, transcode and stream video worldwide with adaptive bitrate and a global CDN",
   "architecture": "video-streaming",
-  "technologies": ["s3", "kafka", "postgresql", "redis", "elasticsearch", "nginx", "docker"],
-  "concepts": ["http", "tcp", "udp", "cdn", "cache", "message-queue", "load-balancing"],
-  "patterns": ["event-driven-architecture", "retry", "dead-letter-queue", "circuit-breaker", "cache-aside"],
-  "learningPath": ["http", "tcp", "udp", "backend", "s3", "message-queue", "kafka", "cdn", "video-streaming"]
+  "systemDesign": "image-pipeline",
+  "technologies": [
+    "s3",
+    "kafka",
+    "postgresql",
+    "redis",
+    "elasticsearch",
+    "nginx",
+    "docker"
+  ],
+  "concepts": [
+    "http",
+    "tcp",
+    "udp",
+    "cdn",
+    "cache",
+    "message-queue",
+    "load-balancing"
+  ],
+  "patterns": [
+    "event-driven-architecture",
+    "retry",
+    "dead-letter-queue",
+    "circuit-breaker",
+    "cache-aside"
+  ],
+  "learningPath": [
+    "http",
+    "tcp",
+    "udp",
+    "backend",
+    "s3",
+    "message-queue",
+    "kafka",
+    "cdn",
+    "video-streaming"
+  ]
 }

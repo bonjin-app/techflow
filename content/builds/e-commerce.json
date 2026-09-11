@@ -3,8 +3,38 @@
   "name": "E-commerce Platform",
   "tagline": "Catalogue, cart, checkout and orders that stay consistent under load",
   "architecture": "e-commerce",
-  "technologies": ["postgresql", "redis", "rabbitmq", "elasticsearch", "docker"],
-  "concepts": ["transaction", "acid", "idempotency", "cache", "race-condition", "distributed-lock"],
-  "patterns": ["saga", "outbox", "cache-aside", "circuit-breaker", "retry"],
-  "learningPath": ["rest", "database", "sql", "transaction", "cache", "cache-aside", "message-queue", "saga", "e-commerce"]
+  "systemDesign": "ticket-booking",
+  "technologies": [
+    "postgresql",
+    "redis",
+    "rabbitmq",
+    "elasticsearch",
+    "docker"
+  ],
+  "concepts": [
+    "transaction",
+    "acid",
+    "idempotency",
+    "cache",
+    "race-condition",
+    "distributed-lock"
+  ],
+  "patterns": [
+    "saga",
+    "outbox",
+    "cache-aside",
+    "circuit-breaker",
+    "retry"
+  ],
+  "learningPath": [
+    "rest",
+    "database",
+    "sql",
+    "transaction",
+    "cache",
+    "cache-aside",
+    "message-queue",
+    "saga",
+    "e-commerce"
+  ]
 }

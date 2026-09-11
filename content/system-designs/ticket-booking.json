@@ -1,0 +1,815 @@
+{
+  "id": "ticket-booking",
+  "name": "Ticket Booking",
+  "tagline": "Sell every seat exactly once, including the minute a million people arrive",
+  "summary": "Booking looks like a CRUD problem and is really a contention problem. The functional requirement is trivial — pick a seat, pay, get a ticket — but the correctness requirement is absolute: a seat may never be sold twice, and a seat must never be lost because someone abandoned a checkout. Add a flash sale where demand exceeds supply by a hundred to one in the first minute, and every naive design fails in the same place: between checking availability and recording the sale.",
+  "category": "design",
+  "tags": [
+    "System Design",
+    "Concurrency",
+    "Transactions",
+    "Inventory",
+    "Scalability"
+  ],
+  "difficulty": 4,
+  "meta": {
+    "lastReviewed": "2026-09-11",
+    "confidence": "high"
+  },
+  "requirements": [
+    "A seat is sold to exactly one buyer — no double-selling, ever, at any load.",
+    "A seat held during checkout is released automatically if payment does not complete.",
+    "Payment takes seconds to minutes and can fail, time out, or answer twice.",
+    "Browsing traffic dwarfs booking traffic: most visitors look at a seat map and leave.",
+    "An on-sale spike can bring 100,000 people in the first minute for 5,000 seats.",
+    "A buyer who retries after a network failure must not be charged twice.",
+    "Inventory shown to buyers can be slightly stale; inventory that is sold cannot."
+  ],
+  "steps": [
+    {
+      "title": "One transaction",
+      "scale": "1,000 users",
+      "problem": "Nothing has broken yet. The job is to write the booking so that it is correct under concurrency from the first line of code, because this is the one property that cannot be retrofitted later.",
+      "why": "The database is the only component that can arbitrate between two buyers, so the decision belongs inside one transaction. The failing version everybody writes first is: SELECT to check the seat is free, then INSERT — two statements with a gap between them, and two requests can both pass the check. The fix is to make the check and the claim the same operation: a UNIQUE constraint on (event_id, seat_id) so the second INSERT fails, or SELECT … FOR UPDATE so the second request waits. Either way the database rejects the loser rather than the application hoping it never happens.",
+      "alternatives": [
+        "transaction",
+        "race-condition"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 2,
+          "y": 0,
+          "ref": "http",
+          "role": "Browser or app",
+          "why": "Views a seat map and posts a booking for one or more seats.",
+          "alternatives": [],
+          "related": [
+            "http",
+            "rest"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "API Server",
+          "kind": "service",
+          "x": 2,
+          "y": 1,
+          "ref": "backend",
+          "role": "Booking endpoint",
+          "why": "One stateless process; the interesting logic is a single transaction it opens against the database.",
+          "alternatives": [],
+          "related": [
+            "rest",
+            "backend"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 2,
+          "y": 2,
+          "ref": "postgresql",
+          "role": "Seats and bookings",
+          "why": "A UNIQUE index on (event_id, seat_id) in the bookings table makes double-selling impossible by construction, not by care.",
+          "alternatives": [
+            "mysql"
+          ],
+          "related": [
+            "transaction",
+            "acid",
+            "indexing"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "api",
+          "label": "POST /bookings"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "BEGIN … INSERT … COMMIT"
+        }
+      ]
+    },
+    {
+      "title": "Holds, because payment takes time",
+      "scale": "100,000 users",
+      "problem": "Payment takes anywhere from two seconds to two minutes, and a third of checkouts are abandoned. Holding a database transaction open for that long is out of the question — it would hold row locks across a network call to a payment provider and exhaust the connection pool in a minute.",
+      "why": "Split the single act of 'buying' into two: a short transaction that reserves the seat with an expiry, and a later transaction that converts the reservation into a sale. The reservation row carries expires_at, so an abandoned checkout releases itself; a sweeper job expires them in batches, and every read of availability treats an expired hold as free. Payment now happens outside any transaction. Because the payment call can time out with an unknown outcome, the booking endpoint takes a client-generated idempotency key: a retry with the same key returns the original result instead of creating a second reservation or a second charge.",
+      "alternatives": [
+        "distributed-lock",
+        "ttl"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "http",
+          "role": "Browser or app",
+          "why": "Reserves seats, then pays; retries carry the same idempotency key.",
+          "alternatives": [],
+          "related": [
+            "idempotency"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "API Server",
+          "kind": "service",
+          "x": 1,
+          "y": 1,
+          "ref": "backend",
+          "role": "Reserve, then confirm",
+          "why": "Two short transactions with a payment call in between, instead of one long one.",
+          "alternatives": [],
+          "related": [
+            "idempotency",
+            "transaction"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 3,
+          "y": 1,
+          "ref": "postgresql",
+          "role": "Seats, reservations, bookings",
+          "why": "A reservation is a row with expires_at; the unique constraint still guarantees one sale per seat.",
+          "alternatives": [],
+          "related": [
+            "transaction",
+            "ttl"
+          ]
+        },
+        {
+          "id": "sweeper",
+          "label": "Expiry Sweeper",
+          "kind": "worker",
+          "x": 3,
+          "y": 3,
+          "ref": "job-scheduler",
+          "role": "Releases abandoned holds",
+          "why": "A periodic job deletes expired reservations in batches so seats return to sale without anyone asking.",
+          "alternatives": [],
+          "related": [
+            "ttl",
+            "job-scheduler"
+          ]
+        },
+        {
+          "id": "pay",
+          "label": "Payment Provider",
+          "kind": "external",
+          "x": 1,
+          "y": 3,
+          "role": "Charges the card",
+          "why": "Slow, external and occasionally ambiguous — the reason holds exist at all.",
+          "alternatives": [],
+          "related": [
+            "payment-system",
+            "idempotency"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "api",
+          "label": "POST /reservations (Idempotency-Key)"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "INSERT reservation, expires_at = now + 10m"
+        },
+        {
+          "from": "api",
+          "to": "pay",
+          "label": "charge",
+          "style": "dashed"
+        },
+        {
+          "from": "pay",
+          "to": "api",
+          "label": "authorised",
+          "style": "dashed"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "reservation → booking"
+        },
+        {
+          "from": "sweeper",
+          "to": "db",
+          "label": "DELETE expired"
+        }
+      ]
+    },
+    {
+      "title": "Most traffic is looking, not buying",
+      "scale": "1 million users",
+      "problem": "The database is at 80% CPU and almost none of it is bookings. Every visitor loads an event page and a seat map, repeatedly, and each load runs the same expensive availability query.",
+      "why": "Separate the read path from the write path, because they have completely different correctness requirements. Event pages and seat maps are cached with a short TTL and served through a CDN; a seat map that is two seconds stale is fine, because the booking attempt is what decides, not the picture. Read replicas absorb the remaining browse queries. The write path — reserve and confirm — still goes to the primary, in a transaction, unchanged. The rule worth stating explicitly: display may be stale, the claim may not.",
+      "alternatives": [
+        "cache-aside",
+        "replication"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "http",
+          "role": "Browser or app",
+          "why": "Loads the seat map many times per booking attempt.",
+          "alternatives": [],
+          "related": [
+            "http"
+          ]
+        },
+        {
+          "id": "cdn",
+          "label": "CDN",
+          "kind": "edge",
+          "x": 1,
+          "y": 0,
+          "ref": "cdn",
+          "role": "Event pages and assets",
+          "why": "Static pages and seat-map snapshots served from the edge never reach your origin at all.",
+          "alternatives": [],
+          "related": [
+            "cache",
+            "web-performance"
+          ]
+        },
+        {
+          "id": "lb",
+          "label": "Load Balancer",
+          "kind": "lb",
+          "x": 1,
+          "y": 1,
+          "ref": "load-balancing",
+          "role": "Spreads traffic",
+          "why": "API servers are stateless, so adding them is the cheapest capacity there is.",
+          "alternatives": [],
+          "related": [
+            "load-balancing"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "API Servers",
+          "kind": "service",
+          "x": 2,
+          "y": 1,
+          "ref": "backend",
+          "role": "Read and write paths",
+          "why": "Same process, two very different code paths: cached reads, transactional writes.",
+          "alternatives": [],
+          "related": [
+            "rest"
+          ]
+        },
+        {
+          "id": "cache",
+          "label": "Redis",
+          "kind": "cache",
+          "x": 3,
+          "y": 0,
+          "ref": "redis",
+          "role": "Seat maps, availability counts",
+          "why": "A 2-second TTL turns thousands of identical availability queries into one.",
+          "alternatives": [
+            "memcached"
+          ],
+          "related": [
+            "cache-aside",
+            "ttl"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "Primary",
+          "kind": "db",
+          "x": 4,
+          "y": 1,
+          "ref": "postgresql",
+          "role": "System of record",
+          "why": "Every reservation and sale still passes through one transactional authority.",
+          "alternatives": [],
+          "related": [
+            "transaction"
+          ]
+        },
+        {
+          "id": "replica",
+          "label": "Read Replica",
+          "kind": "db",
+          "x": 4,
+          "y": 2,
+          "ref": "replication",
+          "role": "Browse queries",
+          "why": "Replica lag is acceptable for browsing and unacceptable for claiming a seat.",
+          "alternatives": [],
+          "related": [
+            "replication",
+            "eventual-consistency"
+          ]
+        },
+        {
+          "id": "sweeper",
+          "label": "Expiry Sweeper",
+          "kind": "worker",
+          "x": 2,
+          "y": 3,
+          "ref": "job-scheduler",
+          "role": "Releases abandoned holds",
+          "why": "Unchanged, and now also invalidates the cached availability for that seat map.",
+          "alternatives": [],
+          "related": [
+            "cache-invalidation"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "cdn",
+          "label": "event page"
+        },
+        {
+          "from": "client",
+          "to": "lb",
+          "label": "API calls"
+        },
+        {
+          "from": "lb",
+          "to": "api",
+          "label": ""
+        },
+        {
+          "from": "api",
+          "to": "cache",
+          "label": "seat map (TTL 2s)"
+        },
+        {
+          "from": "api",
+          "to": "replica",
+          "label": "browse reads",
+          "style": "dashed"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "reserve / confirm"
+        },
+        {
+          "from": "sweeper",
+          "to": "db",
+          "label": "expire holds"
+        },
+        {
+          "from": "sweeper",
+          "to": "cache",
+          "label": "invalidate",
+          "style": "dashed"
+        }
+      ]
+    },
+    {
+      "title": "The on-sale spike",
+      "scale": "100,000 people in 60 seconds",
+      "problem": "Tickets go on sale at 10:00. A hundred thousand people press refresh at the same second for five thousand seats. Row locks on the hot rows serialise everything, the connection pool is exhausted, and the database spends its time on requests that are going to fail anyway — 95% of this traffic cannot succeed, because there is no inventory for it.",
+      "why": "Two ideas, both about doing less work. First, admit fewer people: a waiting-room service issues time-ordered tokens and lets traffic through at a rate the booking path can actually serve, which converts a stampede into a queue with a visible position. Second, move the contention off the database: seat inventory is held in Redis, where a single atomic operation claims a seat or fails, so 95,000 doomed attempts are rejected in microseconds without touching PostgreSQL. Redis becomes the admission control, not the record — the winning attempt still writes a reservation transactionally, and the write is published through an outbox so nothing is lost if a process dies between the two.",
+      "alternatives": [
+        "rate-limiting",
+        "distributed-lock"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "http",
+          "role": "Browser or app",
+          "why": "Holds a queue token and polls its position instead of hammering the booking endpoint.",
+          "alternatives": [],
+          "related": [
+            "http"
+          ]
+        },
+        {
+          "id": "cdn",
+          "label": "CDN",
+          "kind": "edge",
+          "x": 1,
+          "y": 0,
+          "ref": "cdn",
+          "role": "Static shell, waiting page",
+          "why": "The waiting page itself must not need your servers.",
+          "alternatives": [],
+          "related": [
+            "cache"
+          ]
+        },
+        {
+          "id": "room",
+          "label": "Waiting Room",
+          "kind": "service",
+          "x": 1,
+          "y": 1,
+          "ref": "rate-limiting",
+          "role": "Admission control",
+          "why": "Issues ordered tokens and releases them at a measured rate, so the booking path sees steady load instead of a spike.",
+          "alternatives": [],
+          "related": [
+            "rate-limiting",
+            "capacity-planning"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "API Servers",
+          "kind": "service",
+          "x": 2,
+          "y": 1,
+          "ref": "backend",
+          "role": "Booking path",
+          "why": "Rejects anything without a valid admitted token before doing any work.",
+          "alternatives": [],
+          "related": [
+            "rest",
+            "idempotency"
+          ]
+        },
+        {
+          "id": "inv",
+          "label": "Redis Inventory",
+          "kind": "cache",
+          "x": 3,
+          "y": 1,
+          "ref": "redis",
+          "role": "Atomic seat claim",
+          "why": "One atomic script claims a seat and sets a hold TTL; losers are told instantly, without a database round trip.",
+          "alternatives": [
+            "distributed-lock"
+          ],
+          "related": [
+            "distributed-lock",
+            "race-condition",
+            "ttl"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 5,
+          "y": 1,
+          "ref": "postgresql",
+          "role": "System of record",
+          "why": "Still the authority: the unique constraint remains the last line of defence if Redis and the database ever disagree.",
+          "alternatives": [],
+          "related": [
+            "transaction",
+            "outbox"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "Kafka",
+          "kind": "queue",
+          "x": 4,
+          "y": 3,
+          "ref": "kafka",
+          "role": "Booking events",
+          "why": "Reservation and sale events flow to payment, email, analytics and the seat-map cache without the buyer waiting for any of them.",
+          "alternatives": [
+            "rabbitmq"
+          ],
+          "related": [
+            "outbox",
+            "event-driven-architecture"
+          ]
+        },
+        {
+          "id": "payw",
+          "label": "Payment Worker",
+          "kind": "worker",
+          "x": 2,
+          "y": 3,
+          "ref": "payment-system",
+          "role": "Charges and confirms",
+          "why": "Payment is asynchronous with retries; the hold TTL is the deadline it must beat.",
+          "alternatives": [],
+          "related": [
+            "retry",
+            "idempotency"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "cdn",
+          "label": "waiting page"
+        },
+        {
+          "from": "client",
+          "to": "room",
+          "label": "GET /queue/position"
+        },
+        {
+          "from": "room",
+          "to": "client",
+          "label": "admitted token",
+          "style": "dashed"
+        },
+        {
+          "from": "client",
+          "to": "api",
+          "label": "POST /reservations + token"
+        },
+        {
+          "from": "api",
+          "to": "inv",
+          "label": "atomic claim"
+        },
+        {
+          "from": "inv",
+          "to": "api",
+          "label": "won / lost",
+          "style": "dashed"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "INSERT reservation + outbox row"
+        },
+        {
+          "from": "db",
+          "to": "queue",
+          "label": "outbox → events",
+          "style": "dashed"
+        },
+        {
+          "from": "queue",
+          "to": "payw",
+          "label": "reservation.created"
+        },
+        {
+          "from": "payw",
+          "to": "db",
+          "label": "confirm or release"
+        }
+      ]
+    },
+    {
+      "title": "Many events, and proving you were right",
+      "scale": "10 million users, thousands of events",
+      "problem": "One Redis and one database now serve every event in the catalogue, so a single popular on-sale degrades bookings for everything else. And there are two sources of truth about a seat — Redis and PostgreSQL — which means there is a way for them to disagree, and no way to notice.",
+      "why": "Shard by event: an event's inventory, its queue partition and its booking rows all live in the same shard, so one on-sale is loud only in its own. Because a booking never spans two events, this is the rare case where sharding needs no cross-shard transaction. Then close the correctness loop you opened when inventory moved to Redis: a reconciliation job continuously compares claimed seats in Redis against reservations and sales in the database, repairs drift, and exports the disagreement count as a metric. Failures that cannot be repaired — a payment that succeeded against a released hold — go to a dead letter queue for a human, because the wrong answer to 'did this person get a seat?' is silence. Oversell count, hold-expiry rate and queue wait time become the SLOs; they are what a venue will actually ask you about.",
+      "alternatives": [
+        "sharding",
+        "dead-letter-queue"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "http",
+          "role": "Browser or app",
+          "why": "Unchanged; it never knows which shard it reached.",
+          "alternatives": [],
+          "related": [
+            "http"
+          ]
+        },
+        {
+          "id": "room",
+          "label": "Waiting Room",
+          "kind": "service",
+          "x": 1,
+          "y": 1,
+          "ref": "rate-limiting",
+          "role": "Per-event admission",
+          "why": "Rates are set per event, so a stadium tour cannot starve a comedy club.",
+          "alternatives": [],
+          "related": [
+            "rate-limiting"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "API Servers",
+          "kind": "service",
+          "x": 2,
+          "y": 1,
+          "ref": "backend",
+          "role": "Routes by event id",
+          "why": "Event id selects the shard for inventory, queue partition and database.",
+          "alternatives": [],
+          "related": [
+            "sharding"
+          ]
+        },
+        {
+          "id": "inv",
+          "label": "Redis (sharded)",
+          "kind": "cache",
+          "x": 3,
+          "y": 0,
+          "ref": "sharding",
+          "role": "Inventory per event",
+          "why": "Hot events get their own shard; the noisy-neighbour problem becomes a placement decision.",
+          "alternatives": [
+            "redis"
+          ],
+          "related": [
+            "redis",
+            "partitioning"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL (sharded)",
+          "kind": "db",
+          "x": 4,
+          "y": 1,
+          "ref": "postgresql",
+          "role": "Bookings per event",
+          "why": "A booking never spans events, so the shard key is obvious and no distributed transaction is needed.",
+          "alternatives": [],
+          "related": [
+            "sharding",
+            "transaction"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "Kafka",
+          "kind": "queue",
+          "x": 3,
+          "y": 3,
+          "ref": "kafka",
+          "role": "Partitioned by event",
+          "why": "Ordering is guaranteed where it matters — within one event — and nowhere it does not.",
+          "alternatives": [],
+          "related": [
+            "partitioning",
+            "event-driven-architecture"
+          ]
+        },
+        {
+          "id": "recon",
+          "label": "Reconciler",
+          "kind": "worker",
+          "x": 5,
+          "y": 2,
+          "ref": "idempotency",
+          "role": "Compares Redis with the database",
+          "why": "Two sources of truth need a referee: it repairs drift and publishes the disagreement count as a metric.",
+          "alternatives": [],
+          "related": [
+            "eventual-consistency",
+            "observability"
+          ]
+        },
+        {
+          "id": "dlq",
+          "label": "Dead Letter Queue",
+          "kind": "queue",
+          "x": 5,
+          "y": 3,
+          "ref": "dead-letter-queue",
+          "role": "Unrepairable cases",
+          "why": "A charge against a released hold needs a person, not a retry — and it must never be dropped quietly.",
+          "alternatives": [],
+          "related": [
+            "incident-response"
+          ]
+        },
+        {
+          "id": "obs",
+          "label": "Observability",
+          "kind": "external",
+          "x": 5,
+          "y": 0,
+          "ref": "observability",
+          "role": "Oversells, expiries, wait time",
+          "why": "The SLOs here are correctness numbers, not just latency — oversell count should be flat zero and alert on one.",
+          "alternatives": [],
+          "related": [
+            "slo",
+            "capacity-planning"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "room",
+          "label": "queue token"
+        },
+        {
+          "from": "room",
+          "to": "api",
+          "label": "admitted"
+        },
+        {
+          "from": "api",
+          "to": "inv",
+          "label": "claim (shard by event)"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "reserve / confirm"
+        },
+        {
+          "from": "db",
+          "to": "queue",
+          "label": "outbox events",
+          "style": "dashed"
+        },
+        {
+          "from": "queue",
+          "to": "recon",
+          "label": "bookings"
+        },
+        {
+          "from": "recon",
+          "to": "inv",
+          "label": "repair drift"
+        },
+        {
+          "from": "recon",
+          "to": "db",
+          "label": "compare"
+        },
+        {
+          "from": "recon",
+          "to": "dlq",
+          "label": "unrepairable",
+          "style": "dashed"
+        },
+        {
+          "from": "recon",
+          "to": "obs",
+          "label": "disagreement count",
+          "style": "dashed"
+        }
+      ]
+    }
+  ],
+  "textAlternative": "A five-step scale journey for a ticket booking system. Step one is a client, an API server and PostgreSQL, with the seat claim made safe by a unique constraint inside a single transaction. Step two splits buying into a short reservation transaction with an expiry and a later confirmation, with payment happening outside any transaction, an idempotency key on the endpoint, and a sweeper job releasing abandoned holds. Step three adds a CDN, a load balancer, a Redis cache with a two-second TTL for seat maps and a read replica for browse queries, keeping all writes on the primary. Step four adds a waiting-room service that issues ordered admission tokens, moves seat inventory into Redis where an atomic claim rejects doomed attempts without touching the database, and publishes reservation events through an outbox to Kafka, where a payment worker confirms or releases. Step five shards Redis, Kafka partitions and the database by event id, and adds a reconciler that compares Redis inventory against database bookings, repairs drift, sends unrepairable cases to a dead letter queue and exports an oversell metric.",
+  "related": [
+    {
+      "to": "transaction",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "idempotency",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "distributed-lock",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "race-condition",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "outbox",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "payment-system",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "rate-limiting",
+      "rel": "RELATED_TO"
+    }
+  ]
+}

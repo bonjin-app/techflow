@@ -1,0 +1,569 @@
+{
+  "id": "nearby-search",
+  "name": "Nearby Search",
+  "tagline": "Find what is close, when the things are moving and the map is not evenly full",
+  "summary": "\"Show me drivers within 2km\" is a query no ordinary index can answer, because distance is computed from two columns and a B-tree only orders one. Every design here is a way of turning proximity into equality: divide the world into cells, give each cell a name, and look up names instead of measuring distances. The problems that follow are the interesting ones — objects that move constantly, boundaries that cut a search in half, and a world where a thousand cells hold nothing and one holds a city centre.",
+  "category": "design",
+  "tags": [
+    "System Design",
+    "Geospatial",
+    "Indexing",
+    "Sharding",
+    "Real-time"
+  ],
+  "difficulty": 4,
+  "meta": {
+    "lastReviewed": "2026-09-11",
+    "confidence": "medium"
+  },
+  "requirements": [
+    "Given a point and a radius, return nearby objects ordered by distance, in under 100 ms.",
+    "Objects move: an active driver or courier reports a new position every few seconds.",
+    "Density is wildly uneven — a city block may hold more objects than a whole region.",
+    "Results may be a few seconds stale; a result that no longer exists is worse than a missing one.",
+    "A search near a boundary must not miss objects just over it.",
+    "Read volume is dominated by search; write volume is dominated by position updates."
+  ],
+  "steps": [
+    {
+      "title": "One table, one query",
+      "scale": "10,000 objects",
+      "problem": "Start with the obvious thing: a table of latitude and longitude, and a query that computes distance to every row. It is correct, it is one statement, and it scans the table every time.",
+      "why": "At this size a full scan is genuinely fine, and it is worth writing because it defines the correct answer you will later approximate. The first optimisation is not an exotic index but a bounding box: filter by a latitude and longitude range first — which a composite B-tree can serve — then compute exact distance on the survivors and sort. A spatial extension (PostGIS and its equivalents) does this properly with an R-tree, and for a single node it is the right answer for a long time. What you must not do is compute distance in the WHERE clause over the whole table and call it indexed; it is not, and the plan will tell you so.",
+      "alternatives": [
+        "indexing",
+        "sql"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 2,
+          "y": 0,
+          "ref": "http",
+          "role": "App or browser",
+          "why": "Sends a point and a radius and expects an ordered list back.",
+          "alternatives": [],
+          "related": [
+            "http",
+            "rest"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "API Server",
+          "kind": "service",
+          "x": 2,
+          "y": 1,
+          "ref": "backend",
+          "role": "Search endpoint",
+          "why": "Translates a radius into a bounding box, then refines by exact distance.",
+          "alternatives": [],
+          "related": [
+            "rest"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 2,
+          "y": 2,
+          "ref": "postgresql",
+          "role": "Objects with coordinates",
+          "why": "A spatial index answers 'inside this box' quickly; distance ordering happens on the small result.",
+          "alternatives": [],
+          "related": [
+            "indexing",
+            "sql"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "api",
+          "label": "GET /nearby?lat&lng&r"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "bbox filter → distance sort"
+        }
+      ]
+    },
+    {
+      "title": "Turn proximity into equality",
+      "scale": "1 million objects",
+      "problem": "The bounding box still returns too much in dense areas, the spatial index is now the hottest structure in the database, and you cannot cache anything because every query has a slightly different centre point.",
+      "why": "Divide the world into a fixed grid and give every cell a name — a geohash string, an S2 or H3 cell id. An object's cell is computed once on write and stored as an ordinary column. A search becomes: find the cells the radius touches, look them up by equality, then refine by exact distance. Equality lookups are cacheable, shardable and cheap, which the distance function never was. Two details decide whether this works. The radius almost always spans several cells, so you query the centre cell *and its neighbours* — the boundary problem, and the reason a naive single-cell lookup silently misses the closest object. And the cell size is a trade: large cells mean fewer lookups and more rows to refine, small cells the reverse.",
+      "alternatives": [
+        "partitioning",
+        "cache-aside"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "http",
+          "role": "App or browser",
+          "why": "Unchanged; the grid is an implementation detail.",
+          "alternatives": [],
+          "related": [
+            "http"
+          ]
+        },
+        {
+          "id": "lb",
+          "label": "Load Balancer",
+          "kind": "lb",
+          "x": 1,
+          "y": 1,
+          "ref": "load-balancing",
+          "role": "Spreads search traffic",
+          "why": "Search is stateless, so capacity is a matter of adding servers.",
+          "alternatives": [],
+          "related": [
+            "load-balancing"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "Search Servers",
+          "kind": "service",
+          "x": 2,
+          "y": 1,
+          "ref": "backend",
+          "role": "Cell fan-out and refine",
+          "why": "Computes the covering cells, fetches each, merges and sorts by true distance.",
+          "alternatives": [],
+          "related": [
+            "rest"
+          ]
+        },
+        {
+          "id": "cache",
+          "label": "Redis",
+          "kind": "cache",
+          "x": 3,
+          "y": 0,
+          "ref": "redis",
+          "role": "Cell → object list",
+          "why": "A cell is a stable key, so the same cell serves thousands of different search centres.",
+          "alternatives": [
+            "memcached"
+          ],
+          "related": [
+            "cache-aside",
+            "ttl"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 4,
+          "y": 1,
+          "ref": "postgresql",
+          "role": "System of record",
+          "why": "Stores the object with its precomputed cell id; the index is now an ordinary B-tree on a string.",
+          "alternatives": [],
+          "related": [
+            "indexing",
+            "partitioning"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "lb",
+          "label": "GET /nearby"
+        },
+        {
+          "from": "lb",
+          "to": "api",
+          "label": ""
+        },
+        {
+          "from": "api",
+          "to": "cache",
+          "label": "GET cell + neighbours"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "miss → SELECT WHERE cell IN (…)"
+        },
+        {
+          "from": "api",
+          "to": "client",
+          "label": "sorted by exact distance",
+          "style": "dashed"
+        }
+      ]
+    },
+    {
+      "title": "Everything is moving",
+      "scale": "10 million objects, updating every 4 seconds",
+      "problem": "Active objects report a new position every few seconds. That is millions of writes per minute, each one potentially changing the object's cell, and every one of them invalidates a cached cell list. The write path is now larger than the read path, and the database is being used as a scratchpad.",
+      "why": "Split the index from the record. The live position index lives entirely in memory — a geo-indexed structure in Redis, keyed by cell, with a TTL so an object that stops reporting disappears on its own instead of being served forever as a ghost. Position updates go to that index directly and are not durable, which is correct: last week's position of a moving courier has no value. Durable history, if you need it, goes to a log rather than to row updates, where it becomes an analytics problem instead of a transactional one. Search reads only the in-memory index. The staleness budget becomes an explicit product decision — a few seconds is invisible to a user and saves an order of magnitude of write load.",
+      "alternatives": [
+        "ttl",
+        "message-queue"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "http",
+          "role": "Rider or customer app",
+          "why": "Searches, then subscribes to updates for what it found.",
+          "alternatives": [],
+          "related": [
+            "websocket"
+          ]
+        },
+        {
+          "id": "mover",
+          "label": "Moving Object",
+          "kind": "client",
+          "x": 0,
+          "y": 3,
+          "ref": "mobile-networking",
+          "role": "Driver or courier app",
+          "why": "Reports a position every few seconds, batched and dropped freely on a bad connection.",
+          "alternatives": [],
+          "related": [
+            "mobile-networking",
+            "backpressure"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "Search Servers",
+          "kind": "service",
+          "x": 2,
+          "y": 1,
+          "ref": "backend",
+          "role": "Read path only",
+          "why": "Search now touches memory and nothing else.",
+          "alternatives": [],
+          "related": [
+            "rest"
+          ]
+        },
+        {
+          "id": "ingest",
+          "label": "Position Ingest",
+          "kind": "service",
+          "x": 2,
+          "y": 3,
+          "ref": "backpressure",
+          "role": "Write path",
+          "why": "Accepts, validates and coalesces updates; drops stale ones rather than queueing them forever.",
+          "alternatives": [],
+          "related": [
+            "rate-limiting",
+            "backpressure"
+          ]
+        },
+        {
+          "id": "geo",
+          "label": "Redis Geo Index",
+          "kind": "cache",
+          "x": 4,
+          "y": 2,
+          "ref": "redis",
+          "role": "Live positions by cell",
+          "why": "In-memory, TTL'd, rebuildable from the stream — losing it costs seconds of freshness, not data.",
+          "alternatives": [],
+          "related": [
+            "ttl",
+            "cache"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "Kafka",
+          "kind": "queue",
+          "x": 3,
+          "y": 4,
+          "ref": "kafka",
+          "role": "Position history",
+          "why": "The durable copy, partitioned by object, feeding analytics and replay without slowing the live path.",
+          "alternatives": [
+            "message-queue"
+          ],
+          "related": [
+            "event-driven-architecture",
+            "partitioning"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 5,
+          "y": 1,
+          "ref": "postgresql",
+          "role": "Object records",
+          "why": "Identity, profile and state — the things that change rarely — no longer the position.",
+          "alternatives": [],
+          "related": [
+            "database"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "mover",
+          "to": "ingest",
+          "label": "position every 4s"
+        },
+        {
+          "from": "ingest",
+          "to": "geo",
+          "label": "update cell, refresh TTL"
+        },
+        {
+          "from": "ingest",
+          "to": "queue",
+          "label": "append",
+          "style": "dashed"
+        },
+        {
+          "from": "client",
+          "to": "api",
+          "label": "GET /nearby"
+        },
+        {
+          "from": "api",
+          "to": "geo",
+          "label": "cells → candidates"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "hydrate names, ratings"
+        },
+        {
+          "from": "api",
+          "to": "client",
+          "label": "results",
+          "style": "dashed"
+        }
+      ]
+    },
+    {
+      "title": "The world is not evenly full",
+      "scale": "Global, with hotspots",
+      "problem": "Sharding by cell was supposed to spread load, and it does not: one cell covering a city centre at rush hour holds more objects and serves more searches than several countries combined. That shard saturates while its neighbours idle, and a fixed grid cannot be retuned without reindexing everything.",
+      "why": "Use a hierarchical grid instead of a flat one. Cell ids from a space-filling curve are prefixes of each other, so a cell can be subdivided where density demands it and left coarse where it does not — a quadtree in effect, with the useful property that a coarse search still maps onto the finer cells beneath it. Shards are assigned by cell prefix and rebalanced by splitting hot prefixes, which is a data-movement operation rather than a redesign. Two things have to be true for this to stay honest: searches near a shard boundary must fan out across shards and merge, and the metric you watch is not average latency but the p99 of the densest cell, because the average is dominated by empty countryside. Track index staleness — the age of the oldest position in a result — as a first-class number, since it, not latency, is what makes results feel wrong.",
+      "alternatives": [
+        "sharding",
+        "capacity-planning"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "http",
+          "role": "App or browser",
+          "why": "Still unaware of any of this.",
+          "alternatives": [],
+          "related": [
+            "http"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "Search Servers",
+          "kind": "service",
+          "x": 1,
+          "y": 1,
+          "ref": "backend",
+          "role": "Scatter and gather",
+          "why": "Resolves covering cells to shards, queries them in parallel, merges and sorts once.",
+          "alternatives": [],
+          "related": [
+            "rest",
+            "sharding"
+          ]
+        },
+        {
+          "id": "router",
+          "label": "Cell Router",
+          "kind": "service",
+          "x": 2,
+          "y": 2,
+          "ref": "sharding",
+          "role": "Prefix → shard map",
+          "why": "A small, cached map that changes only when a hot prefix is split.",
+          "alternatives": [
+            "partitioning"
+          ],
+          "related": [
+            "partitioning",
+            "consistency"
+          ]
+        },
+        {
+          "id": "s1",
+          "label": "Shard: dense",
+          "kind": "cache",
+          "x": 4,
+          "y": 0,
+          "ref": "redis",
+          "role": "Fine cells, city scale",
+          "why": "Subdivided until each cell holds a workable number of objects.",
+          "alternatives": [],
+          "related": [
+            "redis",
+            "capacity-planning"
+          ]
+        },
+        {
+          "id": "s2",
+          "label": "Shard: sparse",
+          "kind": "cache",
+          "x": 4,
+          "y": 2,
+          "ref": "redis",
+          "role": "Coarse cells, region scale",
+          "why": "One cell may cover a county; subdividing it would only add lookups.",
+          "alternatives": [],
+          "related": [
+            "redis"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "Kafka",
+          "kind": "queue",
+          "x": 2,
+          "y": 4,
+          "ref": "kafka",
+          "role": "Position stream",
+          "why": "Rebuilds any shard from the stream, which is what makes resharding survivable.",
+          "alternatives": [],
+          "related": [
+            "replication",
+            "partitioning"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 5,
+          "y": 4,
+          "ref": "postgresql",
+          "role": "Object records",
+          "why": "Unchanged, and deliberately not sharded by location — identity does not move.",
+          "alternatives": [],
+          "related": [
+            "database"
+          ]
+        },
+        {
+          "id": "obs",
+          "label": "Observability",
+          "kind": "external",
+          "x": 5,
+          "y": 1,
+          "ref": "observability",
+          "role": "p99 by cell, index staleness",
+          "why": "The number that matters is the densest cell's p99 and the age of the freshest data, not the mean of either.",
+          "alternatives": [],
+          "related": [
+            "slo",
+            "capacity-planning"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "api",
+          "label": "GET /nearby"
+        },
+        {
+          "from": "api",
+          "to": "router",
+          "label": "cells → shards"
+        },
+        {
+          "from": "api",
+          "to": "s1",
+          "label": "parallel query"
+        },
+        {
+          "from": "api",
+          "to": "s2",
+          "label": "parallel query"
+        },
+        {
+          "from": "queue",
+          "to": "s1",
+          "label": "rebuild / backfill",
+          "style": "dashed"
+        },
+        {
+          "from": "queue",
+          "to": "s2",
+          "label": "rebuild / backfill",
+          "style": "dashed"
+        },
+        {
+          "from": "api",
+          "to": "db",
+          "label": "hydrate"
+        },
+        {
+          "from": "api",
+          "to": "obs",
+          "label": "latency by cell",
+          "style": "dashed"
+        }
+      ]
+    }
+  ],
+  "textAlternative": "A four-step scale journey for a nearby-search system. Step one is a client, an API server and PostgreSQL, answering a radius query with a bounding-box filter followed by exact distance sorting. Step two precomputes a grid cell id for every object so proximity becomes an equality lookup, adds a load balancer and a Redis cache keyed by cell, and queries the centre cell together with its neighbours so objects just over a boundary are not missed. Step three separates the live index from the record: moving objects send positions to an ingest service that writes an in-memory, TTL'd geo index in Redis and appends durable history to Kafka, while search reads only the in-memory index and hydrates names from PostgreSQL. Step four replaces the flat grid with a hierarchical one whose cell ids are prefixes, so dense areas are subdivided and sparse ones left coarse, with a cell router mapping prefixes to shards, parallel scatter-gather across shards at boundaries, Kafka as the source for rebuilding a shard, and observability on the densest cell's p99 latency and index staleness.",
+  "related": [
+    {
+      "to": "indexing",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "sharding",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "partitioning",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "cache",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "backpressure",
+      "rel": "RELATED_TO"
+    },
+    {
+      "to": "capacity-planning",
+      "rel": "RELATED_TO"
+    }
+  ]
+}
