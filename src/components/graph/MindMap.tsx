@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGraphApi, type ApiNode } from "@/lib/useGraphApi";
 import { TYPE_LABEL, type Relation } from "@/lib/content/types";
 
@@ -63,6 +63,17 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
   const [hover, setHover] = useState<string | null>(null);
   const focusId = trail[trail.length - 1];
   const centre = graph?.nodes.get(focusId);
+
+  // The map is 760px wide at minimum and scrolls inside its box on a phone,
+  // where scrollLeft 0 puts the centre node off-screen to the right — the one
+  // thing the reader came for. Centre the scroller whenever the hub changes.
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    if (max > 0) el.scrollLeft = max / 2;
+  }, [focusId, graph]);
 
   const focus = useCallback(
     (id: string) => {
@@ -223,7 +234,7 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
       </div>
 
       {/* Map */}
-      <div className="overflow-x-auto">
+      <div ref={scroller} className="overflow-x-auto">
         <svg
           viewBox={`${-W / 2} ${-height / 2} ${W} ${height}`}
           className="block w-full min-w-[760px]"

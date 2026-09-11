@@ -6,7 +6,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { buildGraph } from "../src/lib/content/graph";
+import { buildGraph, getNeighbors } from "../src/lib/content/graph";
 import { hrefFor, type DocNode } from "../src/lib/content/types";
 
 const REQUIRED_SECTIONS: Record<DocNode["type"], string[]> = {
@@ -110,6 +110,17 @@ function main() {
       else warnings.push(`${n.id}: step '${step.label}' has no node — the path dead-ends here`);
     }
   }
+  // The product's first success criterion is a specific walk: from Redis to the
+  // idea of a distributed system, one click per hop, feeling like the pieces
+  // connect. It broke once when nobody was watching, so it is a test now.
+  const FIRST_JOURNEY = ["redis", "cache", "cache-aside", "e-commerce", "postgresql", "transaction", "distributed-system"];
+  for (let i = 0; i < FIRST_JOURNEY.length - 1; i++) {
+    const [a, b] = [FIRST_JOURNEY[i], FIRST_JOURNEY[i + 1]];
+    if (!getNeighbors(a).some((n) => n.node.id === b)) {
+      problems.push(`first journey: '${a}' → '${b}' is not one click — the reader hits a dead end here`);
+    }
+  }
+
   // No JSON field is rendered as Markdown — every one of them is printed as
   // plain text — so a link written in a .json file shows the reader raw
   // brackets. Cheaper to catch here than in a screenshot.

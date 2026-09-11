@@ -23,6 +23,7 @@ related:
   - { to: saga, rel: RELATED_TO }
   - { to: outbox, rel: RELATED_TO }
   - { to: e-commerce, rel: USED_IN }
+  - { to: distributed-system, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-09, confidence: high }
 ---
 
@@ -135,3 +136,14 @@ even though each attempt is atomic.
 **Durability is a setting.** `COMMIT` returns after the WAL is fsynced by default;
 some engines allow relaxing this for throughput at the cost of losing the last few
 commits on power loss. Know which mode your database runs in.
+
+**One machine is what makes this cheap.** Everything above works because a single
+database process can see every lock and every version, so it can decide alone.
+Split the data across machines and that stops being true: a
+[distributed system](/concept/distributed-system) has no such observer, and a
+transaction spanning two of them needs either a coordinator that blocks while it
+collects votes ([two-phase commit](/pattern/two-phase-commit)) or a sequence of
+local transactions with compensations ([Saga](/pattern/saga)). Both are
+significantly weaker and more expensive than the guarantee you get for free on one
+node, which is the strongest practical argument for keeping data that must change
+together in the same database.
