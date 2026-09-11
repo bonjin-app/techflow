@@ -4,9 +4,18 @@
   "tagline": "From structuring one codebase to choosing, justifying and evolving whole systems",
   "summary": "Architecture is the set of decisions that are expensive to reverse, so this path is about earning the judgement to make them. It starts where every architect starts — building things — then moves through the structural patterns that keep one codebase changeable, the data guarantees that constrain every design, the distributed-systems reality that appears the moment there is a second machine, the integration patterns that connect services, and finally how systems are evolved and how decisions are recorded and measured.",
   "category": "career",
-  "tags": ["Architecture", "System Design", "Trade-offs", "Career", "Learning Path"],
+  "tags": [
+    "Architecture",
+    "System Design",
+    "Trade-offs",
+    "Career",
+    "Learning Path"
+  ],
   "difficulty": 5,
-  "meta": { "lastReviewed": "2026-09-10", "confidence": "high" },
+  "meta": {
+    "lastReviewed": "2026-09-10",
+    "confidence": "high"
+  },
   "steps": [
     {
       "ref": "programming-fundamentals",
@@ -47,7 +56,8 @@
     {
       "label": "Domain-driven design",
       "stage": "Structuring code",
-      "note": "Bounded contexts and a shared language are how you decide where the seams belong; almost every bad service split is really a missing domain model."
+      "note": "Bounded contexts and a shared language are how you decide where the seams belong; almost every bad service split is really a missing domain model.",
+      "ref": "domain-driven-design"
     },
     {
       "ref": "modular-monolith",
@@ -130,7 +140,8 @@
     {
       "label": "Architecture decision records",
       "stage": "Practice",
-      "note": "Writing down the options, the choice and the consequences is what makes architecture reviewable, teachable and reversible when the context changes."
+      "note": "Writing down the options, the choice and the consequences is what makes architecture reviewable, teachable and reversible when the context changes.",
+      "ref": "architecture-decision-record"
     },
     {
       "ref": "news-feed",

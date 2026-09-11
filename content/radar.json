@@ -450,6 +450,41 @@
       "quadrant": "languages-interfaces",
       "note": "Great for reversible actions, wrong for money and anything irreversible.",
       "moved": "new"
+    },
+    {
+      "ref": "swift",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The only route to full platform API coverage on Apple devices; strict concurrency checking has made large codebases safer to change.",
+      "moved": "new"
+    },
+    {
+      "ref": "kotlin",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The Android default, and null safety plus coroutines remove the two bug classes that dominated the platform's crash reports.",
+      "moved": "new"
+    },
+    {
+      "ref": "react-native",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "The new architecture removed the old bridge bottleneck; adopt where the team already writes React and native dependencies stay few.",
+      "moved": "new"
+    },
+    {
+      "ref": "flutter",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "Strongest option when the product has its own design language; budget explicitly for accessibility and platform-behaviour testing.",
+      "moved": "new"
+    },
+    {
+      "ref": "dbt",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Brings version control, review and tests to the transformation layer, which is where analytics engineering had none.",
+      "moved": "new"
     }
   ]
 }

@@ -50,7 +50,8 @@
     {
       "label": "Cryptography basics",
       "stage": "Cryptography",
-      "note": "Hashes, MACs, symmetric and asymmetric encryption, key derivation and randomness are the vocabulary of everything below; you need to know what each guarantees, not how to implement it."
+      "note": "Hashes, MACs, symmetric and asymmetric encryption, key derivation and randomness are the vocabulary of everything below; you need to know what each guarantees, not how to implement it.",
+      "ref": "cryptography"
     },
     {
       "ref": "tls",
@@ -91,7 +92,8 @@
     {
       "label": "OWASP Top 10 & web attacks",
       "stage": "Application security",
-      "note": "Injection, XSS, SSRF, deserialization and access-control flaws are the concrete bugs the foundations above let you reason about — learn them as patterns, not as a checklist."
+      "note": "Injection, XSS, SSRF, deserialization and access-control flaws are the concrete bugs the foundations above let you reason about — learn them as patterns, not as a checklist.",
+      "ref": "owasp-top-10"
     },
     {
       "ref": "cors",

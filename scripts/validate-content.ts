@@ -5,7 +5,7 @@
  *   pnpm validate
  */
 import { buildGraph } from "../src/lib/content/graph";
-import type { DocNode } from "../src/lib/content/types";
+import { hrefFor, type DocNode } from "../src/lib/content/types";
 
 const REQUIRED_SECTIONS: Record<DocNode["type"], string[]> = {
   technology: ["TL;DR", "Why", "Advantages", "Trade-offs", "When to use", "When not to use"],
@@ -41,7 +41,17 @@ function main() {
         for (const f of fences) if (!KNOWN_FENCES.has(f)) warnings.push(`${n.id} › ${heading}: unknown fence '${f}'`);
         // internal links must resolve
         for (const m of md.matchAll(/\]\(\/(technology|concept|pattern|architecture|compare|roadmap|system-design)\/([a-z0-9-]+)\)/g)) {
-          if (!g.nodes.has(m[2])) problems.push(`${n.id} › ${heading}: link to unknown node '/${m[1]}/${m[2]}'`);
+          const target = g.nodes.get(m[2]);
+          if (!target) {
+            problems.push(`${n.id} › ${heading}: link to unknown node '/${m[1]}/${m[2]}'`);
+            continue;
+          }
+          // The id can exist under a different route — /concept/microservices when
+          // microservices is an architecture. That 404s, so check the segment too.
+          const href = hrefFor(target.type, target.id);
+          if (href !== `/${m[1]}/${m[2]}`) {
+            problems.push(`${n.id} › ${heading}: link '/${m[1]}/${m[2]}' has the wrong type — it is ${href}`);
+          }
         }
       }
     }
@@ -92,7 +102,10 @@ function main() {
     for (const step of n.steps) {
       if (step.ref) continue;
       const hit = byName.get(step.label.toLowerCase());
+      // Two different gaps: a link we could make today, and a page nobody has
+      // written. Both leave the reader at a dead end, so both are reported.
       if (hit) warnings.push(`${n.id}: step '${step.label}' has no ref but node '${hit}' exists`);
+      else warnings.push(`${n.id}: step '${step.label}' has no node — the path dead-ends here`);
     }
   }
   for (const st of g.stacks) {

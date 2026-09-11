@@ -141,7 +141,7 @@ ai-chatbot
 
 ---
 
-# Wave 6 (in progress) — frontend, testing and operations gaps
+# Wave 6 — frontend, testing and operations gaps
 
 Chosen from evidence: these are the roadmap steps that had no node to link to.
 
@@ -155,3 +155,26 @@ offline-first · optimistic-ui
 
 ## comparisons/
 serverless-vs-containers
+
+---
+
+# Wave 7 — mobile, AI, data, cloud and security gaps
+
+Same evidence as wave 6: the remaining roadmap steps that had no node to link
+to. After this wave every step in all ten roadmaps resolves to a page.
+
+## technologies/
+swift · kotlin · react-native · flutter · dbt
+
+## concepts/
+web-fundamentals · mobile-networking · push-notification · app-store-review ·
+math-for-ml · machine-learning · deep-learning · ai-safety ·
+cloud-platform · cloud-networking · cost-optimization · data-quality ·
+cryptography · owasp-top-10
+
+## patterns/
+domain-driven-design · architecture-decision-record
+
+## comparisons/
+react-native-vs-flutter
+
