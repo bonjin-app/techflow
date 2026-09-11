@@ -26,7 +26,8 @@
     {
       "label": "Linear algebra, probability & statistics",
       "stage": "Foundations",
-      "note": "Vectors, matrices, gradients and distributions are what embeddings, loss functions and evaluation metrics are made of."
+      "note": "Vectors, matrices, gradients and distributions are what embeddings, loss functions and evaluation metrics are made of.",
+      "ref": "math-for-ml"
     },
     {
       "ref": "sql",
@@ -37,12 +38,14 @@
     {
       "label": "Machine learning fundamentals",
       "stage": "Models",
-      "note": "Train/test splits, overfitting, regularisation and metrics are the mental model you will reuse when evaluating LLM outputs."
+      "note": "Train/test splits, overfitting, regularisation and metrics are the mental model you will reuse when evaluating LLM outputs.",
+      "ref": "machine-learning"
     },
     {
       "label": "Deep learning & neural networks",
       "stage": "Models",
-      "note": "Backpropagation, optimisers and GPUs explain why models cost what they cost and why inference latency behaves the way it does."
+      "note": "Backpropagation, optimisers and GPUs explain why models cost what they cost and why inference latency behaves the way it does.",
+      "ref": "deep-learning"
     },
     {
       "label": "Transformers & large language models",
@@ -131,7 +134,8 @@
     {
       "label": "Guardrails, safety & privacy",
       "stage": "Operations",
-      "note": "Input filtering, output validation, PII handling and prompt-injection defences are launch blockers, not polish."
+      "note": "Input filtering, output validation, PII handling and prompt-injection defences are launch blockers, not polish.",
+      "ref": "ai-safety"
     },
     {
       "label": "Fine-tuning & model adaptation",

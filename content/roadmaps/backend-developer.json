@@ -127,7 +127,8 @@
     {
       "label": "Cloud platforms (AWS / GCP / Azure)",
       "stage": "Operations",
-      "note": "Managed databases, queues, load balancers and object storage are the building blocks you will actually deploy on; learn one provider well."
+      "note": "Managed databases, queues, load balancers and object storage are the building blocks you will actually deploy on; learn one provider well.",
+      "ref": "cloud-platform"
     },
     {
       "ref": "distributed-system",

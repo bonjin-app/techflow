@@ -44,7 +44,8 @@
     {
       "label": "Cloud provider fundamentals",
       "stage": "Cloud primitives",
-      "note": "Regions, availability zones, the shared responsibility model, quotas and the console-versus-API split are the vocabulary every later step is expressed in."
+      "note": "Regions, availability zones, the shared responsibility model, quotas and the console-versus-API split are the vocabulary every later step is expressed in.",
+      "ref": "cloud-platform"
     },
     {
       "ref": "rbac",
@@ -55,7 +56,8 @@
     {
       "label": "Networking & VPC",
       "stage": "Cloud primitives",
-      "note": "Subnets, route tables, NAT and security groups decide what can reach what; nearly all 'connection timed out' incidents are answered in this layer."
+      "note": "Subnets, route tables, NAT and security groups decide what can reach what; nearly all 'connection timed out' incidents are answered in this layer.",
+      "ref": "cloud-networking"
     },
     {
       "ref": "load-balancing",
@@ -132,7 +134,8 @@
     {
       "label": "Cost management",
       "stage": "Cost & scale",
-      "note": "Last because it depends on everything above: in the cloud an architecture choice is a recurring bill, and tagging, rightsizing and commitment discounts are engineering work."
+      "note": "Last because it depends on everything above: in the cloud an architecture choice is a recurring bill, and tagging, rightsizing and commitment discounts are engineering work.",
+      "ref": "cost-optimization"
     }
   ]
 }

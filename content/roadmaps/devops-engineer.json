@@ -92,7 +92,8 @@
     {
       "label": "Cloud platforms (AWS / GCP / Azure)",
       "stage": "Infrastructure",
-      "note": "IAM, VPCs, managed databases and object storage are the primitives Terraform provisions; know one provider's model deeply."
+      "note": "IAM, VPCs, managed databases and object storage are the primitives Terraform provisions; know one provider's model deeply.",
+      "ref": "cloud-platform"
     },
     {
       "ref": "s3",

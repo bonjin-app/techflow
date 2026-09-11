@@ -86,7 +86,8 @@
     {
       "label": "dbt (SQL transformation)",
       "stage": "Batch",
-      "note": "dbt brings version control, tests, documentation and lineage to the SQL layer, which is where most business logic actually lives."
+      "note": "dbt brings version control, tests, documentation and lineage to the SQL layer, which is where most business logic actually lives.",
+      "ref": "dbt"
     },
     {
       "label": "Dimensional modelling",
@@ -127,7 +128,8 @@
     {
       "label": "Data quality, tests & contracts",
       "stage": "Operations",
-      "note": "Data is trusted or worthless, so freshness checks, row-count assertions and producer-side schema contracts belong in the pipeline, not in a dashboard someone notices later."
+      "note": "Data is trusted or worthless, so freshness checks, row-count assertions and producer-side schema contracts belong in the pipeline, not in a dashboard someone notices later.",
+      "ref": "data-quality"
     },
     {
       "ref": "ci-cd",
