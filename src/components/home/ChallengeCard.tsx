@@ -35,7 +35,9 @@ export function ChallengeCard({ challenge, refs, compact = false }: { challenge:
   };
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    // The id makes a challenge deep-linkable: node pages link to the one that
+    // exercises them, and the header offset keeps it clear of the sticky nav.
+    <div id={challenge.id} className="scroll-mt-24 rounded-xl border border-border bg-surface p-5">
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono text-[11px] uppercase tracking-wider text-system-design">Design challenge</span>
         <span className="text-[11px] text-fg-faint">difficulty {challenge.difficulty}/5</span>

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getArchitectures, getEgoGraph, getNeighbors, getNode } from "@/lib/content/graph";
+import { getPractice, hasPractice } from "@/lib/practice";
 import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { ArchitectureView, DecisionRecords } from "@/components/canvas/ArchitectureView";
 import { GraphLoader } from "@/components/graph/GraphLoader";
 import { MindMapLink } from "@/components/graph/MindMapLink";
+import { PracticeSection } from "@/components/detail/PracticeSection";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
 import { TrackVisit } from "@/components/detail/TrackVisit";
@@ -32,6 +34,7 @@ export default async function Page({ params }: PageProps<"/architecture/[slug]">
   const neighbors = getNeighbors(arch.id);
   const ego = getEgoGraph(arch.id, { depth: 1, maxNodes: 30 });
   const components = arch.nodes.filter((n) => n.ref);
+  const practice = getPractice(arch.id);
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -104,6 +107,13 @@ export default async function Page({ params }: PageProps<"/architecture/[slug]">
             <GraphLoader data={ego} height={380} mode="ego" />
             <MindMapLink id={arch.id} name={arch.name} className="mt-3" />
           </section>
+
+          {hasPractice(practice) && (
+            <section>
+              <SectionHeading eyebrow="Not just reading" title={`Try ${arch.name}`} />
+              <PracticeSection practice={practice} />
+            </section>
+          )}
 
           <section>
             <SectionHeading eyebrow="Keep exploring" title="Related" />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { DocNode } from "@/lib/content/types";
 import { getEgoGraph, getNeighbors, resolveRefs } from "@/lib/content/graph";
 import { buildRefMap, collectMarkdownRefs } from "@/lib/content/refs";
+import { getPractice, hasPractice } from "@/lib/practice";
 import { breadcrumbJsonLd, breadcrumbsFor, techArticleJsonLd } from "@/lib/seo";
 import { Markdown } from "@/components/md/Markdown";
 import { GraphLoader } from "@/components/graph/GraphLoader";
@@ -12,6 +13,7 @@ import { NeighborList } from "./NeighborList";
 import { LearningPath } from "./LearningPath";
 import { TrackVisit } from "./TrackVisit";
 import { LevelTabs } from "./LevelTabs";
+import { PracticeSection } from "./PracticeSection";
 
 /** Sections that get a dedicated layout; anything else renders in authored order at the end. */
 const LEVEL_SECTIONS = ["TL;DR", "Practical", "Deep Dive"];
@@ -55,6 +57,7 @@ export function DocDetail({ node }: { node: DocNode }) {
   const alternatives = neighbors.filter((n) => n.rel === "ALTERNATIVE_TO");
   const comparisons = neighbors.filter((n) => n.node.type === "comparison");
 
+  const practice = getPractice(node.id);
   const why = s["Why"] ?? s["Why it matters"];
   const pros = s["Advantages"];
   const cons = s["Trade-offs"] ?? s["Disadvantages"];
@@ -75,6 +78,7 @@ export function DocDetail({ node }: { node: DocNode }) {
     ...(path.length ? [{ id: "learning-path", label: "Learning path" }] : []),
     ...(archUsedIn.length ? [{ id: "architectures", label: "Architectures" }] : []),
     ...(s["Real-world"] ? [{ id: "real-world", label: "Real-world" }] : []),
+    ...(hasPractice(practice) ? [{ id: "practise", label: "Try it" }] : []),
     { id: "related", label: "Related" },
   ];
 
@@ -256,6 +260,12 @@ export function DocDetail({ node }: { node: DocNode }) {
               <Markdown source={s[h]} refs={refs} />
             </Section>
           ))}
+
+          {hasPractice(practice) && (
+            <Section id="practise" title={`Try ${node.name}`} eyebrow="Not just reading">
+              <PracticeSection practice={practice} />
+            </Section>
+          )}
 
           <Section id="related" title="Related" eyebrow="Keep exploring">
             <NeighborList neighbors={neighbors} />

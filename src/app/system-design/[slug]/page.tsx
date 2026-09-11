@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getPractice, hasPractice } from "@/lib/practice";
 import { getEgoGraph, getNeighbors, getNode, getSystemDesigns } from "@/lib/content/graph";
 import { buildRefMap, collectArchRefs } from "@/lib/content/refs";
 import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { StepJourney } from "@/components/canvas/StepJourney";
 import { GraphLoader } from "@/components/graph/GraphLoader";
 import { MindMapLink } from "@/components/graph/MindMapLink";
+import { PracticeSection } from "@/components/detail/PracticeSection";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
 import { TrackVisit } from "@/components/detail/TrackVisit";
@@ -36,6 +38,7 @@ export default async function Page({ params }: PageProps<"/system-design/[slug]"
   const refs = buildRefMap(ids);
   const neighbors = getNeighbors(node.id);
   const ego = getEgoGraph(node.id, { depth: 1, maxNodes: 30 });
+  const practice = getPractice(node.id);
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -69,9 +72,17 @@ export default async function Page({ params }: PageProps<"/system-design/[slug]"
           <GraphLoader data={ego} height={400} mode="ego" />
           <MindMapLink id={node.id} name={node.name} className="mt-3" />
         </section>
-        <section>
-          <SectionHeading eyebrow="Keep exploring" title="Related" />
-          <NeighborList neighbors={neighbors} />
+        <section className="space-y-8">
+          <div>
+            <SectionHeading eyebrow="Keep exploring" title="Related" />
+            <NeighborList neighbors={neighbors} />
+          </div>
+          {hasPractice(practice) && (
+            <div>
+              <SectionHeading eyebrow="Not just reading" title={`Try ${node.name}`} />
+              <PracticeSection practice={practice} />
+            </div>
+          )}
         </section>
       </div>
     </article>
