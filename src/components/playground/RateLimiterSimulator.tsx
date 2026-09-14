@@ -133,7 +133,10 @@ export function RateLimiterSimulator() {
         }
         case "sliding-counter": {
           if (now - s.windowStart >= windowMs) {
-            s.prevCount = s.count;
+            // More than one window may have elapsed while nothing arrived. The
+            // window before this one was then empty, so carrying the old count
+            // forward would reject requests on the strength of ancient traffic.
+            s.prevCount = now - s.windowStart < windowMs * 2 ? s.count : 0;
             s.count = 0;
             s.windowStart = now - ((now - s.windowStart) % windowMs);
           }

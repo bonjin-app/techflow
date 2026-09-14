@@ -79,13 +79,16 @@ export function CacheSimulator() {
       found.hits++;
       found.at = t;
     } else {
-      if (s.length >= capacity) {
+      // A loop, not an if: the capacity slider can be dragged down mid-run, and
+      // evicting one per miss would leave the cache permanently larger than the
+      // capacity the reader just set — the hit ratio would then be a lie.
+      while (s.length >= capacity) {
         let victim = 0;
         if (policy === "lru") victim = s.reduce((m, x, i) => (x.at < s[m].at ? i : m), 0);
         else if (policy === "lfu") victim = s.reduce((m, x, i) => (x.hits < s[m].hits || (x.hits === s[m].hits && x.at < s[m].at) ? i : m), 0);
         else victim = 0; // fifo → oldest inserted is first
         s.splice(victim, 1);
-        evictions = 1;
+        evictions++;
       }
       s.push({ key, hits: 0, at: t, expires: ttl > 0 ? t + ttl : Infinity });
     }
