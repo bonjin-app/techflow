@@ -90,11 +90,13 @@
       "kind": "storage",
       "x": 5,
       "y": 1,
+      "ref": "s3",
       "role": "Source documents",
       "why": "PDFs, wiki exports and tickets land here; an upload triggers the ingestion pipeline.",
       "alternatives": [],
       "related": [
-        "database"
+        "database",
+        "file-storage-service"
       ]
     },
     {

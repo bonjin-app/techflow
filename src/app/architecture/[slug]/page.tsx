@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getArchitectures, getEgoGraph, getNeighbors, getNode } from "@/lib/content/graph";
+import { hrefFor } from "@/lib/content/types";
 import { getPractice, hasPractice } from "@/lib/practice";
 import { nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { ArchitectureView, DecisionRecords } from "@/components/canvas/ArchitectureView";
@@ -130,8 +131,10 @@ export default async function Page({ params }: PageProps<"/architecture/[slug]">
                 return (
                   <li key={c.id} className="flex items-baseline justify-between gap-2">
                     <span className="text-fg-muted">{c.label}</span>
+                    {/* hrefFor, not a ternary: a component may ref an architecture or a
+                        system design, and the ternary sent both of those to /concept/… */}
                     {n && (
-                      <Link href={`/${n.type === "technology" ? "technology" : n.type === "pattern" ? "pattern" : "concept"}/${n.id}`} className="font-medium hover:underline" data-type={n.type}>
+                      <Link href={hrefFor(n.type, n.id)} className="font-medium hover:underline" data-type={n.type}>
                         {n.name}
                       </Link>
                     )}
