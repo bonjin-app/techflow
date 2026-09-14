@@ -86,6 +86,31 @@ function main() {
     .map((p) => (p === "/index" ? "/" : p))
     .filter((p) => p !== "/" && !linkedTo.has(p) && !EXPECTED_ORPHANS.has(p));
 
+  // The JSON API is a published contract: someone's script reads graph.json and
+  // then fetches the hrefs in it. A node file per node, and every href a page.
+  const apiProblems: string[] = [];
+  const graphFile = path.join(OUT, "api", "graph.json");
+  if (fs.existsSync(graphFile)) {
+    const graph = JSON.parse(fs.readFileSync(graphFile, "utf8")) as {
+      counts: { nodes: number; edges: number };
+      relations: Record<string, string>;
+      nodes: { id: string; href: string }[];
+      edges: { from: string; to: string; rel: string }[];
+    };
+    const ids = new Set(graph.nodes.map((n) => n.id));
+    if (graph.counts.nodes !== graph.nodes.length) apiProblems.push("graph.json counts.nodes disagrees with nodes");
+    if (graph.counts.edges !== graph.edges.length) apiProblems.push("graph.json counts.edges disagrees with edges");
+    for (const e of graph.edges) {
+      if (!ids.has(e.from) || !ids.has(e.to)) apiProblems.push(`edge ${e.from} → ${e.to} points at a node the API does not publish`);
+      if (!graph.relations[e.rel]) apiProblems.push(`edge relation '${e.rel}' is not in the published vocabulary`);
+    }
+    for (const n of graph.nodes) {
+      if (!fs.existsSync(path.join(OUT, "api", "nodes", `${n.id}.json`))) apiProblems.push(`no /api/nodes/${n.id}.json`);
+      if (!resolves(n.href)) apiProblems.push(`/api href ${n.href} is not a built page`);
+    }
+  }
+  for (const p of apiProblems.slice(0, 10)) console.error(`  ✖ ${p}`);
+
   // Every page that ships should be in the sitemap. The sitemap lists nodes,
   // builds and stacks dynamically but carries a hand-written list of static
   // routes, and a hand-written list is a list that goes stale.
@@ -115,9 +140,10 @@ function main() {
   for (const o of orphans) console.warn(`  ⚠ ${o} — generated but nothing links to it`);
 
   console.log(`\n${pages.length} pages, ${checked} internal links checked`);
-  if (broken.size > 0 || missingFromSitemap.length > 0) {
+  if (broken.size > 0 || missingFromSitemap.length > 0 || apiProblems.length > 0) {
     if (broken.size) console.error(`✖ ${broken.size} broken link target(s)`);
     if (missingFromSitemap.length) console.error(`✖ ${missingFromSitemap.length} page(s) missing from sitemap.xml`);
+    if (apiProblems.length) console.error(`✖ ${apiProblems.length} inconsistency(ies) in the published JSON API`);
     process.exit(1);
   }
   console.log(`✔ all internal links resolve (${orphans.length} orphan page(s))`);

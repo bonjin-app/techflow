@@ -21,6 +21,10 @@ content/
 
 The filename **must equal the `id`** (kebab-case). Write in English (the product UI is English).
 
+Every node carries `meta.lastReviewed`, and that date is rendered to the reader. `pnpm
+validate` warns when a technology has not been reviewed for 12 months, or anything else for
+18 — the page makes a promise about freshness, so the checker keeps it.
+
 ## Content principles
 
 Every technology/concept/pattern answers: *What? Why? How? When? Why not? Alternative?

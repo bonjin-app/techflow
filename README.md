@@ -20,7 +20,7 @@ flows, interactive decision trees) rather than pictures.
 ```bash
 pnpm install
 pnpm dev          # http://localhost:3000
-pnpm validate     # checks every content file + graph links (also runs before build)
+pnpm validate     # content, graph links, and the example questions (also runs before build)
 pnpm build        # static production build
 pnpm lint && pnpm typecheck
 ```
@@ -76,10 +76,18 @@ Edges are declared in frontmatter (`related`) and derived automatically from `us
 | JSON API | `/api-docs`, `/api/*.json` | The whole graph as static JSON — no key, no rate limit, regenerated every build |
 | Search | `/search`, `⌘K` | Keyword search over the graph, plus question answering: a typed sentence is matched to a goal, a comparison or the pages for what it names |
 
+Every technology, concept, pattern, architecture and system design page also carries a
+**Try it** section linking to the playgrounds, design challenges, stacks and build goals that
+reference it — the interactive half of the site reached from the page rather than from an
+index.
+
 ## Keyboard
 
-`/` or `⌘K` search · `G` then `T/C/P/A/S/M/R` jump to a section · `⌘⇧D` developer mode ·
-on a diagram: `space` run, `→` step, `f` fit.
+`/` or `⌘K` search · `⌘⇧D` developer mode · on a diagram: `space` run, `→` step, `f` fit.
+
+`G` then a letter jumps: `H` home, `E` explore, `T` technologies, `C` concepts, `P` patterns,
+`A` architecture, `S` system design, `V` compare (as in "vs"), `R` roadmaps, `M` mind map,
+`K` stacks, `D` radar, `Y` playground. The command palette lists them all with their keys.
 
 ## Deployment
 
@@ -108,7 +116,11 @@ README or a design doc.
 understand why I need Redis and Kafka" resolves to the real-time chat goal plus the Redis and
 Kafka pages. It is keyword matching against the graph in the browser — no model, no network —
 and it says so on the card, falling back to ranked results when it cannot read the question.
-The recognisers live in `src/lib/intent.ts`; goal keywords are the `GOAL_WORDS` table.
+The recognisers live in `src/lib/intent.ts`; goal keywords are the `GOAL_WORDS` table and
+abbreviations are shared with search in `src/lib/aliases.ts`. The four questions the product
+was specified around — "Why Redis?", "When is Kafka needed?", "WebSocket vs SSE?", "How do I
+design a payment system?" — are asserted by `pnpm check:intent`, along with the keyword
+rankings, because three of the four broke once without anyone noticing.
 
 ## Personal state
 

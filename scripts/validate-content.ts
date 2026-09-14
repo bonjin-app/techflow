@@ -34,6 +34,17 @@ function main() {
     if (n.difficulty < 1 || n.difficulty > 5) problems.push(`${n.id}: difficulty must be 1–5`);
     if (n.tagline.length > 90) warnings.push(`${n.id}: tagline is long (${n.tagline.length} chars)`);
 
+    // Every page states a review date to the reader, which is a promise that
+    // someone looks. A technology's world moves faster than a concept's.
+    const reviewed = n.meta?.lastReviewed;
+    if (reviewed) {
+      const months = (Date.now() - Date.parse(reviewed)) / (1000 * 60 * 60 * 24 * 30.4);
+      const budget = n.type === "technology" ? 12 : 18;
+      if (months > budget) warnings.push(`${n.id}: last reviewed ${reviewed}, ${Math.round(months)} months ago — the page tells the reader that date`);
+    } else if (n.type === "technology") {
+      warnings.push(`${n.id}: no lastReviewed date`);
+    }
+
     if (n.type === "technology" || n.type === "concept" || n.type === "pattern" || n.type === "comparison") {
       for (const s of REQUIRED_SECTIONS[n.type]) {
         if (!n.sections[s]) problems.push(`${n.id}: missing required section '## ${s}'`);
