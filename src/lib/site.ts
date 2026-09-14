@@ -8,6 +8,25 @@ export const site = {
   twitter: "@techflow",
 } as const;
 
+/**
+ * The guided journey from the product spec: the walk that is supposed to make
+ * "this is how technologies connect" land. The homepage renders it and
+ * `pnpm validate` asserts every hop is one click, so it cannot rot quietly.
+ */
+export const FIRST_JOURNEY = [
+  "redis",
+  "cache",
+  "cache-aside",
+  "e-commerce",
+  "postgresql",
+  "transaction",
+  "distributed-system",
+  "kafka",
+  "event-driven-architecture",
+  "microservices",
+  "rate-limiter",
+] as const;
+
 export const nav = [
   { href: "/technology", label: "Technologies", key: "t" },
   { href: "/concept", label: "Concepts", key: "c" },

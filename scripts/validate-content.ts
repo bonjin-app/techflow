@@ -8,8 +8,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { buildGraph, getNeighbors } from "../src/lib/content/graph";
 import { hrefFor, type DocNode } from "../src/lib/content/types";
+import { FIRST_JOURNEY } from "../src/lib/site";
 
-const REQUIRED_SECTIONS: Record<DocNode["type"], string[]> = {
+const REQUIRED_SECTIONS: Record<DocNode["type"] | "comparison", string[]> = {
+  comparison: ["TL;DR", "Comparison", "Decision"],
   technology: ["TL;DR", "Why", "Advantages", "Trade-offs", "When to use", "When not to use"],
   concept: ["TL;DR", "Why it matters"],
   pattern: ["Problem", "Solution", "How it works", "Advantages", "Disadvantages", "When to use", "When not to use"],
@@ -32,9 +34,24 @@ function main() {
     if (n.difficulty < 1 || n.difficulty > 5) problems.push(`${n.id}: difficulty must be 1–5`);
     if (n.tagline.length > 90) warnings.push(`${n.id}: tagline is long (${n.tagline.length} chars)`);
 
-    if (n.type === "technology" || n.type === "concept" || n.type === "pattern") {
+    if (n.type === "technology" || n.type === "concept" || n.type === "pattern" || n.type === "comparison") {
       for (const s of REQUIRED_SECTIONS[n.type]) {
         if (!n.sections[s]) problems.push(`${n.id}: missing required section '## ${s}'`);
+      }
+      // A comparison exists to refuse an unconditional recommendation. The
+      // mechanism is a decision tree and a section per subject; without those
+      // it is an opinion piece with a table.
+      if (n.type === "comparison") {
+        if (!/^```compare\s*$/m.test(n.sections["Comparison"] ?? "")) {
+          problems.push(`${n.id}: '## Comparison' needs a \`compare\` fence`);
+        }
+        if (!/^```decision\s*$/m.test(n.sections["Decision"] ?? "")) {
+          problems.push(`${n.id}: '## Decision' needs a \`decision\` fence — that is what stops it recommending a winner`);
+        }
+        const whens = n.sectionOrder.filter((h) => h.startsWith("When "));
+        if (whens.length < n.subjects.length) {
+          problems.push(`${n.id}: ${whens.length} 'When …' section(s) for ${n.subjects.length} subjects — each side needs its case made`);
+        }
       }
       const degree = g.adjacency.get(n.id)?.length ?? 0;
       if (degree < 3) warnings.push(`${n.id}: only ${degree} edges — the graph will feel thin here`);
@@ -113,7 +130,6 @@ function main() {
   // The product's first success criterion is a specific walk: from Redis to the
   // idea of a distributed system, one click per hop, feeling like the pieces
   // connect. It broke once when nobody was watching, so it is a test now.
-  const FIRST_JOURNEY = ["redis", "cache", "cache-aside", "e-commerce", "postgresql", "transaction", "distributed-system"];
   for (let i = 0; i < FIRST_JOURNEY.length - 1; i++) {
     const [a, b] = [FIRST_JOURNEY[i], FIRST_JOURNEY[i + 1]];
     if (!getNeighbors(a).some((n) => n.node.id === b)) {

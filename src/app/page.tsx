@@ -4,7 +4,7 @@ import { dailyPick, getArchitectures, getBuilds, getChallenges, getConcepts, get
 import { buildRefMap } from "@/lib/content/refs";
 import { ChallengeCard } from "@/components/home/ChallengeCard";
 import { hrefFor, TYPE_LABEL, type NodeType } from "@/lib/content/types";
-import { site } from "@/lib/site";
+import { FIRST_JOURNEY, site } from "@/lib/site";
 import { todayKey } from "@/lib/local";
 import { HomeSearch } from "@/components/home/HomeSearch";
 import { SurpriseMe } from "@/components/home/SurpriseMe";
@@ -29,13 +29,11 @@ const ENTRY_TYPES: { type: NodeType; blurb: string }[] = [
   { type: "roadmap", blurb: "Backend, Frontend" },
 ];
 
-/** The guided first journey from the product spec. */
-const FIRST_JOURNEY = ["redis", "cache", "cache-aside", "e-commerce", "postgresql", "transaction", "distributed-system", "kafka", "event-driven-architecture", "microservices", "url-shortener"];
-
 export default function Home() {
   const g = getGraph();
   const builds = getBuilds();
   const today = todayKey();
+  const dailyTech = dailyPick(getTechnologies(), today, 0);
   const dailyConcept = dailyPick(getConcepts(), today, 1);
   const dailyArch = dailyPick(getArchitectures(), today, 2);
   const dailyChallenge = dailyPick(getChallenges(), today, 3);
@@ -186,7 +184,20 @@ export default function Home() {
         </section>
 
         {/* Daily */}
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {dailyTech && (
+            <Link href={hrefFor("technology", dailyTech.id)} className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-technology">Today&apos;s technology</span>
+                <Difficulty level={dailyTech.difficulty} showLabel={false} />
+              </div>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight group-hover:underline">{dailyTech.name}</h3>
+              <p className="mt-1 text-sm text-fg-muted">{dailyTech.tagline}</p>
+              <p className="mt-4 text-xs text-fg-faint">
+                {dailyTech.meta?.version ? `${dailyTech.meta.version} · ` : ""}when to use it, and when not to
+              </p>
+            </Link>
+          )}
           {dailyConcept && (
             <Link href={hrefFor("concept", dailyConcept.id)} className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
               <div className="flex items-center justify-between">
