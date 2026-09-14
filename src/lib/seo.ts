@@ -64,7 +64,9 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
       "@type": "ListItem",
       position: i + 1,
       name: it.name,
-      item: `${site.url}${it.path}`,
+      // The current page needs no URL, and several callers pass "#" for it —
+      // which would otherwise be published as a link to the site root.
+      ...(it.path === "#" ? {} : { item: `${site.url}${it.path}` }),
     })),
   };
 }

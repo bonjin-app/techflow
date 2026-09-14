@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getPractice, hasPractice } from "@/lib/practice";
 import { getEgoGraph, getNeighbors, getNode, getSystemDesigns } from "@/lib/content/graph";
 import { buildRefMap, collectArchRefs } from "@/lib/content/refs";
-import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
+import { nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { StepJourney } from "@/components/canvas/StepJourney";
 import { GraphLoader } from "@/components/graph/GraphLoader";
 import { MindMapLink } from "@/components/graph/MindMapLink";
@@ -42,7 +42,7 @@ export default async function Page({ params }: PageProps<"/system-design/[slug]"
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <JsonLd data={[techArticleJsonLd(node), breadcrumbJsonLd(breadcrumbsFor(node))]} />
+      <JsonLd data={techArticleJsonLd(node)} />
       <TrackVisit id={node.id} />
       <PageHeader node={node} />
       <p className="mb-6 max-w-3xl text-fg-muted">{node.summary}</p>

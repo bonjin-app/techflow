@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getNode, getRoadmaps, resolveRefs } from "@/lib/content/graph";
-import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
+import { nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { LearningPath } from "@/components/detail/LearningPath";
 import { TrackVisit } from "@/components/detail/TrackVisit";
@@ -42,7 +42,7 @@ export default async function Page({ params }: PageProps<"/roadmap/[slug]">) {
 
   return (
     <article className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <JsonLd data={[techArticleJsonLd(node), breadcrumbJsonLd(breadcrumbsFor(node))]} />
+      <JsonLd data={techArticleJsonLd(node)} />
       <TrackVisit id={node.id} />
       <PageHeader node={node} />
       <p className="mb-8 max-w-3xl text-fg-muted">{node.summary}</p>

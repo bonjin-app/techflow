@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getArchitectures, getEgoGraph, getNeighbors, getNode } from "@/lib/content/graph";
 import { getPractice, hasPractice } from "@/lib/practice";
-import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
+import { nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { ArchitectureView, DecisionRecords } from "@/components/canvas/ArchitectureView";
 import { GraphLoader } from "@/components/graph/GraphLoader";
 import { MindMapLink } from "@/components/graph/MindMapLink";
@@ -38,7 +38,7 @@ export default async function Page({ params }: PageProps<"/architecture/[slug]">
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <JsonLd data={[techArticleJsonLd(arch), breadcrumbJsonLd(breadcrumbsFor(arch))]} />
+      <JsonLd data={techArticleJsonLd(arch)} />
       <TrackVisit id={arch.id} />
       <PageHeader node={arch} />
 

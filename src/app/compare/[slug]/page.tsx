@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getComparisons, getNeighbors, getNode } from "@/lib/content/graph";
 import { buildRefMap, collectMarkdownRefs } from "@/lib/content/refs";
 import { hrefFor } from "@/lib/content/types";
-import { breadcrumbJsonLd, breadcrumbsFor, nodeMetadata, techArticleJsonLd } from "@/lib/seo";
+import { nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { Markdown } from "@/components/md/Markdown";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
@@ -41,7 +41,7 @@ export default async function Page({ params }: PageProps<"/compare/[slug]">) {
 
   return (
     <article className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <JsonLd data={[techArticleJsonLd(node), breadcrumbJsonLd(breadcrumbsFor(node))]} />
+      <JsonLd data={techArticleJsonLd(node)} />
       <TrackVisit id={node.id} />
       <PageHeader node={node} />
 

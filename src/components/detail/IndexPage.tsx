@@ -4,8 +4,6 @@ import { TYPE_LABEL } from "@/lib/content/types";
 import { getGraph, summarize } from "@/lib/content/graph";
 import { NodeGrid } from "@/components/ui/NodeCard";
 import { Breadcrumbs } from "./PageHeader";
-import { JsonLd } from "@/components/ui/JsonLd";
-import { breadcrumbJsonLd } from "@/lib/seo";
 
 /** Shared index page: title, blurb, nodes grouped by category. */
 export function IndexPage({
@@ -38,7 +36,6 @@ export function IndexPage({
   ];
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <JsonLd data={breadcrumbJsonLd(crumbs.slice(0, 1))} />
       <Breadcrumbs items={crumbs} />
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>

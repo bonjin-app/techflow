@@ -3,12 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getBuilds, getNode, resolveRefs } from "@/lib/content/graph";
 import { hrefFor, TYPE_LABEL, type AnyNode } from "@/lib/content/types";
-import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 import { ArchitectureView } from "@/components/canvas/ArchitectureView";
 import { LearningPath } from "@/components/detail/LearningPath";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
 import { Chip, SectionHeading } from "@/components/ui/Badge";
-import { JsonLd } from "@/components/ui/JsonLd";
 
 export const dynamicParams = false;
 
@@ -63,7 +62,6 @@ export default async function Page({ params }: PageProps<"/build/[slug]">) {
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <JsonLd data={breadcrumbJsonLd(crumbs)} />
       <Breadcrumbs items={crumbs} />
       <header className="mb-8">
         <div className="font-mono text-xs uppercase tracking-wider text-fg-faint">You want to build</div>

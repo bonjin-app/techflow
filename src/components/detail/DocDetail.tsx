@@ -3,7 +3,7 @@ import type { DocNode } from "@/lib/content/types";
 import { getEgoGraph, getNeighbors, resolveRefs } from "@/lib/content/graph";
 import { buildRefMap, collectMarkdownRefs } from "@/lib/content/refs";
 import { getPractice, hasPractice } from "@/lib/practice";
-import { breadcrumbJsonLd, breadcrumbsFor, techArticleJsonLd } from "@/lib/seo";
+import { techArticleJsonLd } from "@/lib/seo";
 import { Markdown } from "@/components/md/Markdown";
 import { GraphLoader } from "@/components/graph/GraphLoader";
 import { Chip, SectionHeading } from "@/components/ui/Badge";
@@ -84,7 +84,7 @@ export function DocDetail({ node }: { node: DocNode }) {
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <JsonLd data={[techArticleJsonLd(node), breadcrumbJsonLd(breadcrumbsFor(node))]} />
+      <JsonLd data={techArticleJsonLd(node)} />
       <TrackVisit id={node.id} />
       <PageHeader node={node} />
 

@@ -86,14 +86,38 @@ function main() {
     .map((p) => (p === "/index" ? "/" : p))
     .filter((p) => p !== "/" && !linkedTo.has(p) && !EXPECTED_ORPHANS.has(p));
 
+  // Every page that ships should be in the sitemap. The sitemap lists nodes,
+  // builds and stacks dynamically but carries a hand-written list of static
+  // routes, and a hand-written list is a list that goes stale.
+  const SITEMAP_EXEMPT = new Set(["/404", "/_not-found"]);
+  const sitemapFile = path.join(OUT, "sitemap.xml");
+  const missingFromSitemap: string[] = [];
+  if (fs.existsSync(sitemapFile)) {
+    const xml = fs.readFileSync(sitemapFile, "utf8");
+    const listed = new Set(
+      [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => {
+        let p = m[1].replace(/^https?:\/\/[^/]+/, "").replace(/\/$/, "");
+        if (BASE && p.startsWith(BASE)) p = p.slice(BASE.length);
+        return p || "/";
+      }),
+    );
+    for (const file of pages) {
+      const rel = "/" + path.relative(OUT, file).replace(/\.html$/, "").replace(/\/index$/, "");
+      const p = rel === "/index" ? "/" : rel;
+      if (!listed.has(p) && !SITEMAP_EXEMPT.has(p)) missingFromSitemap.push(p);
+    }
+  }
+  for (const p of missingFromSitemap) console.error(`  ✖ ${p} — built but missing from sitemap.xml`);
+
   for (const [href, froms] of broken) {
     console.error(`  ✖ ${href} — linked from ${[...froms].slice(0, 3).join(", ")}${froms.size > 3 ? ` (+${froms.size - 3} more)` : ""}`);
   }
   for (const o of orphans) console.warn(`  ⚠ ${o} — generated but nothing links to it`);
 
   console.log(`\n${pages.length} pages, ${checked} internal links checked`);
-  if (broken.size > 0) {
-    console.error(`✖ ${broken.size} broken link target(s)`);
+  if (broken.size > 0 || missingFromSitemap.length > 0) {
+    if (broken.size) console.error(`✖ ${broken.size} broken link target(s)`);
+    if (missingFromSitemap.length) console.error(`✖ ${missingFromSitemap.length} page(s) missing from sitemap.xml`);
     process.exit(1);
   }
   console.log(`✔ all internal links resolve (${orphans.length} orphan page(s))`);

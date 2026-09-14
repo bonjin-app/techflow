@@ -2,10 +2,17 @@ import Link from "next/link";
 import type { AnyNode } from "@/lib/content/types";
 import { TYPE_LABEL, TYPE_ROUTE } from "@/lib/content/types";
 import { Difficulty, TypeBadge } from "@/components/ui/Badge";
+import { JsonLd } from "@/components/ui/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
+/**
+ * The trail, drawn and published from the same array — nine page types drew one
+ * and emitted no structured data, which is how the two drift apart.
+ */
 export function Breadcrumbs({ items }: { items: { name: string; path: string }[] }) {
   return (
     <nav aria-label="Breadcrumb" className="mb-4 text-xs text-fg-faint">
+      <JsonLd data={breadcrumbJsonLd(items)} />
       <ol className="flex flex-wrap items-center gap-1.5">
         {items.map((it, i) => (
           <li key={it.path} className="flex items-center gap-1.5">
