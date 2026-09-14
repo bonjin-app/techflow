@@ -1,11 +1,13 @@
 /**
- * The product spec defines itself with four questions. They are the promise, so
- * they are a test — three of the four silently stopped working once.
+ * The search box is the front door: a question must be understood, and a
+ * keyword must rank the page it names first. Both are promises the product
+ * makes, and both have broken silently before.
  *
  *   pnpm check:intent
  */
 import { buildGraph, getBuilds, getSearchIndex } from "../src/lib/content/graph";
 import { detectIntent, type IntentKind } from "../src/lib/intent";
+import { searchNodes } from "../src/lib/search";
 
 interface Case {
   q: string;
@@ -28,6 +30,19 @@ const CASES: Case[] = [
   { q: "I want to build a mobile app", kind: "build", hits: "mobile-app" },
 ];
 
+/** query → the id that must come first. Abbreviations and typos included. */
+const RANKING: [string, string][] = [
+  ["redis", "redis"],
+  ["cach", "cache"],
+  ["rate limiting", "rate-limiting"],
+  ["k8s", "kubernetes"],
+  ["adr", "architecture-decision-record"],
+  ["postgres", "postgresql"],
+  ["redsi", "redis"],
+  ["kuberentes", "kubernetes"],
+  ["docekr", "docker"],
+];
+
 function main() {
   buildGraph();
   const index = getSearchIndex();
@@ -45,13 +60,18 @@ function main() {
     if (!found.includes(c.hits)) failures.push(`"${c.q}" — did not find '${c.hits}' (found ${found.join(", ") || "nothing"})`);
   }
 
+  for (const [q, want] of RANKING) {
+    const first = searchNodes(index, q, 1)[0]?.item.id;
+    if (first !== want) failures.push(`search "${q}" — ranked '${first ?? "nothing"}' first, expected '${want}'`);
+  }
+
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} question(s) checked`);
+  console.log(`\n${CASES.length} question(s) and ${RANKING.length} keyword(s) checked`);
   if (failures.length) {
-    console.error(`✖ ${failures.length} question(s) the site cannot answer`);
+    console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);
   }
-  console.log("✔ every example question is understood");
+  console.log("✔ every example question is understood and every keyword ranks its page first");
 }
 
 main();

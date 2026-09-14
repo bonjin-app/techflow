@@ -1,4 +1,5 @@
 import type { NodeSummary } from "./content/types";
+import { ALIASES } from "./aliases";
 
 /**
  * Turns a sentence into a route through the graph.
@@ -76,27 +77,6 @@ function norm(s: string) {
 }
 
 /** Shorthand developers actually type, mapped to node ids. Only unambiguous ones. */
-const ALIASES: Record<string, string> = {
-  postgres: "postgresql",
-  psql: "postgresql",
-  mongo: "mongodb",
-  k8s: "kubernetes",
-  kube: "kubernetes",
-  rabbit: "rabbitmq",
-  "node js": "nodejs",
-  node: "nodejs",
-  "next js": "nextjs",
-  websockets: "websocket",
-  webhooks: "webhook",
-  embeddings: "embedding",
-  "vector db": "vector-database",
-  "vector store": "vector-database",
-  llms: "llm",
-  agents: "ai-agent",
-  microservice: "microservices",
-  queues: "message-queue",
-  queue: "message-queue",
-};
 
 /** Node names/ids named in the sentence. Longest names win, so "vector database" beats "database". */
 function findMentions(q: string, index: NodeSummary[]): { nodes: NodeSummary[]; words: string[] } {
