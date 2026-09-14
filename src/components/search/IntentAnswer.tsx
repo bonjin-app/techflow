@@ -7,10 +7,22 @@ import { TYPE_LABEL } from "@/lib/content/types";
 const KIND_EYEBROW: Record<Intent["kind"], string> = {
   build: "You want to build something",
   why: "You asked why",
+  when: "You asked when it fits",
   compare: "You are choosing between two things",
   how: "You asked how it works",
   learn: "You want a path through this",
 };
+
+/**
+ * Jump to the section that answers the question, not the top of the page.
+ * Only where the section is guaranteed to exist: the validator requires "Why"
+ * on technologies and concepts, and "When to use" on technologies and patterns.
+ */
+function anchorFor(kind: Intent["kind"], type: string): string {
+  if (kind === "why" && (type === "technology" || type === "concept")) return "#why";
+  if (kind === "when" && (type === "technology" || type === "pattern")) return "#when";
+  return "";
+}
 
 /**
  * The answer card above ordinary search results. It says back what it thinks was
@@ -70,7 +82,7 @@ export function IntentAnswer({ intent, query }: { intent: Intent; query: string 
             <ul className="grid gap-1.5 sm:grid-cols-2">
               {mentioned.map((n) => (
                 <li key={n.id}>
-                  <Link href={n.href} data-type={n.type} className="group flex min-w-0 items-baseline gap-2 text-sm">
+                  <Link href={`${n.href}${anchorFor(intent.kind, n.type)}`} data-type={n.type} className="group flex min-w-0 items-baseline gap-2 text-sm">
                     <span className="size-1.5 shrink-0 translate-y-[-1px] rounded-full" style={{ background: "var(--type)" }} aria-hidden />
                     <span className="shrink-0 whitespace-nowrap font-medium text-fg group-hover:underline">{n.name}</span>
                     <span className="min-w-0 truncate text-xs text-fg-faint">

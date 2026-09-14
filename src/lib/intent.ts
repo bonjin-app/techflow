@@ -14,7 +14,7 @@ import type { NodeSummary } from "./content/types";
  * returns null and the page falls back to ordinary ranked search.
  */
 
-export type IntentKind = "build" | "why" | "compare" | "how" | "learn";
+export type IntentKind = "build" | "why" | "when" | "compare" | "how" | "learn";
 
 export interface BuildTarget {
   id: string;
@@ -54,8 +54,12 @@ const GOAL_WORDS: [string[], string][] = [
 const KIND_WORDS: [string[], IntentKind][] = [
   [["want to build", "build a", "building a", "make a", "making a", "create a", "how do i build", "i need to build"], "build"],
   [["vs", "versus", "or should i", "which one", "difference between", "compare"], "compare"],
-  [["why do i need", "why use", "why would", "do i need", "why is", "why does"], "why"],
+  [["why do i need", "why use", "why would", "do i need", "why is", "why does", "why"], "why"],
+  // "When is Kafka needed?" is a different question from "why" and from "how":
+  // it asks for the conditions under which the thing is the right choice.
+  [["when is", "when do i", "when should", "when to use", "when would", "when not", "when"], "when"],
   [["how does", "how do i", "how to", "how should"], "how"],
+  [["what is", "what are", "what does"], "why"],
   [["learn", "study", "roadmap", "where do i start", "getting started", "beginner"], "learn"],
 ];
 
@@ -101,7 +105,10 @@ function findMentions(q: string, index: NodeSummary[]): { nodes: NodeSummary[]; 
   const claimed: [number, number][] = [];
 
   const candidates = index
-    .filter((n) => ["technology", "concept", "pattern"].includes(n.type))
+    // Architectures and system designs are named in questions too — "design a
+    // payment system", "how does a news feed work" — and leaving them out made
+    // those questions invisible to the reader.
+    .filter((n) => ["technology", "concept", "pattern", "architecture", "system-design"].includes(n.type))
     .flatMap((n) => {
       const names = new Set<string>([norm(n.name), n.id.replace(/-/g, " ")]);
       // "Server-Sent Events (SSE)" should also match "sse"
@@ -160,10 +167,10 @@ export function detectIntent(rawQuery: string, index: NodeSummary[], builds: Bui
   const q = norm(rawQuery);
   if (!q) return null;
   const words = q.split(" ");
-  // one or two bare words is a lookup, not a question
-  const looksLikeSentence = words.length >= 3;
-
   const { kind, word: kindWord } = findKind(q);
+  // One or two bare words is a lookup, not a question — unless one of them is a
+  // question word. "Why Redis?" is a question, and it is two words.
+  const looksLikeSentence = words.length >= 3 || !!kindWord;
   const { goal, word: goalWord } = findGoal(q, builds);
   const { nodes: mentioned, words: mentionWords } = findMentions(q, index);
 
@@ -187,6 +194,7 @@ export function detectIntent(rawQuery: string, index: NodeSummary[], builds: Bui
   else if (goal) reading = `You want to build ${goal.name}.`;
   else if (comparison) reading = `You are weighing up ${names.slice(0, 2).join(" against ")}.`;
   else if (kind === "why") reading = `You are asking why ${names[0]} is needed.`;
+  else if (kind === "when") reading = `You are asking when ${names[0]} is the right choice.`;
   else if (kind === "how") reading = `You are asking how ${names[0]} works.`;
   else reading = `You are looking for a path through ${names.slice(0, 3).join(", ")}.`;
 
