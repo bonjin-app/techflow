@@ -22,14 +22,15 @@
     "Density is wildly uneven — a city block may hold more objects than a whole region.",
     "Results may be a few seconds stale; a result that no longer exists is worse than a missing one.",
     "A search near a boundary must not miss objects just over it.",
-    "Read volume is dominated by search; write volume is dominated by position updates."
+    "Read volume is dominated by search; write volume is dominated by position updates.",
+    "A match must be assigned to exactly one driver, even when two requests choose the same one."
   ],
   "steps": [
     {
       "title": "One table, one query",
       "scale": "10,000 objects",
       "problem": "Start with the obvious thing: a table of latitude and longitude, and a query that computes distance to every row. It is correct, it is one statement, and it scans the table every time.",
-      "why": "At this size a full scan is genuinely fine, and it is worth writing because it defines the correct answer you will later approximate. The first optimisation is not an exotic index but a bounding box: filter by a latitude and longitude range first — which a composite B-tree can serve — then compute exact distance on the survivors and sort. A spatial extension (PostGIS and its equivalents) does this properly with an R-tree, and for a single node it is the right answer for a long time. What you must not do is compute distance in the WHERE clause over the whole table and call it indexed; it is not, and the plan will tell you so.",
+      "why": "At this size a full scan is genuinely fine, and it is worth writing because it defines the correct answer you will later approximate. The first optimisation is not an exotic index but a bounding box: filter by a latitude and longitude range first — which a composite B-tree can serve — then compute exact distance on the survivors and sort. A spatial extension (PostGIS and its equivalents) does this properly with an R-tree, and for a single node it is the right answer for a long time. What you must not do is compute distance in the WHERE clause over the whole table and call it indexed; it is not, and the plan will tell you so. It is worth writing the naive version down because it defines the correct answer that every later step approximates, and because the approximations are hard to check without it. The bounding box is the first real optimisation and it is not exact: a box that contains a circle also contains corners outside the radius, so the exact distance filter on the survivors is not optional. A spatial extension does this properly with an R-tree, which indexes rectangles rather than ordered values and is the right answer on a single node for a long time. The failure that ends this step is not the query plan, it is density — a box around a city centre returns thousands of rows to filter, and the refinement cost grows with the population rather than with the result size.",
       "alternatives": [
         "indexing",
         "sql"
@@ -97,7 +98,7 @@
       "title": "Turn proximity into equality",
       "scale": "1 million objects",
       "problem": "The bounding box still returns too much in dense areas, the spatial index is now the hottest structure in the database, and you cannot cache anything because every query has a slightly different centre point.",
-      "why": "Divide the world into a fixed grid and give every cell a name — a geohash string, an S2 or H3 cell id. An object's cell is computed once on write and stored as an ordinary column. A search becomes: find the cells the radius touches, look them up by equality, then refine by exact distance. Equality lookups are cacheable, shardable and cheap, which the distance function never was. Two details decide whether this works. The radius almost always spans several cells, so you query the centre cell *and its neighbours* — the boundary problem, and the reason a naive single-cell lookup silently misses the closest object. And the cell size is a trade: large cells mean fewer lookups and more rows to refine, small cells the reverse.",
+      "why": "Divide the world into a fixed grid and give every cell a name — a geohash string, an S2 or H3 cell id. An object's cell is computed once on write and stored as an ordinary column. A search becomes: find the cells the radius touches, look them up by equality, then refine by exact distance. Equality lookups are cacheable, shardable and cheap, which the distance function never was. Two details decide whether this works. The radius almost always spans several cells, so you query the centre cell *and its neighbours* — the boundary problem, and the reason a naive single-cell lookup silently misses the closest object. And the cell size is a trade: large cells mean fewer lookups and more rows to refine, small cells the reverse. The cell size is the decision that governs everything after it. Large cells mean fewer lookups and more rows to refine; small cells mean the opposite, and a radius that spans dozens of cells. There is no globally right answer because density is not uniform, which is exactly the problem step four has to solve. The boundary fan-out is the correctness detail people skip: a search centred near the edge of a cell must query the neighbours or it will silently miss the closest object, and the bug is invisible in testing because the result still looks plausible. What this step buys is cacheability — a cell id is a stable key, so thousands of different search centres hit the same entries, which a distance function could never allow.",
       "alternatives": [
         "partitioning",
         "cache-aside"
@@ -211,7 +212,7 @@
       "title": "Everything is moving",
       "scale": "10 million objects, updating every 4 seconds",
       "problem": "Active objects report a new position every few seconds. That is millions of writes per minute, each one potentially changing the object's cell, and every one of them invalidates a cached cell list. The write path is now larger than the read path, and the database is being used as a scratchpad.",
-      "why": "Split the index from the record. The live position index lives entirely in memory — a geo-indexed structure in Redis, keyed by cell, with a TTL so an object that stops reporting disappears on its own instead of being served forever as a ghost. Position updates go to that index directly and are not durable, which is correct: last week's position of a moving courier has no value. Durable history, if you need it, goes to a log rather than to row updates, where it becomes an analytics problem instead of a transactional one. Search reads only the in-memory index. The staleness budget becomes an explicit product decision — a few seconds is invisible to a user and saves an order of magnitude of write load.",
+      "why": "Split the index from the record. The live position index lives entirely in memory — a geo-indexed structure in Redis, keyed by cell, with a TTL so an object that stops reporting disappears on its own instead of being served forever as a ghost. Position updates go to that index directly and are not durable, which is correct: last week's position of a moving courier has no value. Durable history, if you need it, goes to a log rather than to row updates, where it becomes an analytics problem instead of a transactional one. Search reads only the in-memory index. The staleness budget becomes an explicit product decision — a few seconds is invisible to a user and saves an order of magnitude of write load. The decision underneath this step is that a position is not a fact worth keeping. Last week's location of a courier has no value, so it does not belong in a transactional database paying for durability, replication and backup on every update. Moving the live index into memory with a TTL also solves a problem nobody asks about until it bites: an object that stops reporting disappears on its own, instead of being served forever as a ghost that a rider taps and waits for. The staleness budget becomes an explicit product decision rather than an accident — a few seconds is invisible to a user and saves an order of magnitude of write load, and stating the number is what lets you defend the design later. The durable copy goes to a log, where it is an analytics problem rather than a transactional one.",
       "alternatives": [
         "ttl",
         "message-queue"
@@ -366,7 +367,7 @@
       "title": "The world is not evenly full",
       "scale": "Global, with hotspots",
       "problem": "Sharding by cell was supposed to spread load, and it does not: one cell covering a city centre at rush hour holds more objects and serves more searches than several countries combined. That shard saturates while its neighbours idle, and a fixed grid cannot be retuned without reindexing everything.",
-      "why": "Use a hierarchical grid instead of a flat one. Cell ids from a space-filling curve are prefixes of each other, so a cell can be subdivided where density demands it and left coarse where it does not — a quadtree in effect, with the useful property that a coarse search still maps onto the finer cells beneath it. Shards are assigned by cell prefix and rebalanced by splitting hot prefixes, which is a data-movement operation rather than a redesign. Two things have to be true for this to stay honest: searches near a shard boundary must fan out across shards and merge, and the metric you watch is not average latency but the p99 of the densest cell, because the average is dominated by empty countryside. Track index staleness — the age of the oldest position in a result — as a first-class number, since it, not latency, is what makes results feel wrong.",
+      "why": "Use a hierarchical grid instead of a flat one. Cell ids from a space-filling curve are prefixes of each other, so a cell can be subdivided where density demands it and left coarse where it does not — a quadtree in effect, with the useful property that a coarse search still maps onto the finer cells beneath it. Shards are assigned by cell prefix and rebalanced by splitting hot prefixes, which is a data-movement operation rather than a redesign. Two things have to be true for this to stay honest: searches near a shard boundary must fan out across shards and merge, and the metric you watch is not average latency but the p99 of the densest cell, because the average is dominated by empty countryside. Track index staleness — the age of the oldest position in a result — as a first-class number, since it, not latency, is what makes results feel wrong. The property that makes a hierarchical grid work is that cell ids from a space-filling curve are prefixes of each other, so a coarse cell contains its finer children by construction and a search resolved at one level maps onto any other. Shards are assigned by prefix, and rebalancing a hot area means splitting a prefix and moving data rather than reindexing the world. Two things have to stay true for this to remain honest. Searches near a shard boundary must fan out and merge, so the routing layer is doing scatter-gather rather than a single lookup, and the cell router's map has to be cached everywhere and updated atomically or two servers will disagree about who owns a cell. The metric to watch is not the mean — the mean is dominated by empty countryside — but the p99 of the densest cell, alongside index staleness, which is what actually makes results feel wrong.",
       "alternatives": [
         "sharding",
         "capacity-planning"
@@ -537,9 +538,202 @@
           "style": "dashed"
         }
       ]
+    },
+    {
+      "title": "From nearest to best match",
+      "scale": "Assignment, not just lookup",
+      "problem": "Returning the closest objects was never the product. A rider needs a driver assigned, and assigning each request to its nearest driver as it arrives is measurably worse than waiting two seconds and assigning a batch: greedy matching strands a driver one street away because a request that arrived half a second earlier took the one across town.",
+      "why": "Split retrieval from ranking, then from assignment. The spatial index still answers 'who is within 3km' quickly — that is a candidate set, not a decision. Ranking scores those candidates on the things the product cares about: estimated time of arrival rather than straight-line distance, driver rating, whether they are about to finish another trip. Assignment then solves the whole batch at once over a short window, which is a small optimisation problem and dramatically better than first-come-first-served. The window is the trade: longer batches match better and make every user wait, so it is tuned against the abandonment rate rather than against the match quality alone. Once assignment exists, the index needs one more field — a status, so an object already committed to a trip is never a candidate — and that field has to be updated atomically or two riders get the same driver. The batching window is the only real knob and it trades two numbers against each other: a longer window matches better because the matcher sees more of both sides of the market, and it makes every rider wait longer before hearing anything. Tune it against abandonment, not against match quality alone, or you will optimise a metric nobody feels. The status field is the sharp edge — a driver who is a candidate in two concurrent batches must be claimable by exactly one, which is a compare-and-set rather than a read followed by a write, and getting it wrong sends two riders to the same car. Everything downstream of the assignment — the notification, the pricing, the analytics — consumes an event rather than blocking the match, because the rider is waiting on exactly one thing and it is not the receipt.",
+      "alternatives": [
+        "consistent-hashing",
+        "distributed-lock"
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Rider App",
+          "kind": "client",
+          "x": 0,
+          "y": 1,
+          "ref": "mobile-networking",
+          "role": "Requests a trip",
+          "why": "Waits a couple of seconds for a match rather than an instant answer that is worse.",
+          "alternatives": [],
+          "related": [
+            "http"
+          ]
+        },
+        {
+          "id": "api",
+          "label": "Match API",
+          "kind": "service",
+          "x": 1,
+          "y": 1,
+          "ref": "backend",
+          "role": "Accepts requests into the current window",
+          "why": "Buffers arrivals for a short batching window instead of dispatching each one on arrival.",
+          "alternatives": [],
+          "related": [
+            "rest",
+            "tail-latency"
+          ]
+        },
+        {
+          "id": "geo",
+          "label": "Geo Index",
+          "kind": "cache",
+          "x": 2,
+          "y": 0,
+          "ref": "redis",
+          "role": "Candidate retrieval",
+          "why": "Answers 'who is nearby and available' in milliseconds; it filters, it does not decide.",
+          "alternatives": [],
+          "related": [
+            "cache",
+            "ttl"
+          ]
+        },
+        {
+          "id": "rank",
+          "label": "Ranker",
+          "kind": "service",
+          "x": 3,
+          "y": 0,
+          "ref": "machine-learning",
+          "role": "Scores candidates",
+          "why": "Estimated arrival time, rating and how soon a driver frees up — straight-line distance is a poor proxy for any of them.",
+          "alternatives": [],
+          "related": [
+            "model-serving"
+          ]
+        },
+        {
+          "id": "matcher",
+          "label": "Batch Matcher",
+          "kind": "worker",
+          "x": 3,
+          "y": 2,
+          "ref": "job-scheduler",
+          "role": "Assigns the whole window at once",
+          "why": "Solving the batch beats assigning greedily as requests arrive; the window length is the tuning knob.",
+          "alternatives": [],
+          "related": [
+            "capacity-planning"
+          ]
+        },
+        {
+          "id": "lock",
+          "label": "Assignment Lock",
+          "kind": "cache",
+          "x": 4,
+          "y": 2,
+          "ref": "distributed-lock",
+          "role": "One driver, one trip",
+          "why": "The status flip must be atomic, or two riders are told the same driver is coming.",
+          "alternatives": [],
+          "related": [
+            "race-condition",
+            "idempotency"
+          ]
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "kind": "db",
+          "x": 5,
+          "y": 1,
+          "ref": "postgresql",
+          "role": "Trips and drivers",
+          "why": "The durable record of who was assigned to whom, written once the lock is held.",
+          "alternatives": [],
+          "related": [
+            "transaction"
+          ]
+        },
+        {
+          "id": "queue",
+          "label": "Kafka",
+          "kind": "queue",
+          "x": 4,
+          "y": 3,
+          "ref": "kafka",
+          "role": "Match events",
+          "why": "Notifications, pricing and analytics consume the assignment without the rider waiting for any of them.",
+          "alternatives": [],
+          "related": [
+            "fan-out",
+            "event-driven-architecture"
+          ]
+        },
+        {
+          "id": "obs",
+          "label": "Observability",
+          "kind": "external",
+          "x": 5,
+          "y": 3,
+          "ref": "observability",
+          "role": "Match rate, wait time, abandonment",
+          "why": "Match quality and time-to-match move in opposite directions; you cannot tune the window without watching both.",
+          "alternatives": [],
+          "related": [
+            "slo",
+            "tail-latency"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "from": "client",
+          "to": "api",
+          "label": "POST /trips"
+        },
+        {
+          "from": "api",
+          "to": "geo",
+          "label": "candidates within 3km"
+        },
+        {
+          "from": "geo",
+          "to": "rank",
+          "label": "candidate set"
+        },
+        {
+          "from": "rank",
+          "to": "matcher",
+          "label": "scored pairs"
+        },
+        {
+          "from": "matcher",
+          "to": "lock",
+          "label": "claim driver"
+        },
+        {
+          "from": "lock",
+          "to": "db",
+          "label": "write the trip"
+        },
+        {
+          "from": "db",
+          "to": "queue",
+          "label": "trip.matched",
+          "style": "dashed"
+        },
+        {
+          "from": "queue",
+          "to": "obs",
+          "label": "metrics",
+          "style": "dashed"
+        },
+        {
+          "from": "api",
+          "to": "client",
+          "label": "matched in ~2s",
+          "style": "dashed"
+        }
+      ]
     }
   ],
-  "textAlternative": "A four-step scale journey for a nearby-search system. Step one is a client, an API server and PostgreSQL, answering a radius query with a bounding-box filter followed by exact distance sorting. Step two precomputes a grid cell id for every object so proximity becomes an equality lookup, adds a load balancer and a Redis cache keyed by cell, and queries the centre cell together with its neighbours so objects just over a boundary are not missed. Step three separates the live index from the record: moving objects send positions to an ingest service that writes an in-memory, TTL'd geo index in Redis and appends durable history to Kafka, while search reads only the in-memory index and hydrates names from PostgreSQL. Step four replaces the flat grid with a hierarchical one whose cell ids are prefixes, so dense areas are subdivided and sparse ones left coarse, with a cell router mapping prefixes to shards, parallel scatter-gather across shards at boundaries, Kafka as the source for rebuilding a shard, and observability on the densest cell's p99 latency and index staleness.",
+  "textAlternative": "A four-step scale journey for a nearby-search system. Step one is a client, an API server and PostgreSQL, answering a radius query with a bounding-box filter followed by exact distance sorting. Step two precomputes a grid cell id for every object so proximity becomes an equality lookup, adds a load balancer and a Redis cache keyed by cell, and queries the centre cell together with its neighbours so objects just over a boundary are not missed. Step three separates the live index from the record: moving objects send positions to an ingest service that writes an in-memory, TTL'd geo index in Redis and appends durable history to Kafka, while search reads only the in-memory index and hydrates names from PostgreSQL. Step four replaces the flat grid with a hierarchical one whose cell ids are prefixes, so dense areas are subdivided and sparse ones left coarse, with a cell router mapping prefixes to shards, parallel scatter-gather across shards at boundaries, Kafka as the source for rebuilding a shard, and observability on the densest cell's p99 latency and index staleness. A fifth step separates retrieval from ranking and assignment: the match API buffers arrivals for a short window, the geo index returns candidates, a ranker scores them on estimated arrival time and rating rather than straight-line distance, and a batch matcher assigns the whole window at once. An assignment lock makes the status flip atomic so two riders cannot be given the same driver, the trip is written to PostgreSQL, and the match is published to Kafka for notifications, pricing and analytics.",
   "related": [
     {
       "to": "indexing",
