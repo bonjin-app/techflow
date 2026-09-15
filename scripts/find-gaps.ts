@@ -39,11 +39,15 @@ const WATCH: (string | [term: string, coveredBy: string])[] = [
   ["write amplification", "storage-engine"], ["hot partition", "sharding"], ["hotspot", "sharding"],
   ["cascading failure", "circuit-breaker"], ["chatty", "microservices"],
   ["distributed monolith", "microservices"], ["noisy neighbour", "cloud-platform"],
-  // no page, and no page covers them — these are the candidates
   ["mTLS", "mtls"], ["mutual TLS", "mtls"], ["zero trust", "mtls"],
-  "vector clock", "bloom filter", "spot instance",
-  "expand-contract", "trunk-based", "monorepo", "semantic versioning", "OpenAPI",
-  "WebAssembly", "eBPF", "gossip", "read repair", "N+1", "feature store", "runbook", "postmortem",
+  ["OpenAPI", "openapi"], ["postmortem", "incident-response"], ["runbook", "incident-response"],
+  // "N+1" mostly matches the redundancy sense (N+1 capacity); the query
+  // anti-pattern has its own section on the SQL page.
+  ["N+1 quer", "sql"],
+  // No page, and nothing covers them — these are the open candidates.
+  "vector clock", "bloom filter", "spot instance", "expand-contract", "trunk-based",
+  "monorepo", "semantic versioning", "WebAssembly", "eBPF", "gossip", "read repair",
+  "feature store",
 ];
 
 function walk(dir: string): string[] {

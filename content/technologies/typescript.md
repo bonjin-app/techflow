@@ -43,7 +43,7 @@ and a type-check step in CI. Day-to-day work looks like this:
   false sense of safety.
 - Model domain data as types or interfaces; use discriminated unions for states
   (`{ status: "loading" } | { status: "ok"; data: T } | { status: "error"; error: E }`).
-- Generate types from contracts instead of writing them twice: OpenAPI for
+- Generate types from contracts instead of writing them twice: [OpenAPI](/technology/openapi) for
   [REST](/concept/rest), codegen for [GraphQL](/technology/graphql), protobuf for
   [gRPC](/technology/grpc), Prisma/Drizzle for the database schema.
 - Validate at boundaries with a schema library (Zod, Valibot, ArkType) and infer the

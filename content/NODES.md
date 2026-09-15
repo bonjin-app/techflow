@@ -205,3 +205,12 @@ fan-out · tail-latency · backfill
 The second three came from widening the watchlist to failure modes: "fan-out"
 was used 86 times across 31 pages, and "p99" 45 times across 28, with no page
 behind either.
+
+## technologies/
+openapi
+
+With that the watchlist is drained at the threshold these waves used: the
+highest remaining term is "feature store" at 8 uses across 3 pages. "N+1" looked
+like a candidate and was not — most of its matches are the redundancy sense
+("N+1 capacity"), and the query anti-pattern already has a section on the SQL
+page.

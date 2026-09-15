@@ -92,7 +92,7 @@ whether the version you are about to ship has been verified against everything a
 running in that environment. That turns a matrix of compatibility questions into one gate
 in the [CI/CD](/concept/ci-cd) pipeline.
 
-**Schema-first is a valid variant.** When the provider already publishes an OpenAPI or
+**Schema-first is a valid variant.** When the provider already publishes an [OpenAPI](/technology/openapi) or
 protobuf schema, you can verify contracts against the schema rather than against a running
 service — cheaper to adopt, weaker guarantee, because a schema says what is possible and a
 contract says what is used.
