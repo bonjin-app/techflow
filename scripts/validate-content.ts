@@ -94,6 +94,9 @@ function main() {
     }
     if (n.type === "architecture") {
       if (n.flows.length === 0) warnings.push(`${n.id}: architecture has no flows (no ▶ Run animation)`);
+      // The page offers an Evolution control; without versions it renders nothing,
+      // and the "how did it get this way" half of the diagram is missing.
+      if (!n.versions?.length) warnings.push(`${n.id}: architecture has no versions (no evolution tabs)`);
       const refs = n.nodes.filter((x) => x.ref).length;
       if (refs === 0) problems.push(`${n.id}: no diagram node has a 'ref' — inspector cannot link to the graph`);
     }

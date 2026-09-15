@@ -262,6 +262,26 @@
         "The message service consumes at its own pace.",
         "History is written to PostgreSQL for search and reload."
       ]
+    },
+    {
+      "id": "reconnect",
+      "name": "Reconnect and catch up",
+      "path": [
+        "browser",
+        "lb",
+        "chat-2",
+        "message-svc",
+        "db",
+        "redis"
+      ],
+      "steps": [
+        "The client's connection drops — a tunnel, a sleeping laptop, a deploy — and it reconnects with the id of the last message it saw.",
+        "The load balancer sends it to whichever chat server has capacity, which is usually not the one it was on before.",
+        "Chat Server B accepts the socket. It holds no history and knows nothing about this client's gap.",
+        "It asks the message service for everything in these rooms since that last id — the socket cannot replay what it never carried.",
+        "PostgreSQL returns the missed messages in order, and they are delivered before any live traffic so the client never sees a gap.",
+        "Only then does the server subscribe to the room's Redis channel, and the client is live again."
+      ]
     }
   ],
   "decisions": [
@@ -348,7 +368,7 @@
       ]
     }
   ],
-  "textAlternative": "Browsers connect over WebSocket to a load balancer, which distributes connections across two chat servers. Both chat servers publish and subscribe to Redis so a message received on one server reaches recipients connected to the other. Messages are also written as events to Kafka. Three consumers read from Kafka: a message service that stores history in PostgreSQL, a notification service that pushes to offline users, and an analytics service.",
+  "textAlternative": "Browsers connect over WebSocket to a load balancer, which distributes connections across two chat servers. Both chat servers publish and subscribe to Redis so a message received on one server reaches recipients connected to the other. Messages are also written as events to Kafka. Three consumers read from Kafka: a message service that stores history in PostgreSQL, a notification service that pushes to offline users, and an analytics service. When a client reconnects it may land on a different chat server, which holds no history of its own: the server asks the message service for everything since the last message id the client saw, delivers that backlog from PostgreSQL first, and only then subscribes to the room's Redis channel so live messages resume without a gap.",
   "related": [
     {
       "to": "pub-sub",
