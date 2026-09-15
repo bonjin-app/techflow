@@ -75,7 +75,7 @@ rate), latency (proportion of requests under a threshold) and quality/freshness 
 pipelines: proportion of data processed within *n* minutes).
 
 **Set thresholds, not percentiles, in the SLI.** "99% of requests under 300 ms" is a
-counting problem you can compute anywhere. Averaging p99 values across instances or time
+counting problem you can compute anywhere. Averaging [p99](/concept/tail-latency) values across instances or time
 buckets is mathematically meaningless, which is why threshold counters are the standard
 implementation in [Prometheus](/technology/prometheus) recording rules.
 

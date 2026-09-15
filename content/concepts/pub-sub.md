@@ -49,7 +49,7 @@ the users connected to all the others.
 ## Visual
 
 ```sequence
-title: Publish and fan-out
+title: Publish and [fan-out](/concept/fan-out)
 participants: Checkout [backend], Broker [redis], Inventory, Email, Analytics
 Checkout -> Broker: PUBLISH order.placed {id: 42}
 Broker -> Inventory: order.placed {id: 42}

@@ -199,5 +199,9 @@ across 24 pages and had nowhere to send the reader.
 
 ## concepts/
 delivery-semantics · consensus · consistent-hashing · storage-engine ·
-service-discovery · autoscaling · change-data-capture · mtls
+service-discovery · autoscaling · change-data-capture · mtls ·
+fan-out · tail-latency · backfill
 
+The second three came from widening the watchlist to failure modes: "fan-out"
+was used 86 times across 31 pages, and "p99" 45 times across 28, with no page
+behind either.

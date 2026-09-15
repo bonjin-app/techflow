@@ -51,7 +51,7 @@ back in seconds, deleted data does not come back.
 title: Expand, migrate, contract across two deploys
 1. Expand (migration A) | add the new nullable column full_name, no default rewrite, no constraint
 2. Deploy 1 | new code writes BOTH first_name/last_name and full_name, reads the old fields
-3. Backfill in batches | UPDATE ... WHERE id BETWEEN, few thousand rows per batch, pause on replica lag
+3. [Backfill](/concept/backfill) in batches | UPDATE ... WHERE id BETWEEN, few thousand rows per batch, pause on replica lag
 4. Verify | count rows where full_name IS NULL, compare against the old fields
 5. Deploy 2 | new code reads full_name, still writing both so a rollback to Deploy 1 is safe
 6. Add the constraint | NOT NULL or CHECK once the data is known clean, validated concurrently
