@@ -108,7 +108,7 @@ tokens — so the zombie's writes fail even though it thinks it is in charge. If
 the resource cannot check tokens, the work must instead be
 [idempotent](/concept/idempotency).
 
-Choosing the store is a [CAP](/concept/cap-theorem) decision. A consensus store
+Choosing the store is a [CAP](/concept/cap-theorem) decision. A [consensus](/concept/consensus) store
 (etcd, ZooKeeper) is CP: during a partition it refuses to answer rather than
 elect two leaders. Redis is faster and simpler, but a failover of its own primary
 can lose the lease — fine for a nightly digest job, not for a ledger writer.

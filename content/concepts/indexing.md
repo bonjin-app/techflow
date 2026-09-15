@@ -27,7 +27,7 @@ meta: { lastReviewed: 2026-09-10, confidence: high }
 
 ## TL;DR
 
-An index is a separate, ordered data structure — usually a B-tree — that maps column
+An index is a separate, ordered data structure — usually a [B-tree](/concept/storage-engine) — that maps column
 values to row locations, so the database can jump to the matching rows instead of reading
 every one. It changes lookup cost from *O(n)* to roughly *O(log n)*, which is the
 difference between 400 ms and 0.2 ms on a million-row table. Indexes are not free: each

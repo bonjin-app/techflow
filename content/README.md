@@ -25,6 +25,10 @@ Every node carries `meta.lastReviewed`, and that date is rendered to the reader.
 validate` warns when a technology has not been reviewed for 12 months, or anything else for
 18 — the page makes a promise about freshness, so the checker keeps it.
 
+`pnpm gaps` lists terms the content already uses heavily with no page behind them — that is
+how waves 7 and 8 were chosen. Add a term to the watchlist in `scripts/find-gaps.ts` when you
+notice the pages leaning on something that has nowhere to link.
+
 ## Content principles
 
 Every technology/concept/pattern answers: *What? Why? How? When? Why not? Alternative?

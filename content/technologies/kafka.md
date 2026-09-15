@@ -51,7 +51,7 @@ What you actually build:
   so all events for one order land in the same partition, in order.
 - **Consumer groups per service.** Each service gets every event once; partitions are
   shared among that service's instances for parallelism.
-- **Idempotent consumers.** Kafka delivers at-least-once by default; handlers must
+- **Idempotent consumers.** Kafka delivers [at-least-once](/concept/delivery-semantics) by default; handlers must
   tolerate duplicates. See [Idempotency](/concept/idempotency).
 - **The Outbox pattern** to publish events atomically with database writes, usually
   via Debezium/Kafka Connect reading the DB log. See [Outbox](/pattern/outbox).

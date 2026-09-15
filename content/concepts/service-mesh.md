@@ -1,7 +1,7 @@
 ---
 id: service-mesh
 name: Service Mesh
-tagline: Move retries, mTLS and routing out of services into a managed proxy layer
+tagline: Move retries, [mTLS](/concept/mtls) and routing out of services into a managed proxy layer
 category: architecture
 tags: [Architecture, Networking, Kubernetes, Observability]
 difficulty: 4
@@ -61,7 +61,7 @@ title: One request through two sidecars
 
 ## How it works
 
-**Data plane.** The proxies (commonly Envoy) do the work: service discovery from the
+**Data plane.** The proxies (commonly Envoy) do the work: [service discovery](/concept/service-discovery) from the
 control plane, connection pooling, HTTP/1.1, [HTTP/2](/concept/http2) and gRPC awareness,
 header-based routing, weighted splitting, fault injection, and per-endpoint health.
 Interception is transparent — iptables rules or eBPF hooks — so no application change is

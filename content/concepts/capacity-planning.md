@@ -84,7 +84,7 @@ the marketing campaign, the enterprise customer onboarding in March and the regu
 deadline. Seasonality and one-off events belong in the model explicitly, with their
 expected multiplier.
 
-**Autoscaling is a tool, not an answer.** It handles diurnal variation well and sudden
+**[Autoscaling](/concept/autoscaling) is a tool, not an answer.** It handles diurnal variation well and sudden
 spikes poorly: instances take time to boot, caches start cold, and the scaling signal lags
 the demand. Plan static capacity for the spike you cannot wait out, and use elasticity for
 the predictable shape. Scaling limits, quota ceilings and node pool sizes must be part of

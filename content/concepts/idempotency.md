@@ -43,7 +43,7 @@ working. The only robust client behaviour is to [Retry](/pattern/retry) — and 
 retry of a non-idempotent operation is a duplicate side effect.
 
 The same ambiguity appears everywhere a message crosses a boundary: a
-[Message Queue](/concept/message-queue) that guarantees at-least-once delivery will
+[Message Queue](/concept/message-queue) that guarantees [at-least-once](/concept/delivery-semantics) delivery will
 occasionally deliver twice; a webhook provider re-sends when your endpoint is slow;
 a user double-clicks "Pay". Without idempotency, every one of these becomes a
 [Race Condition](/concept/race-condition) between the original and the duplicate.

@@ -111,7 +111,7 @@ layer; a service inside the VPC must still authenticate its callers. The modern 
 that the network is a blast-radius control, not a trust boundary: an attacker who compromises
 one workload is *inside*, and everything they can reach is everything you allowed that
 workload to reach. This is the argument for per-service rules rather than a permissive
-intra-VPC allow, and for mutual TLS between services — the job a
+intra-VPC allow, and for [mutual TLS](/concept/mtls) between services — the job a
 [service mesh](/concept/service-mesh) automates.
 
 **Connecting networks: pick the simplest thing that works.** Peering is a direct link between

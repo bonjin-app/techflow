@@ -188,3 +188,16 @@ Not graph nodes, added in the same wave so the new pages are reachable from the
 product's entry points rather than only from a roadmap:
 builds/ mobile-app · stacks/ mobile-app · challenges/ prompt-injection ·
 challenges/ mobile-double-submit
+
+---
+
+# Wave 8 — terms the content already leaned on
+
+Chosen from evidence again, one level down from wave 7: `pnpm gaps` lists terms
+the pages use often with no page behind them. "at-least-once" appeared 56 times
+across 24 pages and had nowhere to send the reader.
+
+## concepts/
+delivery-semantics · consensus · consistent-hashing · storage-engine ·
+service-discovery · autoscaling · change-data-capture · mtls
+

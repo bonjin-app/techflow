@@ -13,6 +13,7 @@
     "gen:index": "tsx scripts/gen-search-index.ts",
     "check:links": "tsx scripts/check-links.ts",
     "link:labels": "tsx scripts/link-labels.ts",
+    "gaps": "tsx scripts/find-gaps.ts",
     "gen:api": "tsx scripts/gen-api.ts",
     "gen": "pnpm gen:index && pnpm gen:api"
   },

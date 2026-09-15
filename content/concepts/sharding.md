@@ -69,7 +69,7 @@ Respond to the client | no other shard was involved
 - *Range* — keys 0–999 on shard A, 1000–1999 on B. Range scans stay local; hot ranges
   (today's timestamps, sequential ids) pile onto one shard.
 - *Hash* — `hash(key) mod N`. Even distribution; range queries must hit every shard.
-  Adding a node with plain modulo moves nearly every key; *consistent hashing* or
+  Adding a node with plain modulo moves nearly every key; [consistent hashing](/concept/consistent-hashing) or
   fixed virtual slots (Redis Cluster's 16,384 hash slots) move only a fraction.
 - *Directory* — a lookup table maps each key or tenant to a shard. Fully flexible
   (move one big tenant to its own node), but the directory is another component to
