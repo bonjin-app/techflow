@@ -22,7 +22,7 @@ related:
   - { to: write-through, rel: ALTERNATIVE_TO }
   - { to: cache-aside, rel: ALTERNATIVE_TO }
   - { to: message-queue, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-09, confidence: high }
+meta: { lastReviewed: 2026-09-15, confidence: high }
 ---
 
 ## Problem
@@ -98,6 +98,22 @@ Reads hit the cache, so the application always sees its own writes. Anything tha
 reads the *database* directly — reports, other services, replicas — sees data that
 lags by the flush interval. The pattern is a deliberate choice of
 [eventual consistency](/concept/eventual-consistency) for the persistent copy.
+
+**The flush interval is your data-loss window, so name it.** Everything written and
+not yet flushed disappears if the cache process dies. Five seconds of view counts is
+nothing; five seconds of orders is an incident. State the interval as a recovery
+point objective in the design document — "we accept losing up to N seconds of X" —
+because that sentence is the entire justification for the pattern, and a team that
+cannot write it should not be using it.
+
+**Never let the cache evict a dirty key.** This is the trap that turns write-behind
+into silent data loss: memory fills, the eviction policy does its job, and an entry
+holding unflushed changes is dropped as though it were a cached copy. The write is
+gone with no error anywhere. Either keep dirty state somewhere eviction cannot reach
+it — a durable [message queue](/concept/message-queue), a separate unbounded
+structure, an append-only log — or configure the cache so those keys are exempt and
+alert when memory pressure would force the issue. A cache instance used this way is
+no longer a cache; it is a database with an eviction policy pointed at your data.
 
 ## Advantages
 

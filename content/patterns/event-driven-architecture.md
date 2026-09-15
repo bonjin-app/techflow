@@ -23,9 +23,11 @@ related:
   - { to: kafka, rel: USED_WITH }
   - { to: rabbitmq, rel: USED_WITH }
   - { to: outbox, rel: USED_WITH }
+  - { to: delivery-semantics, rel: REQUIRES }
+  - { to: fan-out, rel: RELATED_TO }
   - { to: notification-system, rel: USED_IN }
   - { to: microservices, rel: USED_IN }
-meta: { lastReviewed: 2026-09-09, confidence: high }
+meta: { lastReviewed: 2026-09-15, confidence: high }
 ---
 
 ## Problem
@@ -80,7 +82,41 @@ The broker matters. A log such as [Kafka](/technology/kafka) keeps events for da
 and lets a new consumer replay history; a queue such as
 [RabbitMQ](/technology/rabbitmq) routes each message to the right worker and
 deletes it once acknowledged. Either way, delivery is at-least-once in practice,
-so every handler must tolerate duplicates and out-of-order arrival.
+so every handler must tolerate duplicates and out-of-order arrival — see
+[Delivery Semantics](/concept/delivery-semantics).
+
+**An event is a fact, not an instruction.** `OrderPlaced` is something that
+happened; `ReserveStock` is something you want done. The moment a producer publishes
+the second one it has a dependency on the consumer again, just routed through a
+broker — the coupling it was trying to remove, now harder to see. Name events in the
+past tense and let each consumer decide what the fact means for it. When a producer
+genuinely needs a specific thing done by a specific service, that is a command, and
+a direct call is more honest than pretending otherwise.
+
+**Schemas evolve, and consumers deploy on their own schedule.** This is the ongoing
+cost of the pattern. Adding an optional field is safe; removing one, renaming one or
+changing its meaning breaks every consumer you do not control, and you will not find
+out at build time. A schema registry with compatibility rules turns that into a
+failing publish rather than a silent break, and the discipline is the same as
+[API versioning](/pattern/api-versioning): add, deprecate, remove in a later
+version — never change in place. The subtler trap is semantic: keeping the field and
+altering what it means passes every compatibility check and breaks every consumer.
+
+**Order is guaranteed narrowly, if at all.** A log preserves order within a
+partition, so events about one entity stay ordered only if they share a partition
+key — usually the entity id. Across entities, and across topics, there is no order
+at all, so a consumer that joins two streams must tolerate the child arriving before
+the parent. Retries make it worse: a message sent to a retry topic reappears after
+messages that came later. Designs that quietly assume global order work in staging
+and fail under load.
+
+**Debugging is the real tax.** A synchronous call stack shows you what happened; an
+event chain does not, and "the email never arrived" could be the producer, the
+broker, one of four consumers, or a filter three hops away. The mitigations are not
+optional at any scale: a correlation id propagated through every event, distributed
+tracing across the async boundary, and consumer lag as a first-class metric.
+Without them the pattern's loose coupling becomes the inability to answer a simple
+question — see [Observability](/concept/observability).
 
 ```ts
 // Consumer: idempotent by design

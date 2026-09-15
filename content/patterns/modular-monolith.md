@@ -23,7 +23,7 @@ related:
   - { to: docker, rel: RELATED_TO }
   - { to: postgresql, rel: RELATED_TO }
   - { to: e-commerce, rel: USED_IN }
-meta: { lastReviewed: 2026-09-09, confidence: high }
+meta: { lastReviewed: 2026-09-15, confidence: high }
 ---
 
 ## Problem
@@ -93,6 +93,39 @@ export { OrdersApi } from "./orders-api";
 
 Extraction later is mechanical: the module's public API becomes a network API,
 its schema becomes its own database, and the in-process events become messages.
+
+**Enforcement has to be automatic or it does not exist.** A convention in a README
+lasts until the first deadline. What holds is a check that fails the build:
+package-private visibility where the language has it, and an architecture test
+otherwise — a unit test that walks the dependency graph and asserts that nothing
+outside `orders` imports `orders.internal`. Write that test on day one, because
+retrofitting boundaries into a codebase that ignored them is the migration this
+pattern exists to avoid.
+
+**The failure mode is a distributed monolith without the distribution.** If every
+module calls every other module's API synchronously, you have bought the ceremony of
+service boundaries and none of the independence: one module's change still ripples,
+and now it ripples through an interface. The signal is a module whose public API has
+thirty methods, or a use case that touches five modules in one call chain. The fix is
+the same as it would be between services — move to events for anything that does not
+need an answer, and reconsider whether the boundary is in the right place.
+
+**Know what actually triggers extraction.** "It is getting big" is not a reason. The
+real ones are narrow: a module needs to scale independently of the rest, it needs a
+different runtime (a GPU, a different language), a separate team needs to deploy on
+its own cadence, or it has a compliance boundary the rest of the system should not
+cross. Until one of those is true, extraction adds a network, a failure mode and an
+[eventual consistency](/concept/eventual-consistency) problem in exchange for
+nothing. See [Modular Monolith vs Microservices](/compare/modular-monolith-vs-microservices)
+for the comparison in full.
+
+**One artefact means one blast radius.** The honest cost is that any module's bad
+release takes the whole application down, so the practices that make a monolith safe
+are not optional: [feature flags](/pattern/feature-flag) so a module can be disabled
+without a deploy, a fast test suite so the shared pipeline does not become a queue,
+and [canary release](/pattern/canary-release) on the single deployment. Teams that
+skip these find that "we can always extract later" was true and "we can deploy
+safely today" was not.
 
 ## Advantages
 

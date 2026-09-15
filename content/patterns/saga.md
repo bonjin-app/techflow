@@ -25,7 +25,9 @@ related:
   - { to: kafka, rel: RELATED_TO }
   - { to: e-commerce, rel: USED_IN }
   - { to: microservices, rel: USED_IN }
-meta: { lastReviewed: 2026-09-09, confidence: high }
+  - { to: delivery-semantics, rel: REQUIRES }
+  - { to: dead-letter-queue, rel: USED_WITH }
+meta: { lastReviewed: 2026-09-15, confidence: high }
 ---
 
 ## Problem
@@ -82,11 +84,56 @@ Two coordination styles exist:
   central component, but the overall flow is spread across services and hard to
   see, and cyclic dependencies creep in.
 
+The usable rule: choreography while the flow is linear and has about three
+participants, orchestration the moment it branches, has a timeout per step, or
+needs someone to answer "where is order 8f21 right now?". Teams almost always
+start with choreography because it needs no new component, and almost always add
+an orchestrator later — so if you can already see the branch coming, start there.
+
 Saga state must be durable. The orchestrator writes "step 2 done" to its database
 before sending step 3, ideally together with the outgoing command via the
 [Transactional Outbox](/pattern/outbox). Steps are grouped as *compensatable*
 (can be undone), a single *pivot* step after which the saga must complete, and
 *retriable* steps that are guaranteed to eventually succeed.
+
+**There is no isolation, so buy some back where it matters.** A saga's intermediate
+states are visible to everyone: stock is reserved but unpaid, an order exists but is
+not confirmed. Where that is unacceptable, the countermeasures are all application
+level. A *semantic lock* marks the record as in-flight (`status = PENDING`) and other
+operations refuse to touch it. *Commutative updates* — add and subtract rather than
+set — make the order of concurrent changes irrelevant. *Re-reading the value* before
+the pivot step catches a change made underneath you. None of these is free, and
+choosing "we accept the intermediate state" is a legitimate answer as long as it is
+a decision rather than an oversight.
+
+**Compensations fail too, and that path needs a design.** A refund can be declined,
+a release can hit a service that is down, and a compensation that fails leaves the
+system in exactly the state the saga existed to prevent. Two rules make this
+survivable: compensations retry forever with backoff rather than giving up, and
+anything that exhausts its retries goes to a
+[dead letter queue](/pattern/dead-letter-queue) that a human actually reads. Design
+compensations to be simpler than the forward step — releasing a reservation is a
+delete, refunding is one API call — because a compensation with its own branches is
+a saga inside a saga.
+
+**Some steps cannot be compensated, so put them last.** An email cannot be unsent
+and a physical shipment cannot be recalled. The *pivot* is the step after which the
+saga must go forwards: everything before it is compensatable, everything after it is
+retriable until it succeeds. Ordering the steps so the irreversible ones come after
+the pivot is most of saga design, and getting it wrong is how you end up apologising
+by email.
+
+**You cannot operate what you cannot see.** Every message in a saga carries the same
+correlation id, the orchestrator's state is queryable ("which sagas are in step 2
+and older than ten minutes?"), and a stuck saga raises an alert rather than sitting
+in a table. The failure mode in production is not a saga that compensates — that is
+the design working — it is a saga that stops halfway and nobody notices for a week.
+
+**Test the unhappy paths, because they are the pattern.** A saga's happy path is the
+least interesting thing about it. The tests that matter inject a failure at each
+step and assert the compensations ran, deliver every message twice and assert
+nothing doubled, and kill the orchestrator mid-saga to prove it resumes from its
+persisted state.
 
 ```ts
 const placeOrderSaga = defineSaga("place-order", [
@@ -108,9 +155,9 @@ const placeOrderSaga = defineSaga("place-order", [
 ## Disadvantages
 
 - No isolation: other requests see intermediate states (stock reserved, order pending)
-- Compensations may themselves fail and need retries, alerts or manual repair
+- Compensations may themselves fail, so there must be a retry path and a human queue behind it
 - Some actions cannot be compensated cleanly — an email cannot be unsent
-- Every step must be idempotent because messages are redelivered
+- Every step must be idempotent because messages are redelivered [at least once](/concept/delivery-semantics)
 - Significantly more design, testing and tooling than a single transaction
 
 ## When to use

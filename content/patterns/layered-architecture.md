@@ -22,7 +22,7 @@ related:
   - { to: database, rel: RELATED_TO }
   - { to: transaction, rel: RELATED_TO }
   - { to: simple-web-app, rel: USED_IN }
-meta: { lastReviewed: 2026-09-09, confidence: high }
+meta: { lastReviewed: 2026-09-15, confidence: high }
 ---
 
 ## Problem
@@ -74,6 +74,35 @@ Two variants matter in practice:
   simple reads pass through empty "delegation" methods.
 - **Relaxed** layering — a layer may skip layers (controller → repository for a
   plain lookup). Less boilerplate, more temptation to bypass the rules.
+
+**Layers are not tiers.** A layer is a compile-time grouping; a tier is a machine.
+Four layers usually run in one process, and the fact that the diagram looks like a
+stack of boxes does not mean anything is crossing a network. Confusing the two is how
+teams end up making a repository call an HTTP service for no reason.
+
+**The anaemic domain model is what goes wrong.** Layering pushes behaviour into
+services and leaves entities as bags of getters and setters, so `OrderService`
+grows to two thousand lines while `Order` knows nothing about being an order. It
+still works; it just means the business rules are scattered across procedures rather
+than living with the data they constrain. The counter-pressure is to put invariants
+on the entity — an `Order` that refuses to be created without a customer, a `Money`
+type that cannot be added across currencies — and let the service coordinate rather
+than decide. That is the line where this pattern hands over to
+[Domain-Driven Design](/pattern/domain-driven-design) and
+[Clean Architecture](/pattern/clean-architecture).
+
+**Transactions belong to the layer that owns the use case.** Starting a transaction
+in a repository gives you one per query and no way to make two writes atomic;
+starting it in the controller couples HTTP to your persistence. The business layer is
+the right place, because a use case is exactly the unit that must succeed or fail
+together — see [Transaction](/concept/transaction).
+
+**Leaks are the thing to watch for.** A repository that returns ORM entities with
+lazy-loaded relations has handed database semantics to the business layer, which will
+now trigger queries from code that looks like plain field access. A controller that
+accepts an entity as its request body has made the database schema part of the public
+API. Both compile, both pass tests, and both mean the boundary exists only in the
+diagram.
 
 ```ts
 // business layer: no HTTP, no SQL
