@@ -65,7 +65,7 @@ Forgotten resources | orphaned disks, unattached addresses, old load balancers, 
 Retries and fan-out | one client bug multiplies requests, and every layer bills for them
 Per-request AI and API spend | now a top line item, and the one that scales with usage fastest
 Commitment coverage | the discount you have not claimed on the capacity you genuinely keep
-Architecture itself | the cache you did not build, the [CDN](/concept/cdn) you did not put in front
+Architecture itself [cdn] | the cache you did not build, the CDN you did not put in front
 ```
 
 ## Solutions

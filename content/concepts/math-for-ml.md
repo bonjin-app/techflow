@@ -55,13 +55,13 @@ the [context window](/concept/context-window) costs more than twice as much.
 
 ```steps
 title: The maths you meet, in the order you meet it
-Vectors and dot products | an [embedding](/concept/embedding) is a vector; similarity is a dot product
+Vectors and dot products [embedding] | an embedding is a vector; similarity is a dot product
 Norms and cosine similarity | why you normalise before comparing, and why magnitude is not meaning
 Matrix multiplication | one layer of a network, and the operation a GPU exists to do fast
 Probability distributions | a model predicts a distribution, not an answer
 Softmax and temperature | how scores become probabilities, and how sampling is tuned
 Expectation and variance | why one benchmark number is not a result
-Sampling and confidence intervals | how many examples an [evaluation](/concept/llm-evaluation) needs
+Sampling and confidence intervals | how many examples an evaluation needs
 Precision, recall and base rates | why 99% accuracy on a rare event is worthless
 Gradients and gradient descent | how training moves weights; enough to read a loss curve
 Dimensionality | why high-dimensional distance behaves unlike the 3D intuition

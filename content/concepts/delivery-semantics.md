@@ -33,7 +33,7 @@ a message can arrive twice. **Exactly once** is what everyone wants and nobody d
 an end-to-end network property — the sender cannot tell a lost message from a lost
 acknowledgement, so it must either give up or retry, and those are the first two options.
 What is sold as exactly-once is at-least-once delivery plus deduplication at the receiver,
-or a transaction that spans the read and the write inside one system. Both are real and
+or a [transaction](/concept/transaction) that spans the read and the write inside one system. Both are real and
 useful; neither is magic, and both need you to do something.
 
 ## Why it matters
@@ -122,7 +122,7 @@ Saying it that way keeps the mechanism visible: somebody is storing keys, that s
 retention window, and outside the window a duplicate gets through.
 
 **Ordering is a separate guarantee, and people conflate them.** A queue may deliver each
-message at least once and still reorder them. Kafka guarantees order within a partition
+message at least once and still reorder them. Kafka guarantees order within a [partition](/concept/partitioning)
 only, so a key that must be processed in order has to land in one partition — which is why
 partitioning by entity id matters more than it first appears. Retries break order too: a
 failed message sent to a retry topic arrives after messages that came later. If your handler

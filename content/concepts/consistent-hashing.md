@@ -28,7 +28,7 @@ meta: { lastReviewed: 2026-09-15, confidence: high }
 ## TL;DR
 
 The obvious way to spread keys across N machines is `hash(key) % N`. It works perfectly until
-N changes: add one machine and almost every key maps somewhere new, so a cache empties itself
+N changes: add one machine and almost every key maps somewhere new, so a [cache](/concept/cache) empties itself
 and a sharded database has to move nearly all its data. Consistent hashing puts both keys and
 nodes on the same circular number space and gives each key to the next node clockwise.
 Adding a node then steals keys only from its immediate neighbour, so roughly **1/N of the
@@ -116,8 +116,8 @@ local cache in front of the shared one so the hot key is served from the caller'
 [Social Feed](/architecture/social-feed) hits exactly this and solves it by treating popular
 accounts differently.
 
-**Where it already runs.** Memcached clients have used it for two decades to survive node
-changes. Cassandra and DynamoDB partition by token ranges on a ring, which is why their data
+**Where it already runs.** [Memcached](/technology/memcached) clients have used it for two decades to survive node
+changes. [Cassandra](/technology/cassandra) and DynamoDB partition by token ranges on a ring, which is why their data
 model insists you choose a partition key. Redis Cluster uses fixed slots. Content delivery
 networks use it to decide which edge caches an object, and load balancers use it — as "ring
 hash" — to keep a client on the same backend without sticky sessions, which is where it

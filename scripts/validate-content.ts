@@ -69,6 +69,13 @@ function main() {
       for (const [heading, md] of Object.entries(n.sections)) {
         const fences = [...md.matchAll(/^```(\w+)/gm)].map((m) => m[1]);
         for (const f of fences) if (!KNOWN_FENCES.has(f)) warnings.push(`${n.id} › ${heading}: unknown fence '${f}'`);
+        // A visual fence is parsed by its own grammar — `Label [node-id]` — and its
+        // cells print as plain text, so a Markdown link inside one shows the reader
+        // literal brackets. Same trap as a link written into a .json file.
+        for (const block of md.matchAll(/^```(steps|sequence|compare|decision|timeline)\n([\s\S]*?)^```/gm)) {
+          const bad = /\[[^\]\n]{1,60}\]\(\/[^)\n]{1,120}\)/.exec(block[2]);
+          if (bad) problems.push(`${n.id} › ${heading}: Markdown link '${bad[0]}' inside a ${block[1]} fence — use \`Label [node-id]\``);
+        }
         // internal links must resolve
         for (const m of md.matchAll(/\]\(\/(technology|concept|pattern|architecture|compare|roadmap|system-design)\/([a-z0-9-]+)\)/g)) {
           const target = g.nodes.get(m[2]);

@@ -64,11 +64,11 @@ title: Which primitive answers which question
 "Was this sent by someone with the key?" | an HMAC — integrity plus authenticity, symmetric
 "Only the recipient may read this" | AEAD symmetric encryption (AES-GCM, ChaCha20-Poly1305)
 "Anyone may verify, only I may sign" | an asymmetric signature (Ed25519, RSA-PSS)
-"Agree on a key over a hostile network" | key exchange (ECDH) — the heart of [TLS](/concept/tls)
+"Agree on a key over a hostile network" | key exchange (ECDH) — the heart of TLS
 "Store a user's password" | a slow password hash with a per-user salt (argon2id, bcrypt)
 "Derive a key from a password" | a KDF (argon2, PBKDF2) — not a plain hash
 "Protect many records with one master key" | envelope encryption: a data key per record, wrapped by a KMS key
-"Prove a token has not been tampered with" | a signature or MAC over the payload — see [JWT](/concept/jwt)
+"Prove a token has not been tampered with" | a signature or MAC over the payload — see JWT
 "Generate a token or a nonce" | a cryptographically secure random source, never a plain PRNG
 ```
 

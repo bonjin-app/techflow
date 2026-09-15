@@ -65,7 +65,7 @@ Engineer features | joins, aggregates, encodings — where domain knowledge live
 Train a simple model | logistic regression or gradient boosting first; it is often the final answer
 Evaluate against the baseline | with a metric tied to the decision, not to accuracy by default
 Ship behind a flag | shadow mode first: predict, log, do not act
-Monitor inputs and outputs | [drift](/concept/data-quality) in features precedes drift in quality
+Monitor inputs and outputs [data-quality] | drift in features precedes drift in quality
 Retrain on a schedule | with the same pipeline that trained it, or the two diverge
 ```
 

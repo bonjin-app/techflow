@@ -22,7 +22,9 @@ related:
   - { to: ttl, rel: RELATED_TO }
   - { to: cache-invalidation, rel: RELATED_TO }
   - { to: e-commerce, rel: USED_IN }
-meta: { lastReviewed: 2026-09-09, confidence: high }
+  - { to: race-condition, rel: RELATED_TO }
+  - { to: tail-latency, rel: RELATED_TO }
+meta: { lastReviewed: 2026-09-15, confidence: high }
 ---
 
 ## Problem
@@ -74,9 +76,40 @@ Return value
 ```
 
 Only data that is actually read gets cached ("lazy loading"), so memory is spent on
-hot keys. The TTL bounds staleness even when an invalidation is missed. Deleting on
-write instead of updating avoids a race where two writers set the cache in the
-wrong order.
+hot keys, and the [TTL](/concept/ttl) bounds staleness even when an invalidation is
+missed — which is the safety net that makes the pattern forgiving.
+
+**Why delete rather than update.** Writing the new value into the cache looks more
+efficient and introduces a race: two concurrent writers can set the cache in the
+opposite order to the one in which they hit the database, leaving a value that
+matches neither. Deleting has no ordering to get wrong — the next reader
+repopulates from the source of truth. It also avoids caching data nobody asks for.
+
+**The read-then-write race, which the delete does not fix.** A reader misses,
+queries the database, and is paused — by a GC pause, a slow network, a busy
+scheduler — before it writes to the cache. Meanwhile a writer updates the row and
+deletes the key. The reader then wakes and writes its stale value, which now has a
+full TTL to live. This is a
+[race condition](/concept/race-condition) with a window of milliseconds and it will
+happen at scale. The mitigations, in order of how often they are worth it:
+
+- **Short TTLs** bound the damage, and for most data that is enough.
+- **Delete again after a delay** — invalidate, wait longer than a typical read, and
+  invalidate once more — closes the common window cheaply and imperfectly.
+- **Version the key** (`product:42:v7`, with the version bumped on write) so a stale
+  writer fills a key nobody will read.
+- **Fill only if absent** (`SET … NX`) so the reader cannot overwrite a value a
+  later reader already placed.
+
+Choose by what a stale read costs. A product description can tolerate the race; a
+permission check cannot, and should not be cached this way at all.
+
+**When the cache is down, the database gets everything.** "Degrades to slower" is
+true for one request and false for the fleet: losing the cache means every read
+becomes a database read at once, which is usually several times its capacity. A
+circuit breaker in front of the cache, a concurrency limit on database reads, and
+the willingness to serve degraded responses are what make that survivable — and
+the same reasoning applies to a cold cache after a deploy.
 
 ```ts
 async function getProduct(id: number) {
@@ -109,7 +142,7 @@ async function updatePrice(id: number, price: number) {
 - Data can be stale between a write and TTL expiry if invalidation fails
 - Read-then-write race: a slow reader can repopulate the cache with an old value right after a delete
 - Every miss costs an extra round-trip (cache + database)
-- Hot-key expiry causes stampedes without request coalescing
+- Hot-key expiry causes stampedes without request coalescing — and the cache exists to protect the database it then floods
 
 ## When to use
 
@@ -126,7 +159,18 @@ async function updatePrice(id: number, price: number) {
 
 ## Real-world
 
-Cache Aside is the default way Redis is used in web backends: product pages,
-user profiles, configuration and permission lookups. The
-[E-commerce](/architecture/e-commerce) architecture shows it in front of PostgreSQL
-for catalogue reads while checkout bypasses the cache.
+Cache Aside is the default way [Redis](/technology/redis) is used in web backends:
+product pages, user profiles, configuration and permission lookups. The
+[E-commerce](/architecture/e-commerce) architecture shows it in front of
+[PostgreSQL](/technology/postgresql) for catalogue reads while checkout bypasses the
+cache — the distinction being that a stale price on a listing page is a cosmetic
+problem and a stale price at payment is a refund.
+
+Two habits separate an implementation that holds up from one that does not. Give
+every key a namespace with a schema version, so a change to the cached shape is a
+new keyspace rather than a deploy reading old JSON with new code. And measure the
+hit ratio per prefix rather than overall: the aggregate number is dominated by
+whatever is most popular, and the prefix quietly sitting at 5% is the one spending
+memory for nothing. The [cache simulator](/playground/cache) is the fastest way to
+build intuition for how capacity, eviction policy and access pattern move that
+number.

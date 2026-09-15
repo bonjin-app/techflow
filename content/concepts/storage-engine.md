@@ -34,15 +34,15 @@ LSM tree appends and merges later, so it writes fast and reads through several l
 move, so a crash replays rather than corrupts. **How concurrent readers see the data**:
 multi-version concurrency control keeps old row versions so readers never block writers. Read
 a database's answers to those three and you can predict its write amplification, its
-tail latency, why it needs vacuuming, and what a backup actually contains.
+[tail latency](/concept/tail-latency), why it needs vacuuming, and what a backup actually contains.
 
 ## Why it matters
 
 These are not internals for their own sake. They surface as the operational problems people
 actually hit.
 
-A PostgreSQL table bloats and queries slow down: that is MVCC leaving dead row versions
-behind and autovacuum falling behind. A Cassandra cluster's reads get slower over a week:
+A [PostgreSQL](/technology/postgresql) table bloats and queries slow down: that is MVCC leaving dead row versions
+behind and autovacuum falling behind. A [Cassandra](/technology/cassandra) cluster's reads get slower over a week:
 that is LSM levels accumulating and compaction not keeping up. A database's throughput
 collapses when the working set exceeds memory: that is a B-tree doing a random read per
 lookup instead of a memory hit. An analytics query over one column reads the whole table:
@@ -135,7 +135,8 @@ virtual disk, the drive's own cache — can lie about that. This is what group c
 optimises, and what a "relaxed durability" setting trades away. When a cloud volume promises
 durability, read which layer the promise is made at.
 
-**Backups are engine-shaped too.** A copy of the data directory without the WAL is not a
-backup; point-in-time recovery is exactly the WAL replayed to a chosen moment. LSM snapshots
+**Backups are engine-shaped too.** From [SQLite](/technology/sqlite) on one machine to a
+replicated cluster, the rule is the same: a copy of the data directory without the WAL is not
+a backup, and point-in-time recovery is exactly the WAL replayed to a chosen moment. LSM snapshots
 are cheap because files are immutable — a snapshot is a set of hard links. Knowing this is
 the difference between a restore plan and a folder of files.

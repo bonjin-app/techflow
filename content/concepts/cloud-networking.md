@@ -55,9 +55,9 @@ data-transfer bill, because cross-zone and egress traffic is charged per gigabyt
 
 ```steps
 title: One request, from the internet to the database
-DNS resolves your domain | [DNS](/concept/dns) returns the load balancer's public address
+DNS resolves your domain [dns] | DNS returns the load balancer's public address
 Internet gateway | the only door into the VPC; the load balancer's subnet is the only public one
-Load balancer | terminates [TLS](/concept/tls) and picks a healthy target — see [Load Balancing](/concept/load-balancing)
+Load balancer | terminates TLS and picks a healthy target — see Load Balancing
 Security group on the app tier | allows port 8080 *from the load balancer's group only*, not from a CIDR
 App server in a private subnet | it has no public address; nothing on the internet can dial it
 Security group on the database | allows 5432 from the app's security group, and nothing else

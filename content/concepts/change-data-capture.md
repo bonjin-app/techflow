@@ -27,8 +27,8 @@ meta: { lastReviewed: 2026-09-15, confidence: high }
 
 ## TL;DR
 
-Change data capture reads the log a database already writes for its own replication — the
-WAL in PostgreSQL, the binlog in MySQL — and turns every insert, update and delete into an
+Change data capture reads the log a database already writes for its own [replication](/concept/replication) — the
+WAL in [PostgreSQL](/technology/postgresql), the binlog in [MySQL](/technology/mysql) — and turns every insert, update and delete into an
 event. Nothing in the application changes, nothing polls, and no write is missed, because the
 log is the same source of truth the database's own replicas use. It is how operational data
 reaches a warehouse, a search index or a cache without a nightly batch job, and how a

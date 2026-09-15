@@ -64,12 +64,12 @@ Account and organisation | the top-level boundary: separate production from ever
 Identity and roles | who and what may act; a workload gets a role, never a long-lived key
 Region and availability zone | your failure domains and your data-residency answer
 Virtual network | private address space; most things should have no public address at all
-Compute | virtual machines, containers, or [functions](/concept/serverless) — the same workload at three granularities
-Object storage | cheap, durable, effectively unlimited — [S3](/technology/s3) and its equivalents
+Compute | virtual machines, containers, or functions — the same workload at three granularities
+Object storage | cheap, durable, effectively unlimited — S3 and its equivalents
 Managed database | the provider runs replication, backup and failover; you still own the schema
-Load balancer | the public entry point and the [TLS](/concept/tls) termination
+Load balancer | the public entry point and the TLS termination
 Observability | logs, metrics and traces, priced by volume — a real budget line
-Everything as code | [Terraform](/technology/terraform) or the provider's own, because a console click is not reproducible
+Everything as code | Terraform or the provider's own, because a console click is not reproducible
 ```
 
 ## Solutions

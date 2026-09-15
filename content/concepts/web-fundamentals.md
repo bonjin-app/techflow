@@ -58,7 +58,7 @@ container queries, native dialogs and view transitions all exist now without a l
 
 ```steps
 title: What the browser does with your three files
-GET / returns HTML | the [HTTP](/concept/http) response arrives as a byte stream
+GET / returns HTML [http] | the HTTP response arrives as a byte stream
 Parse HTML into the DOM | incrementally — the browser starts before the file has finished arriving
 Discover a stylesheet | render-blocking: nothing paints until it is fetched and parsed
 Discover a script | a plain script blocks parsing; defer or module scripts do not

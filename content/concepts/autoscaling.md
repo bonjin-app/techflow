@@ -41,7 +41,7 @@ cannot fix a bottleneck that is not the thing you are scaling.
 The appeal is obvious: pay for what you use, survive a spike without provisioning for the
 worst day of the year. The disappointments are specific.
 
-A service scales on CPU, but the bottleneck is a database connection pool. Adding instances
+A service scales on CPU, but the bottleneck is a [database](/concept/database) connection pool. Adding instances
 adds connections, the database saturates, latency rises, CPU falls, and the scaler removes
 the instances it just added — while the outage continues. A scaler reacts to a traffic step
 in 90 seconds and the instance takes 120 more to become ready, so three and a half minutes of
@@ -110,7 +110,7 @@ have not planned for, or a loop.
 the work to be stateless and spreadable. *Vertical* makes an instance bigger, which suits a
 database or a memory-bound process and usually needs a restart. *Cluster* scaling adds the
 machines the instances run on, which is a second, slower loop underneath the first: on
-Kubernetes a pod can be scheduled in a second, or in three minutes if a node has to be
+[Kubernetes](/technology/kubernetes) a pod can be scheduled in a second, or in three minutes if a node has to be
 provisioned first. When a scale-out seems inexplicably slow, it is usually the lower loop.
 
 **Scale to zero is a different product.** Serverless platforms and some container services

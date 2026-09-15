@@ -70,7 +70,7 @@ Repeat over a batch | many examples at once, because a GPU's throughput comes fr
 Repeat over epochs | the whole dataset, many times, while the loss curve is watched
 Validate | if validation loss rises while training loss falls, it is memorising — stop early
 Checkpoint | training runs fail; a run without checkpoints is a run you cannot resume
-Export for inference | quantise, compile, batch — [serving](/concept/model-serving) is a separate discipline
+Export for inference [model-serving] | quantise, compile, batch — serving is a separate discipline
 ```
 
 ## Solutions
