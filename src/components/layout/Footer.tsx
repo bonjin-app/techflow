@@ -8,6 +8,7 @@ const columns = [
     links: [
       { href: "/explore", label: "Knowledge graph" },
       { href: "/map", label: "Mind map" },
+      { href: "/path", label: "Find a path" },
       { href: "/technology", label: "Technologies" },
       { href: "/concept", label: "Concepts" },
       { href: "/pattern", label: "Patterns" },

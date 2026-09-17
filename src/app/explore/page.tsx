@@ -34,6 +34,9 @@ export default function Page() {
           </p>
         </div>
         <div className="text-xs text-fg-faint">
+          <Link href="/path" className="mb-2 block text-sm text-accent hover:underline">
+            Find a path between two things →
+          </Link>
           <Link href="/map" className="mb-2 block text-sm text-accent hover:underline">
             Walk it as a mind map →
           </Link>

@@ -6,6 +6,7 @@ import { getPractice, hasPractice } from "@/lib/practice";
 import { techArticleJsonLd } from "@/lib/seo";
 import { Markdown } from "@/components/md/Markdown";
 import { GraphLoader } from "@/components/graph/GraphLoader";
+import { PathLink } from "@/components/graph/PathLink";
 import { Chip, SectionHeading } from "@/components/ui/Badge";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { PageHeader } from "./PageHeader";
@@ -126,6 +127,7 @@ export function DocDetail({ node }: { node: DocNode }) {
               .
             </p>
             <GraphLoader data={ego} height={420} mode="ego" />
+            <PathLink id={node.id} name={node.name} className="mt-3" />
           </Section>
 
           {why && (

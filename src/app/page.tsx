@@ -181,6 +181,10 @@ export default function Home() {
               </li>
             ))}
           </ol>
+          <p className="mt-4 text-sm text-fg-muted">
+            That is one route. <Link href="/path" className="text-accent hover:underline">Pick your own two points</Link> and the graph will work out
+            how they connect — or what you need to read first.
+          </p>
         </section>
 
         {/* Daily */}

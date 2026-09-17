@@ -63,6 +63,7 @@ Edges are declared in frontmatter (`related`) and derived automatically from `us
 | Area | Route | What it does |
 | --- | --- | --- |
 | Knowledge graph | `/explore`, every detail page | Force-directed graph of all nodes; hover a neighbourhood, click to open |
+| Find a path | `/path`, `?from=&to=` | Two questions a list of pages cannot answer: how are these two connected (weighted so the route avoids hub pages), and what do I need to read first (prerequisites, topologically ordered, minus what you have ticked as known) |
 | Mind map | `/map`, `?focus=<id>` | One centre, a branch per relationship kind, leaves stacked in columns. Clicking a leaf re-centres without a page load and keeps a trail; copies out as Mermaid |
 | Technologies / Concepts / Patterns | `/technology`, `/concept`, `/pattern` | Three depth levels, trade-offs, prerequisites, learning path, animated diagrams |
 | Architecture Explorer | `/architecture` | Interactive diagrams: ▶ Run animates a request, inspector per component, version evolution |
@@ -116,6 +117,10 @@ README or a design doc.
 understand why I need Redis and Kafka" resolves to the real-time chat goal plus the Redis and
 Kafka pages. It is keyword matching against the graph in the browser — no model, no network —
 and it says so on the card, falling back to ranked results when it cannot read the question.
+The path finder in `src/lib/path.ts` answers the other two shapes of question — a weighted
+Dijkstra between any two pages, and a topological sort of a target's prerequisites. Both run
+against `/api/graph.json` in the browser, and both are asserted by `pnpm check:intent`.
+
 The recognisers live in `src/lib/intent.ts`; goal keywords are the `GOAL_WORDS` table and
 abbreviations are shared with search in `src/lib/aliases.ts`. The four questions the product
 was specified around — "Why Redis?", "When is Kafka needed?", "WebSocket vs SSE?", "How do I

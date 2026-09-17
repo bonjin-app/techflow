@@ -8,6 +8,7 @@ import { nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { ArchitectureView, DecisionRecords } from "@/components/canvas/ArchitectureView";
 import { GraphLoader } from "@/components/graph/GraphLoader";
 import { MindMapLink } from "@/components/graph/MindMapLink";
+import { PathLink } from "@/components/graph/PathLink";
 import { PracticeSection } from "@/components/detail/PracticeSection";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
@@ -107,6 +108,7 @@ export default async function Page({ params }: PageProps<"/architecture/[slug]">
             <SectionHeading eyebrow="Knowledge graph" title="Connected technologies & concepts" />
             <GraphLoader data={ego} height={380} mode="ego" />
             <MindMapLink id={arch.id} name={arch.name} className="mt-3" />
+            <PathLink id={arch.id} name={arch.name} className="mt-1" />
           </section>
 
           {hasPractice(practice) && (

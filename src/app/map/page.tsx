@@ -35,9 +35,14 @@ export default function Page() {
             so you can walk back. Nothing reloads.
           </p>
         </div>
-        <Link href="/explore" className="text-sm text-accent hover:underline">
-          Prefer the force graph? →
-        </Link>
+        <div className="flex flex-col items-end gap-1 text-sm">
+          <Link href="/explore" className="text-accent hover:underline">
+            Prefer the force graph? →
+          </Link>
+          <Link href="/path" className="text-accent hover:underline">
+            Connect two specific things →
+          </Link>
+        </div>
       </header>
       <Suspense fallback={<div className="grid-bg h-[520px] rounded-xl border border-border" />}>
         <MindMapPage starts={starts} />

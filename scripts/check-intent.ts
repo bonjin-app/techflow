@@ -1,13 +1,16 @@
 /**
- * The search box is the front door: a question must be understood, and a
- * keyword must rank the page it names first. Both are promises the product
- * makes, and both have broken silently before.
+ * The three things the reader asks the graph directly: a question in the search
+ * box, a keyword, and a path between two pages. All of them are promises the
+ * product makes, and the first two have broken silently before.
  *
  *   pnpm check:intent
  */
-import { buildGraph, getBuilds, getSearchIndex } from "../src/lib/content/graph";
+import { buildGraph, getBuilds, getSearchIndex, summarize } from "../src/lib/content/graph";
 import { detectIntent, type IntentKind } from "../src/lib/intent";
 import { searchNodes } from "../src/lib/search";
+import { findPath, learningRoute } from "../src/lib/path";
+import type { ApiNode, GraphApi } from "../src/lib/useGraphApi";
+import { RELATION_LABEL, type Relation } from "../src/lib/content/types";
 
 interface Case {
   q: string;
@@ -43,6 +46,72 @@ const RANKING: [string, string][] = [
   ["docekr", "docker"],
 ];
 
+/** The path finder runs against the published graph shape, so build that here. */
+function asGraphApi(): GraphApi {
+  const g = buildGraph();
+  const nodes = new Map<string, ApiNode>();
+  for (const n of g.nodes.values()) {
+    const s = summarize(n, g);
+    nodes.set(s.id, { id: s.id, type: s.type, name: s.name, tagline: s.tagline, category: s.category, difficulty: s.difficulty, degree: s.degree, href: s.href });
+  }
+  const adjacency = new Map<string, { other: string; rel: Relation; direction: "out" | "in" }[]>();
+  const push = (id: string, e: { other: string; rel: Relation; direction: "out" | "in" }) => {
+    const list = adjacency.get(id);
+    if (list) list.push(e);
+    else adjacency.set(id, [e]);
+  };
+  for (const e of g.edges) {
+    if (!nodes.has(e.from) || !nodes.has(e.to)) continue;
+    push(e.from, { other: e.to, rel: e.rel, direction: "out" });
+    push(e.to, { other: e.from, rel: e.rel, direction: "in" });
+  }
+  return { nodes, adjacency, counts: { nodes: nodes.size, edges: g.edges.length } };
+}
+
+function checkPaths(): string[] {
+  const api = asGraphApi();
+  const fail: string[] = [];
+
+  // Every pair of well-connected pages should be reachable, and in few hops —
+  // a path of ten is a graph problem, not an answer.
+  for (const [a, b] of [
+    ["redis", "distributed-system"],
+    ["swift", "kafka"],
+    ["jwt", "sharding"],
+    ["openapi", "tail-latency"],
+    ["cache", "microservices"],
+  ]) {
+    const hops = findPath(api, a, b);
+    if (!hops) fail.push(`path ${a} → ${b}: no route at all`);
+    else if (hops.length > 4) fail.push(`path ${a} → ${b}: ${hops.length} hops — too far to explain anything`);
+    else if (hops.some((h) => !RELATION_LABEL[h.rel])) fail.push(`path ${a} → ${b}: a hop has no relation label`);
+  }
+
+  // Hub avoidance has to change something, or the weighting is doing nothing.
+  const plain = findPath(api, "jwt", "sharding", { avoidHubs: false });
+  const weighted = findPath(api, "jwt", "sharding", { avoidHubs: true });
+  if (plain && weighted && plain.length <= weighted.length && JSON.stringify(plain) === JSON.stringify(weighted)) {
+    fail.push("path jwt → sharding: hub avoidance made no difference");
+  }
+
+  // A learning route must end at the target and start at something with no
+  // prerequisites of its own, or the ordering is wrong.
+  const route = learningRoute(api, "saga", new Set());
+  if (route.length < 3) fail.push(`learning route to saga: only ${route.length} step(s)`);
+  if (route[route.length - 1]?.id !== "saga") fail.push("learning route to saga: does not end at saga");
+  if (route[0]?.depth !== 0) fail.push("learning route to saga: does not start at a node with no prerequisites");
+  const seen = new Set<string>();
+  for (const step of route) {
+    for (const e of api.adjacency.get(step.id) ?? []) {
+      if (e.rel === "REQUIRES" && e.direction === "out" && route.some((r) => r.id === e.other) && !seen.has(e.other)) {
+        fail.push(`learning route to saga: ${step.id} comes before its prerequisite ${e.other}`);
+      }
+    }
+    seen.add(step.id);
+  }
+  return fail;
+}
+
 function main() {
   buildGraph();
   const index = getSearchIndex();
@@ -65,13 +134,15 @@ function main() {
     if (first !== want) failures.push(`search "${q}" — ranked '${first ?? "nothing"}' first, expected '${want}'`);
   }
 
+  failures.push(...checkPaths());
+
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} question(s) and ${RANKING.length} keyword(s) checked`);
+  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s) and 7 path assertion(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);
   }
-  console.log("✔ every example question is understood and every keyword ranks its page first");
+  console.log("✔ questions understood, keywords ranked, paths found");
 }
 
 main();

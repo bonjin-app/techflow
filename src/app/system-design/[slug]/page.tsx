@@ -7,6 +7,7 @@ import { nodeMetadata, techArticleJsonLd } from "@/lib/seo";
 import { StepJourney } from "@/components/canvas/StepJourney";
 import { GraphLoader } from "@/components/graph/GraphLoader";
 import { MindMapLink } from "@/components/graph/MindMapLink";
+import { PathLink } from "@/components/graph/PathLink";
 import { PracticeSection } from "@/components/detail/PracticeSection";
 import { PageHeader } from "@/components/detail/PageHeader";
 import { NeighborList } from "@/components/detail/NeighborList";
@@ -71,6 +72,7 @@ export default async function Page({ params }: PageProps<"/system-design/[slug]"
           <SectionHeading eyebrow="Knowledge graph" title="Everything this design touches" />
           <GraphLoader data={ego} height={400} mode="ego" />
           <MindMapLink id={node.id} name={node.name} className="mt-3" />
+            <PathLink id={node.id} name={node.name} className="mt-1" />
         </section>
         <section className="space-y-8">
           <div>
