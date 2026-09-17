@@ -21,6 +21,8 @@ export interface BuildTarget {
   id: string;
   name: string;
   tagline: string;
+  /** the technology / concept / pattern pages this goal is made of */
+  pages?: string[];
 }
 
 export interface Intent {

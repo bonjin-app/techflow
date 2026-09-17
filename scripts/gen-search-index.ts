@@ -40,7 +40,14 @@ function main() {
   console.log(`✔ public/search-index.json — ${index.length} nodes, ${kb} KB`);
 
   // "I want to build …" goals, so the search page can recognise a goal in a sentence.
-  const goals = g.builds.map(({ id, name, tagline }) => ({ id, name, tagline }));
+  // `pages` is what the goal is made of, so a client can say how far in a
+  // reader is without fetching ten more files.
+  const goals = g.builds.map(({ id, name, tagline, technologies, concepts, patterns }) => ({
+    id,
+    name,
+    tagline,
+    pages: [...new Set([...technologies, ...concepts, ...patterns])],
+  }));
   const gkb = write("build-goals.json", goals);
   console.log(`✔ public/build-goals.json — ${goals.length} goals, ${gkb} KB`);
 }

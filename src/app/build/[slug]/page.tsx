@@ -8,6 +8,7 @@ import { ArchitectureView } from "@/components/canvas/ArchitectureView";
 import { LearningPath } from "@/components/detail/LearningPath";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
 import { Chip, SectionHeading } from "@/components/ui/Badge";
+import { BuildProgress } from "@/components/detail/BuildProgress";
 
 export const dynamicParams = false;
 
@@ -80,6 +81,8 @@ export default async function Page({ params }: PageProps<"/build/[slug]">) {
           ))}
         </ol>
       </header>
+
+      <BuildProgress name={b.name} ids={[...b.technologies, ...b.concepts, ...b.patterns]} />
 
       {arch && arch.type === "architecture" && (
         <section id="architecture" className="mb-12 scroll-mt-20">

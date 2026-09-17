@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useGraphApi, type ApiNode } from "@/lib/useGraphApi";
+import { useBuildGoals } from "@/lib/useSearchIndex";
 import { useLocalRaw } from "@/lib/useLocal";
 import { KEYS, getStreak, setKnown } from "@/lib/local";
 import { TYPE_LABEL } from "@/lib/content/types";
@@ -43,6 +44,7 @@ function Row({ node, onKnown, note }: { node: ApiNode; onKnown?: () => void; not
  */
 export function Progress() {
   const { graph, loading } = useGraphApi();
+  const goals = useBuildGoals();
   const knownRaw = useLocalRaw(KEYS.known);
   const recentRaw = useLocalRaw(KEYS.recent);
   const challengeRaw = useLocalRaw(CHALLENGE_KEY);
@@ -136,6 +138,39 @@ export function Progress() {
               const gap = graph.nodes.get(missing);
               return node ? <Row key={id} node={node} note={gap ? `needs ${gap.name} first` : undefined} /> : null;
             })}
+          </ul>
+        </section>
+      )}
+
+      {goals.length > 0 && totalKnown > 0 && (
+        <section>
+          <h2 className="mb-1 text-lg font-semibold tracking-tight">Closest goal</h2>
+          <p className="mb-3 text-sm text-fg-muted">
+            How much of each “I want to build …” goal you have already covered. Ordered by how close you are, not by size.
+          </p>
+          <ul className="space-y-2">
+            {goals
+              .map((goal) => {
+                const pages = (goal.pages ?? []).filter((id) => graph.nodes.has(id));
+                const done = pages.filter((id) => known.has(id)).length;
+                return { goal, done, total: pages.length, pct: pages.length ? done / pages.length : 0 };
+              })
+              .filter((row) => row.total > 0)
+              .sort((a, b) => b.pct - a.pct)
+              .slice(0, 5)
+              .map(({ goal, done, total, pct }) => (
+                <li key={goal.id} className="flex items-center gap-3 text-sm">
+                  <Link href={`/build/${goal.id}`} className="w-40 shrink-0 truncate text-fg hover:underline">
+                    {goal.name}
+                  </Link>
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
+                    <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(pct * 100)}%` }} />
+                  </span>
+                  <span className="w-16 shrink-0 text-right font-mono text-xs tabular-nums text-fg-faint">
+                    {done}/{total}
+                  </span>
+                </li>
+              ))}
           </ul>
         </section>
       )}
