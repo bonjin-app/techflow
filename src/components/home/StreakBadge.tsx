@@ -31,6 +31,9 @@ export function StreakBadge() {
           <span aria-hidden>🔥</span> {streak}-day learning streak
         </span>
       )}
+      <Link href="/you" className="ml-auto order-last text-xs text-accent hover:underline sm:order-none">
+        What can I read next? →
+      </Link>
       {recent.length > 0 && (
         <span className="flex flex-wrap items-center gap-2 text-fg-muted">
           <span className="text-xs text-fg-faint">Continue:</span>

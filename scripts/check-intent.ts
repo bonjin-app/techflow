@@ -8,7 +8,7 @@
 import { buildGraph, getBuilds, getSearchIndex, summarize } from "../src/lib/content/graph";
 import { detectIntent, type IntentKind } from "../src/lib/intent";
 import { searchNodes } from "../src/lib/search";
-import { findPath, learningRoute } from "../src/lib/path";
+import { coverage, findPath, frontier, learningRoute } from "../src/lib/path";
 import type { ApiNode, GraphApi } from "../src/lib/useGraphApi";
 import { RELATION_LABEL, type Relation } from "../src/lib/content/types";
 
@@ -109,6 +109,20 @@ function checkPaths(): string[] {
     }
     seen.add(step.id);
   }
+  // The progress page's whole claim is that ticking a page opens others. If
+  // nothing is ever ready or nearly ready, the page has nothing to say.
+  const known = new Set(["programming-fundamentals", "http", "backend", "database", "sql", "rest", "cache", "transaction"]);
+  const f = frontier(api, known);
+  if (f.ready.length < 3) fail.push(`frontier: only ${f.ready.length} page(s) ready after ticking eight foundations`);
+  if (f.nearly.length < 3) fail.push(`frontier: only ${f.nearly.length} page(s) one step away`);
+  if (f.ready.some((id) => known.has(id))) fail.push("frontier: a ticked page was listed as ready to read");
+  for (const { id, missing } of f.nearly) {
+    if (known.has(missing)) fail.push(`frontier: ${id} is blocked on ${missing}, which is already known`);
+  }
+  const cov = coverage(api, known);
+  const counted = cov.reduce((a, c) => a + c.known, 0);
+  if (counted !== [...known].filter((id) => api.nodes.has(id)).length) fail.push(`coverage: counted ${counted} known pages, expected ${known.size}`);
+
   return fail;
 }
 
@@ -137,7 +151,7 @@ function main() {
   failures.push(...checkPaths());
 
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s) and 7 path assertion(s) checked`);
+  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s) and 12 graph assertion(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);

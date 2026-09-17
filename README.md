@@ -63,6 +63,7 @@ Edges are declared in frontmatter (`related`) and derived automatically from `us
 | Area | Route | What it does |
 | --- | --- | --- |
 | Knowledge graph | `/explore`, every detail page | Force-directed graph of all nodes; hover a neighbourhood, click to open |
+| Your progress | `/you` | What this browser remembers, crossed against the prerequisite graph: which pages are readable now, which are one page away, and which single page would open the most of them |
 | Find a path | `/path`, `?from=&to=` | Two questions a list of pages cannot answer: how are these two connected (weighted so the route avoids hub pages), and what do I need to read first (prerequisites, topologically ordered, minus what you have ticked as known) |
 | Mind map | `/map`, `?focus=<id>` | One centre, a branch per relationship kind, leaves stacked in columns. Clicking a leaf re-centres without a page load and keeps a trail; copies out as Mermaid |
 | Technologies / Concepts / Patterns | `/technology`, `/concept`, `/pattern` | Three depth levels, trade-offs, prerequisites, learning path, animated diagrams |
@@ -130,4 +131,6 @@ rankings, because three of the four broke once without anyone noticing.
 ## Personal state
 
 There are no accounts and no backend. Learning-path checkboxes, recently viewed, streak and
-theme live in the visitor's `localStorage` only.
+theme live in the visitor's `localStorage` only. `/you` is the one place that reads all of it
+at once — and it can also forget all of it, which is the only honest thing to offer when
+there is nothing to log out of.

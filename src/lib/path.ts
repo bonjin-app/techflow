@@ -141,3 +141,50 @@ export function learningRoute(graph: GraphApi, target: string, known: Set<string
   steps.push({ id: target, depth: Math.max(0, ...steps.map((s) => s.depth)) + 1, known: known.has(target) });
   return steps;
 }
+
+export interface Frontier {
+  /** every prerequisite ticked — these are readable now */
+  ready: string[];
+  /** exactly one prerequisite missing, with the id of that prerequisite */
+  nearly: { id: string; missing: string }[];
+}
+
+/**
+ * What a reader can pick up next, given what they have ticked as known.
+ *
+ * A page is *ready* when everything it requires is already known — which is the
+ * only honest definition of "you could read this now". *Nearly* is one step
+ * behind, and is usually the more useful list, because it names the single page
+ * standing between the reader and several others.
+ */
+export function frontier(graph: GraphApi, known: Set<string>, types?: Set<string>): Frontier {
+  const ready: string[] = [];
+  const nearly: { id: string; missing: string }[] = [];
+  for (const node of graph.nodes.values()) {
+    if (known.has(node.id)) continue;
+    if (types && !types.has(node.type)) continue;
+    const prereqs = (graph.adjacency.get(node.id) ?? []).filter((e) => e.rel === "REQUIRES" && e.direction === "out").map((e) => e.other);
+    if (prereqs.length === 0) continue; // a starting point, not a frontier
+    const missing = prereqs.filter((p) => !known.has(p));
+    if (missing.length === 0) ready.push(node.id);
+    else if (missing.length === 1) nearly.push({ id: node.id, missing: missing[0] });
+  }
+  const byDegree = (a: string, b: string) => (graph.nodes.get(b)?.degree ?? 0) - (graph.nodes.get(a)?.degree ?? 0);
+  ready.sort(byDegree);
+  nearly.sort((a, b) => byDegree(a.id, b.id));
+  return { ready, nearly };
+}
+
+/** How many pages of each type are ticked, against how many exist. */
+export function coverage(graph: GraphApi, known: Set<string>): { type: string; known: number; total: number }[] {
+  const totals = new Map<string, { known: number; total: number }>();
+  for (const node of graph.nodes.values()) {
+    const row = totals.get(node.type) ?? { known: 0, total: 0 };
+    row.total++;
+    if (known.has(node.id)) row.known++;
+    totals.set(node.type, row);
+  }
+  return [...totals.entries()]
+    .map(([type, row]) => ({ type, ...row }))
+    .sort((a, b) => b.total - a.total);
+}

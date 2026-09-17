@@ -16,6 +16,7 @@ const TOOLS: { label: string; href: string; hint: string }[] = [
   ...PLAYGROUNDS.map((p) => ({ label: p.title, href: `/playground/${p.slug}`, hint: "playground" })),
   { label: "Mind map", href: "/map", hint: "mind map" },
   { label: "Find a path between two things", href: "/path", hint: "path route prerequisites" },
+  { label: "Your progress", href: "/you", hint: "known streak progress next" },
   { label: "Real-world stacks", href: "/stack", hint: "stacks" },
   { label: "Technology radar", href: "/radar", hint: "radar" },
   { label: "Design challenges", href: "/challenge", hint: "practice" },

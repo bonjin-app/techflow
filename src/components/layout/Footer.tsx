@@ -9,6 +9,7 @@ const columns = [
       { href: "/explore", label: "Knowledge graph" },
       { href: "/map", label: "Mind map" },
       { href: "/path", label: "Find a path" },
+      { href: "/you", label: "Your progress" },
       { href: "/technology", label: "Technologies" },
       { href: "/concept", label: "Concepts" },
       { href: "/pattern", label: "Patterns" },
