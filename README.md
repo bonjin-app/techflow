@@ -106,7 +106,7 @@ Every gate runs on pull requests (`.github/workflows/ci.yml`) and again before d
 | `pnpm lint` / `pnpm typecheck` | React compiler rules and types |
 | `pnpm check:links` | 23,000 internal links, sitemap coverage, and that the published JSON API matches what was built |
 | `pnpm check:build` | every page: one `h1`, no skipped heading levels, no duplicate ids, a name on every link, button and input — plus a 45KB gzipped page budget and a 420KB JS budget, and that `404.html` is ours |
-| `pnpm e2e` | 32 Playwright tests against the **exported** site, served the way GitHub Pages resolves it: 21 pages that must render with an empty console (a hydration mismatch logs and looks fine otherwise), and 11 journeys — the spec's first walk, the palette, a question, the path finder, the learning route, the mind map, an architecture animation, a challenge, a simulator, progress, and the 404 |
+| `pnpm e2e` | 97 Playwright tests against the **exported** site, served the way GitHub Pages resolves it: 21 pages that must render with an empty console (a hydration mismatch logs and looks fine otherwise), 11 journeys — the spec's first walk, the palette, a question, the path finder, the learning route, the mind map, an architecture animation, a challenge, a simulator, progress, the 404 — and a phone-sized sweep across a spread of every route shape, sampled from the sitemap, that nothing scrolls the document sideways |
 
 ## Deployment
 

@@ -96,7 +96,7 @@ export default async function Page({ params }: PageProps<"/build/[slug]">) {
         </section>
       )}
 
-      <div className="grid gap-10 md:grid-cols-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 md:grid-cols-3">
         <section id="technologies" className="scroll-mt-20">
           <Group title="Recommended technologies" ids={b.technologies} />
         </section>

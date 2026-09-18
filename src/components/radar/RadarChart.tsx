@@ -95,7 +95,7 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
   const dense = items.length > 40;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="relative">
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full max-w-[720px]" role="img" aria-label="Technology radar: four rings (adopt, trial, assess, caution) across four quadrants. A list version follows.">
           {RING_R.map((r, i) => (
