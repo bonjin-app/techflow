@@ -59,6 +59,7 @@ export function NodePicker({
         aria-expanded={open}
         aria-controls={listId}
         aria-autocomplete="list"
+        aria-activedescendant={open && matches[cursor] ? `${listId}-opt-${matches[cursor].id}` : undefined}
         value={query || (open ? "" : (value?.name ?? ""))}
         placeholder={placeholder}
         onChange={(e) => {
@@ -88,9 +89,10 @@ export function NodePicker({
       {open && matches.length > 0 && (
         <ul id={listId} role="listbox" className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-bg p-1 shadow-lg">
           {matches.map((n, i) => (
-            <li key={n.id} role="option" aria-selected={i === cursor}>
+            <li key={n.id} id={`${listId}-opt-${n.id}`} role="option" aria-selected={i === cursor}>
               <button
                 type="button"
+                tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(n)}
                 onMouseEnter={() => setCursor(i)}

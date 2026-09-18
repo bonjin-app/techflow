@@ -43,12 +43,15 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  /** Whatever had focus when the palette opened, so closing can hand it back. */
+  const returnTo = useRef<HTMLElement | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [recent, setRecent] = useState<NodeSummary[]>([]);
 
   useEffect(() => {
     const onOpen = (e: Event) => {
       const q = (e as CustomEvent<{ query?: string }>).detail?.query ?? "";
+      returnTo.current = document.activeElement as HTMLElement | null;
       setQuery(q);
       setWanted(true);
       setOpen(true);
@@ -73,6 +76,9 @@ export function CommandPalette() {
     setOpen(false);
     setQuery("");
     setActive(0);
+    // Without this the keyboard user is dropped at the top of the document,
+    // having lost the place they opened the palette from.
+    returnTo.current?.focus();
   }, []);
 
   const random = useCallback(() => {
@@ -141,6 +147,12 @@ export function CommandPalette() {
         close();
         router.push(`/search?q=${encodeURIComponent(query.trim())}`);
       }
+    } else if (e.key === "Tab") {
+      // A modal that lets Tab wander onto the page behind it puts the keyboard
+      // user somewhere they cannot see. The input is the only tab stop here —
+      // the results answer to the arrow keys — so Tab has nowhere to go, and
+      // the visible `esc` hint is the way out.
+      e.preventDefault();
     } else if (e.key === "Escape") {
       e.preventDefault();
       close();
@@ -201,6 +213,7 @@ export function CommandPalette() {
                 <button
                   id={`cmd-${c.id}`}
                   role="option"
+                  tabIndex={-1}
                   aria-selected={i === active}
                   data-active={i === active}
                   onMouseEnter={() => setActive(i)}

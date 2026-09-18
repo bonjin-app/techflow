@@ -45,7 +45,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <Header />
-        <main id="main" className="flex-1">
+        {/* tabIndex -1 so "Skip to content" actually moves focus: without it the
+            jump scrolls the page and leaves focus behind, which a screen reader
+            reads as having gone nowhere. */}
+        <main id="main" tabIndex={-1} className="flex-1 outline-none">
           {children}
         </main>
         <Footer />

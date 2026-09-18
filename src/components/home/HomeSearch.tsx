@@ -61,6 +61,7 @@ export function HomeSearch({ suggestions }: { suggestions: string[] }) {
           role="combobox"
           aria-expanded={focus && flat.length > 0}
           aria-controls="home-search-results"
+          aria-activedescendant={flat[active] ? `home-opt-${flat[active].id}` : undefined}
           autoComplete="off"
           spellCheck={false}
         />
@@ -82,8 +83,10 @@ export function HomeSearch({ suggestions }: { suggestions: string[] }) {
                 return (
                   <Link
                     key={it.id}
+                    id={`home-opt-${it.id}`}
                     href={it.href}
                     role="option"
+                    tabIndex={-1}
                     aria-selected={i === active}
                     onMouseEnter={() => setActive(i)}
                     data-type={it.type}
