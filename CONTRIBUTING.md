@@ -17,6 +17,22 @@ pnpm e2e           # needs `pnpm exec playwright install chromium` once
 CI runs exactly these on every pull request. If one fails locally it will fail
 there, and the message names the file and the rule.
 
+`pnpm e2e` is four sweeps over the built export, each generated from the real
+sitemap rather than a hand-written list:
+
+| Sweep | What it would have caught |
+| --- | --- |
+| `journeys` | A reader cannot get from the front page to an answer |
+| `mobile` | A page scrolls sideways on a phone |
+| `a11y` | axe-core: contrast, roles, labels — 106 of these were live |
+| `keyboard` | Focus traps, dead skip links, silent comboboxes |
+| `perf` | Content that jumps after paint, or a blocked main thread |
+
+The performance budgets are far above what the site does today (layout shift
+near zero, ~300ms blocked at 4x CPU throttling). They exist to catch a
+collapse — a heavy library pulled into the shared bundle — not to police
+milliseconds, because measurement showed there was nothing there to win.
+
 ## Writing content
 
 `content/README.md` is the authoring guide: frontmatter fields, the required
