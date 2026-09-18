@@ -9,6 +9,7 @@ import { KEYS, setKnown } from "@/lib/local";
 import { RELATION_LABEL, TYPE_LABEL } from "@/lib/content/types";
 import { commonGround, findPath, learningRoute } from "@/lib/path";
 import { NodePicker } from "./NodePicker";
+import { CopyButton } from "@/components/ui/CopyButton";
 
 type Mode = "connection" | "common" | "route";
 
@@ -55,6 +56,36 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
 
   const fromNode = graph.nodes.get(from);
   const toNode = graph.nodes.get(to);
+
+  /**
+   * The answer as Markdown, so it can leave the site — into an onboarding doc,
+   * an issue, a pull request description. Absolute links, because a checklist
+   * pasted elsewhere is useless if its links are relative to this page.
+   */
+  const asMarkdown = () => {
+    const site = typeof window === "undefined" ? "" : window.location.origin;
+    const link = (id: string) => {
+      const n = graph.nodes.get(id);
+      return n ? `[${n.name}](${site}${n.href})` : id;
+    };
+    if (mode === "connection" && hops) {
+      const lines = [`## ${fromNode?.name} → ${toNode?.name}`, "", `- ${link(from)}`];
+      for (const hop of hops) lines.push(`- *${RELATION_LABEL[hop.rel]}* → ${link(hop.to)}`);
+      return lines.join("\n");
+    }
+    if (mode === "common" && common) {
+      const lines = [`## What ${fromNode?.name} and ${toNode?.name} share`, ""];
+      if (common.direct) lines.push(`They are linked directly (${RELATION_LABEL[common.direct.rel]}).`, "");
+      for (const s of common.shared.slice(0, 12)) lines.push(`- ${link(s.id)}`);
+      return lines.join("\n");
+    }
+    if (mode === "route" && route.length > 0) {
+      const lines = [`## What to read before ${toNode?.name}`, ""];
+      for (const step of route) lines.push(`- [${step.known ? "x" : " "}] ${link(step.id)}`);
+      return lines.join("\n");
+    }
+    return "";
+  };
   const chain = hops ? [from, ...hops.map((h) => h.to)] : [];
 
   return (
@@ -104,11 +135,12 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
           ))}
         </div>
         {mode === "connection" && (
-          <label className="ml-auto flex items-center gap-2 text-fg-muted">
+          <label className="flex items-center gap-2 text-fg-muted">
             <input type="checkbox" checked={avoidHubs} onChange={(e) => setAvoidHubs(e.target.checked)} className="accent-[var(--accent)]" />
             Avoid routing through hubs
           </label>
         )}
+        <CopyButton className="ml-auto" text={asMarkdown} label="Copy as Markdown" title="Copy this answer as a Markdown list, with absolute links" />
       </div>
 
       {mode === "connection" && <ConnectionView graph={graph} chain={chain} hops={hops} from={fromNode?.name} to={toNode?.name} avoidHubs={avoidHubs} />}

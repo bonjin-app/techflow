@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGraphApi, type ApiNode } from "@/lib/useGraphApi";
 import { GraphUnavailable } from "./GraphUnavailable";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { TYPE_LABEL, type Relation } from "@/lib/content/types";
 
 /**
@@ -170,17 +171,6 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
     return Math.max(420, Math.ceil((Math.max(0, ...extent) + 60) * 2));
   }, [branches]);
 
-  const [copied, setCopied] = useState(false);
-  const copyMermaid = async () => {
-    try {
-      await navigator.clipboard.writeText(mermaid);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* clipboard blocked — nothing useful to say */
-    }
-  };
-
   if (failed) return <GraphUnavailable retry={retry} />;
   if (loading) {
     return (
@@ -221,14 +211,7 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
           })}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={copyMermaid}
-            className="h-8 rounded-md border border-border px-2.5 text-[12px] text-fg-muted hover:text-fg"
-            title="Copy this map as a Mermaid graph"
-          >
-            {copied ? "Copied" : "Copy as Mermaid"}
-          </button>
+          <CopyButton text={mermaid} label="Copy as Mermaid" title="Copy this map as a Mermaid graph" />
           <Link href={centre.href} className="h-8 rounded-md bg-accent px-3 text-[13px] font-semibold leading-8 text-accent-fg hover:opacity-90">
             Open {centre.name}
           </Link>

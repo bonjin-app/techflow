@@ -123,3 +123,15 @@ test("common ground answers with something specific, not a roadmap", async ({ pa
   await expect(first).not.toHaveAttribute("href", /\/roadmap\//);
   await expect(first).toHaveAttribute("data-type", /architecture|system-design|concept|pattern|technology/);
 });
+
+test("an answer can be copied out as Markdown", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/path?from=redis&to=sharding");
+  await page.getByRole("tab", { name: "What do I need first?" }).click();
+  await page.getByRole("button", { name: "Copy as Markdown" }).click();
+  await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
+
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toContain("## What to read before Sharding");
+  expect(copied).toMatch(/- \[[ x]\] \[.+\]\(http/); // a checklist with absolute links
+});
