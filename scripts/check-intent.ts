@@ -8,7 +8,7 @@
 import { buildGraph, getBuilds, getSearchIndex, summarize } from "../src/lib/content/graph";
 import { detectIntent, type IntentKind } from "../src/lib/intent";
 import { searchNodes } from "../src/lib/search";
-import { coverage, findPath, frontier, learningRoute } from "../src/lib/path";
+import { commonGround, coverage, findPath, frontier, learningRoute } from "../src/lib/path";
 import type { ApiNode, GraphApi } from "../src/lib/useGraphApi";
 import { RELATION_LABEL, type Relation } from "../src/lib/content/types";
 
@@ -119,6 +119,17 @@ function checkPaths(): string[] {
   for (const { id, missing } of f.nearly) {
     if (known.has(missing)) fail.push(`frontier: ${id} is blocked on ${missing}, which is already known`);
   }
+  // Shared ground must answer with something specific, not "both are on a roadmap".
+  const shared = commonGround(api, "redis", "kafka");
+  if (!shared || shared.shared.length < 3) fail.push("common ground redis ∩ kafka: too few shared pages");
+  else {
+    const top = shared.shared[0];
+    const node = api.nodes.get(top.id);
+    if (node?.type === "roadmap") fail.push(`common ground redis ∩ kafka: leads with a roadmap (${top.id}), which says nothing`);
+    if (node?.type === "comparison") fail.push(`common ground redis ∩ kafka: leads with the comparison of the two, which restates the question`);
+  }
+  if (commonGround(api, "redis", "redis") !== null) fail.push("common ground: a page compared with itself should return null");
+
   const cov = coverage(api, known);
   const counted = cov.reduce((a, c) => a + c.known, 0);
   if (counted !== [...known].filter((id) => api.nodes.has(id)).length) fail.push(`coverage: counted ${counted} known pages, expected ${known.size}`);
@@ -151,7 +162,7 @@ function main() {
   failures.push(...checkPaths());
 
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s) and 12 graph assertion(s) checked`);
+  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s) and 15 graph assertion(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);

@@ -21,10 +21,11 @@ export default function Page() {
           Find a path
         </h1>
         <p className="mt-3 max-w-2xl text-fg-muted">
-          Two questions a list of pages cannot answer. <strong className="font-semibold text-fg">How are these connected?</strong> walks the graph
+          Three questions a list of pages cannot answer. <strong className="font-semibold text-fg">How are these connected?</strong> walks the graph
           between any two pages and shows every relationship on the way.{" "}
+          <strong className="font-semibold text-fg">What do they share?</strong> finds the pages that touch both, most specific first.{" "}
           <strong className="font-semibold text-fg">What do I need first?</strong> follows the prerequisites backwards and orders them so nothing comes
-          before what it depends on. Both run in your browser against the same{" "}
+          before what it depends on. All three run in your browser against the same{" "}
           <Link href="/api-docs" className="text-accent hover:underline">
             graph JSON
           </Link>{" "}

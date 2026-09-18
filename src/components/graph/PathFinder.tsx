@@ -7,10 +7,10 @@ import { GraphUnavailable } from "./GraphUnavailable";
 import { useLocalRaw } from "@/lib/useLocal";
 import { KEYS, setKnown } from "@/lib/local";
 import { RELATION_LABEL, TYPE_LABEL } from "@/lib/content/types";
-import { findPath, learningRoute } from "@/lib/path";
+import { commonGround, findPath, learningRoute } from "@/lib/path";
 import { NodePicker } from "./NodePicker";
 
-type Mode = "connection" | "route";
+type Mode = "connection" | "common" | "route";
 
 function readKnown(raw: string | null | undefined): Set<string> {
   if (!raw) return new Set();
@@ -48,6 +48,7 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
   const nodes = useMemo(() => (graph ? [...graph.nodes.values()] : []), [graph]);
   const hops = useMemo(() => (graph && mode === "connection" ? findPath(graph, from, to, { avoidHubs }) : null), [graph, from, to, mode, avoidHubs]);
   const route = useMemo(() => (graph && mode === "route" ? learningRoute(graph, to, known) : []), [graph, to, mode, known]);
+  const common = useMemo(() => (graph && mode === "common" ? commonGround(graph, from, to) : null), [graph, from, to, mode]);
 
   if (failed) return <GraphUnavailable retry={retry} />;
   if (loading || !graph) return <div className="rounded-xl border border-border bg-surface p-8 text-sm text-fg-faint">loading the graph…</div>;
@@ -60,7 +61,7 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <NodePicker
-          label={mode === "connection" ? "From" : "Already reading about"}
+          label={mode === "route" ? "Already reading about" : "From"}
           nodes={nodes}
           value={fromNode}
           placeholder="Redis"
@@ -70,7 +71,7 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
           }}
         />
         <NodePicker
-          label={mode === "connection" ? "To" : "I want to understand"}
+          label={mode === "route" ? "I want to understand" : "To"}
           nodes={nodes}
           value={toNode}
           placeholder="Distributed System"
@@ -86,6 +87,7 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
           {(
             [
               ["connection", "How are they connected?"],
+              ["common", "What do they share?"],
               ["route", "What do I need first?"],
             ] as [Mode, string][]
           ).map(([m, label]) => (
@@ -109,11 +111,9 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
         )}
       </div>
 
-      {mode === "connection" ? (
-        <ConnectionView graph={graph} chain={chain} hops={hops} from={fromNode?.name} to={toNode?.name} avoidHubs={avoidHubs} />
-      ) : (
-        <RouteView graph={graph} route={route} target={toNode?.name ?? to} />
-      )}
+      {mode === "connection" && <ConnectionView graph={graph} chain={chain} hops={hops} from={fromNode?.name} to={toNode?.name} avoidHubs={avoidHubs} />}
+      {mode === "common" && <CommonView graph={graph} common={common} a={fromNode?.name ?? from} b={toNode?.name ?? to} />}
+      {mode === "route" && <RouteView graph={graph} route={route} target={toNode?.name ?? to} />}
     </div>
   );
 }
@@ -178,6 +178,68 @@ function ConnectionView({
           );
         })}
       </ol>
+    </div>
+  );
+}
+
+function CommonView({
+  graph,
+  common,
+  a,
+  b,
+}: {
+  graph: NonNullable<ReturnType<typeof useGraphApi>["graph"]>;
+  common: ReturnType<typeof commonGround>;
+  a: string;
+  b: string;
+}) {
+  if (!common) {
+    return <p className="rounded-xl border border-border bg-surface p-5 text-sm text-fg-muted">Pick two different pages.</p>;
+  }
+  if (common.shared.length === 0) {
+    return (
+      <p className="rounded-xl border border-border bg-surface p-5 text-sm text-fg-muted">
+        {a} and {b} share nothing directly. That is a real answer — try{" "}
+        <span className="font-medium text-fg">How are they connected?</span> for the route between them.
+      </p>
+    );
+  }
+  return (
+    <div>
+      <p className="mb-3 text-sm text-fg-muted">
+        {common.direct ? (
+          <>
+            They are linked directly ({RELATION_LABEL[common.direct.rel]}), and {common.shared.length} other{" "}
+            {common.shared.length === 1 ? "page touches" : "pages touch"} both.
+          </>
+        ) : (
+          <>
+            {common.shared.length} {common.shared.length === 1 ? "page touches" : "pages touch"} both. Roadmaps and the comparison of these two are
+            pushed down — “both are on the backend roadmap” is true of eighty pages and answers nothing.
+          </>
+        )}
+      </p>
+      <ul aria-label={`What ${a} and ${b} share`} className="space-y-1.5">
+        {common.shared.slice(0, 12).map((s) => {
+          const node = graph.nodes.get(s.id);
+          if (!node) return null;
+          return (
+            <li key={s.id}>
+              <Link
+                href={node.href}
+                data-type={node.type}
+                className="group flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border border-border bg-surface px-3 py-2"
+              >
+                <span className="size-1.5 shrink-0 translate-y-[-1px] rounded-full" style={{ background: "var(--type)" }} aria-hidden />
+                <span className="text-sm font-medium text-fg group-hover:underline">{node.name}</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-fg-faint">
+                  {a} {RELATION_LABEL[s.relToA]} · {b} {RELATION_LABEL[s.relToB]}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

@@ -113,3 +113,13 @@ test("an unknown URL lands on the site's own 404, with a way back", async ({ pag
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/isn't in the graph/);
   await expect(page.getByRole("link", { name: /Explore the graph/ })).toBeVisible();
 });
+
+test("common ground answers with something specific, not a roadmap", async ({ page }) => {
+  await page.goto("/path?from=redis&to=kafka");
+  await page.getByRole("tab", { name: "What do they share?" }).click();
+  const list = page.getByRole("list", { name: /What .* share/ });
+  await expect(list).toBeVisible();
+  const first = list.getByRole("link").first();
+  await expect(first).not.toHaveAttribute("href", /\/roadmap\//);
+  await expect(first).toHaveAttribute("data-type", /architecture|system-design|concept|pattern|technology/);
+});

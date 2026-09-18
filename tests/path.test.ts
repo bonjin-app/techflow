@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coverage, findPath, frontier, learningRoute } from "@/lib/path";
+import { commonGround, coverage, findPath, frontier, learningRoute } from "@/lib/path";
 import { loadGraph, makeGraph } from "./helpers";
 
 const graph = loadGraph();
@@ -143,5 +143,44 @@ describe("coverage", () => {
     const rows = coverage(graph, known);
     expect(rows.reduce((a, r) => a + r.total, 0)).toBe(graph.nodes.size);
     expect(rows.reduce((a, r) => a + r.known, 0)).toBe(2);
+  });
+});
+
+describe("commonGround", () => {
+  it("returns null for a page compared with itself or an unknown id", () => {
+    expect(commonGround(graph, "redis", "redis")).toBeNull();
+    expect(commonGround(graph, "redis", "nope")).toBeNull();
+  });
+
+  it("reports a direct edge when there is one", () => {
+    const c = commonGround(graph, "redis", "kafka")!;
+    expect(c.direct).toBeDefined();
+  });
+
+  it("only lists pages that really touch both", () => {
+    const c = commonGround(graph, "jwt", "oauth")!;
+    for (const s of c.shared) {
+      expect((graph.adjacency.get("jwt") ?? []).some((e) => e.other === s.id)).toBe(true);
+      expect((graph.adjacency.get("oauth") ?? []).some((e) => e.other === s.id)).toBe(true);
+    }
+  });
+
+  it("never lists either of the two pages as shared ground", () => {
+    const c = commonGround(graph, "saga", "outbox")!;
+    expect(c.shared.some((s) => s.id === "saga" || s.id === "outbox")).toBe(false);
+  });
+
+  it("leads with something specific rather than a roadmap or the comparison of the two", () => {
+    for (const [a, b] of [["redis", "kafka"], ["swift", "flutter"], ["jwt", "oauth"]] as const) {
+      const top = commonGround(graph, a, b)!.shared[0];
+      const type = graph.nodes.get(top.id)?.type;
+      expect(type, `${a} ∩ ${b} led with ${top.id}`).not.toBe("roadmap");
+      expect(type, `${a} ∩ ${b} led with ${top.id}`).not.toBe("comparison");
+    }
+  });
+
+  it("does not repeat a page that is linked more than once", () => {
+    const ids = commonGround(graph, "redis", "kafka")!.shared.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

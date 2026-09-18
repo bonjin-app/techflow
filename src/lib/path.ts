@@ -188,3 +188,56 @@ export function coverage(graph: GraphApi, known: Set<string>): { type: string; k
     .map(([type, row]) => ({ type, ...row }))
     .sort((a, b) => b.total - a.total);
 }
+
+export interface SharedNode {
+  id: string;
+  /** how each side relates to it */
+  relToA: Relation;
+  relToB: Relation;
+}
+
+export interface CommonGround {
+  /** a direct edge between the two, if there is one */
+  direct?: { rel: Relation; direction: "out" | "in" };
+  shared: SharedNode[];
+}
+
+/**
+ * What two pages have in common. Ordered by how much the shared neighbour
+ * narrows things down: everything on this site touches Backend, so "both are
+ * related to Backend" is not an answer — the interesting shared pages are the
+ * specific ones, which is the same reasoning the path weighting uses.
+ */
+export function commonGround(graph: GraphApi, a: string, b: string): CommonGround | null {
+  if (a === b || !graph.nodes.has(a) || !graph.nodes.has(b)) return null;
+
+  const edgesOfA = new Map<string, Relation>();
+  let direct: CommonGround["direct"];
+  for (const e of graph.adjacency.get(a) ?? []) {
+    if (e.other === b) direct = { rel: e.rel, direction: e.direction };
+    // keep the most specific relation when two pages are linked more than once
+    const existing = edgesOfA.get(e.other);
+    if (!existing || REL_COST[e.rel] < REL_COST[existing]) edgesOfA.set(e.other, e.rel);
+  }
+
+  const shared: SharedNode[] = [];
+  for (const e of graph.adjacency.get(b) ?? []) {
+    const relToA = edgesOfA.get(e.other);
+    if (!relToA || e.other === a) continue;
+    if (shared.some((s) => s.id === e.other)) continue;
+    shared.push({ id: e.other, relToA, relToB: e.rel });
+  }
+
+  // "Both are on the backend roadmap" is true of eighty pages and answers
+  // nothing; "both are used in Chat System" is an actual answer. A roadmap is a
+  // curriculum rather than a relationship, and a comparison of exactly these two
+  // is a restatement of the question — so both are pushed down.
+  const informativeness = (s: SharedNode) => {
+    const node = graph.nodes.get(s.id);
+    const membership = s.relToA === "PART_OF" && s.relToB === "PART_OF" ? 3 : 0;
+    const tautology = node?.type === "comparison" ? 2 : 0;
+    return REL_COST[s.relToA] + REL_COST[s.relToB] + hubPenalty(node?.degree ?? 1) * 2 + membership + tautology;
+  };
+  shared.sort((x, y) => informativeness(x) - informativeness(y));
+  return { direct, shared };
+}
