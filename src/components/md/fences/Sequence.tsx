@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { SequenceData } from "@/lib/fences";
 import type { RefMap } from "../refs";
 
@@ -17,6 +17,10 @@ const STEP_MS = 650;
  * reduced-motion users and without JS.
  */
 export function Sequence({ data, refs }: { data: SequenceData; refs: RefMap }) {
+  // A fixed marker id collides when a page carries two sequence fences, which
+  // is invalid HTML and makes the second diagram's arrowheads point at the
+  // first one's definition.
+  const arrow = `seq-arrow-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const n = data.participants.length;
   const width = LEFT * 2 + COL_W * Math.max(1, n - 1) + 80;
   const height = TOP + ROW_H * data.messages.length + 30;
@@ -152,7 +156,7 @@ export function Sequence({ data, refs }: { data: SequenceData; refs: RefMap }) {
                     fill="none"
                     stroke={stroke}
                     strokeWidth={1.5}
-                    markerEnd="url(#seq-arrow)"
+                    markerEnd={`url(#${arrow})`}
                   />
                 ) : (
                   <line
@@ -163,7 +167,7 @@ export function Sequence({ data, refs }: { data: SequenceData; refs: RefMap }) {
                     stroke={stroke}
                     strokeWidth={1.5}
                     strokeDasharray={m.reply ? "5 4" : undefined}
-                    markerEnd="url(#seq-arrow)"
+                    markerEnd={`url(#${arrow})`}
                     data-visible={visible}
                   />
                 )}
@@ -180,7 +184,7 @@ export function Sequence({ data, refs }: { data: SequenceData; refs: RefMap }) {
             );
           })}
           <defs>
-            <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <marker id={arrow} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
               <path d="M0 0 10 5 0 10z" fill="var(--fg-muted)" />
             </marker>
           </defs>

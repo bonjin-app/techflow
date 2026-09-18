@@ -25,6 +25,7 @@ pnpm build        # static production build
 pnpm test         # unit tests (vitest) — needs `pnpm gen` once for the generated JSON
 pnpm lint && pnpm typecheck
 pnpm check:links  # after a build: links, sitemap coverage, published API
+pnpm check:build  # after a build: static accessibility audit + page budgets
 ```
 
 ## Project layout
@@ -103,6 +104,7 @@ Every gate runs on pull requests (`.github/workflows/ci.yml`) and again before d
 | `pnpm test` | 55 unit tests over the pure logic: path finding, learning routes, the frontier, search ranking and typo tolerance, question parsing, the fence grammars, and localStorage behaviour including private mode |
 | `pnpm lint` / `pnpm typecheck` | React compiler rules and types |
 | `pnpm check:links` | 23,000 internal links, sitemap coverage, and that the published JSON API matches what was built |
+| `pnpm check:build` | every page: one `h1`, no skipped heading levels, no duplicate ids, a name on every link, button and input — plus a 45KB gzipped page budget and a 420KB JS budget |
 
 ## Deployment
 
@@ -147,3 +149,8 @@ There are no accounts and no backend. Learning-path checkboxes, recently viewed,
 theme live in the visitor's `localStorage` only. `/you` is the one place that reads all of it
 at once — and it can also forget all of it, which is the only honest thing to offer when
 there is nothing to log out of.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Content is TechFlow's editorial assessment; each page carries a
+review date and a confidence level, and both should travel with anything you republish.

@@ -42,7 +42,7 @@ export function ChallengeCard({ challenge, refs, compact = false }: { challenge:
         <span className="font-mono text-[11px] uppercase tracking-wider text-system-design">Design challenge</span>
         <span className="text-[11px] text-fg-faint">difficulty {challenge.difficulty}/5</span>
       </div>
-      <h3 className="mt-2 text-lg font-semibold tracking-tight">{challenge.question}</h3>
+      <h2 className="mt-2 text-lg font-semibold tracking-tight">{challenge.question}</h2>
       {!compact && <p className="mt-2 text-sm text-fg-muted">{challenge.context}</p>}
       <ol className="mt-4 space-y-2">
         {challenge.options.map((o, i) => {

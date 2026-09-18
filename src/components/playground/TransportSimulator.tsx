@@ -208,7 +208,7 @@ export function TransportSimulator() {
           return (
             <div key={t} className="rounded-lg border border-border bg-surface p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="text-sm font-semibold">{LABEL[t]}</h3>
+                <h2 className="text-sm font-semibold">{LABEL[t]}</h2>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-fg-muted">
                   <span>
                     requests <span className="text-fg">{l.requests}</span>

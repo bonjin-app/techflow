@@ -47,6 +47,8 @@ jobs:
         run: pnpm build
       - name: Check every internal link resolves
         run: pnpm check:links
+      - name: Accessibility and page budgets
+        run: pnpm check:build
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:

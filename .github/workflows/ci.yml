@@ -36,3 +36,5 @@ jobs:
         run: pnpm build
       - name: Links, sitemap and the published API
         run: pnpm check:links
+      - name: Accessibility and page budgets
+        run: pnpm check:build
