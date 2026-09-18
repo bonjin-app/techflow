@@ -37,6 +37,12 @@ jobs:
           pnpm validate
           pnpm lint
           pnpm exec next typegen && pnpm typecheck
+      - name: Unit tests
+        # The generated JSON the tests read is written by `pnpm gen`, which
+        # `pnpm build` also runs — do it here so a failure lands before the build.
+        run: |
+          pnpm gen
+          pnpm test
       - name: Build static site
         run: pnpm build
       - name: Check every internal link resolves

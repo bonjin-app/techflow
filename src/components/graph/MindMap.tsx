@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGraphApi, type ApiNode } from "@/lib/useGraphApi";
+import { GraphUnavailable } from "./GraphUnavailable";
 import { TYPE_LABEL, type Relation } from "@/lib/content/types";
 
 /**
@@ -58,7 +59,7 @@ export interface MindMapProps {
 }
 
 export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
-  const { graph, loading } = useGraphApi();
+  const { graph, loading, failed, retry } = useGraphApi();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [hover, setHover] = useState<string | null>(null);
   const focusId = trail[trail.length - 1];
@@ -180,6 +181,7 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
     }
   };
 
+  if (failed) return <GraphUnavailable retry={retry} />;
   if (loading) {
     return (
       <div className="grid-bg flex h-[520px] items-center justify-center rounded-xl border border-border text-sm text-fg-faint">
@@ -190,7 +192,7 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
   if (!graph || !centre) {
     return (
       <div className="rounded-xl border border-border bg-surface p-6 text-sm text-fg-muted">
-        The graph could not be loaded. <Link href="/explore" className="text-accent hover:underline">Open the force graph</Link> instead.
+        That page is not in the graph. <Link href="/explore" className="text-accent hover:underline">Open the force graph</Link> instead.
       </div>
     );
   }

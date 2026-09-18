@@ -10,6 +10,10 @@ export function pageMetadata(opts: {
   keywords?: string[];
 }): Metadata {
   const url = `${site.url}${opts.path}`;
+  // Setting an openGraph object here overrides the root opengraph-image.tsx
+  // rather than merging with it, so every page has to name the card explicitly —
+  // otherwise summary_large_image renders blank everywhere but the homepage.
+  const image = `${site.url}/opengraph-image`;
   // The root layout applies the "%s | TechFlow" template; keep titles bare here.
   const title = opts.title;
   return {
@@ -23,12 +27,14 @@ export function pageMetadata(opts: {
       url,
       siteName: site.name,
       type: opts.type ?? "website",
+      images: [{ url: image, width: 1200, height: 630, alt: `${site.name} — ${site.tagline}` }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} | ${site.name}`,
       description: opts.description,
       site: site.twitter,
+      images: [image],
     },
   };
 }

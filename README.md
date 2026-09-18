@@ -22,7 +22,9 @@ pnpm install
 pnpm dev          # http://localhost:3000
 pnpm validate     # content, graph links, and the example questions (also runs before build)
 pnpm build        # static production build
+pnpm test         # unit tests (vitest) — needs `pnpm gen` once for the generated JSON
 pnpm lint && pnpm typecheck
+pnpm check:links  # after a build: links, sitemap coverage, published API
 ```
 
 ## Project layout
@@ -90,6 +92,17 @@ index.
 `G` then a letter jumps: `H` home, `E` explore, `T` technologies, `C` concepts, `P` patterns,
 `A` architecture, `S` system design, `V` compare (as in "vs"), `R` roadmaps, `M` mind map,
 `K` stacks, `D` radar, `Y` playground. The command palette lists them all with their keys.
+
+## Checks
+
+Every gate runs on pull requests (`.github/workflows/ci.yml`) and again before deploy:
+
+| Command | What it protects |
+| --- | --- |
+| `pnpm validate` | required sections, graph links and their types, prerequisite cycles, comparison structure, review dates, the four example questions, keyword ranking and the path algorithms |
+| `pnpm test` | 55 unit tests over the pure logic: path finding, learning routes, the frontier, search ranking and typo tolerance, question parsing, the fence grammars, and localStorage behaviour including private mode |
+| `pnpm lint` / `pnpm typecheck` | React compiler rules and types |
+| `pnpm check:links` | 23,000 internal links, sitemap coverage, and that the published JSON API matches what was built |
 
 ## Deployment
 

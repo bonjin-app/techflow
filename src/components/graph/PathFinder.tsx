@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { useGraphApi } from "@/lib/useGraphApi";
+import { GraphUnavailable } from "./GraphUnavailable";
 import { useLocalRaw } from "@/lib/useLocal";
 import { KEYS, setKnown } from "@/lib/local";
 import { RELATION_LABEL, TYPE_LABEL } from "@/lib/content/types";
@@ -25,7 +26,7 @@ function readKnown(raw: string | null | undefined): Set<string> {
  * two things connected, and what do I have to understand first.
  */
 export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; initialTo?: string }) {
-  const { graph, loading } = useGraphApi();
+  const { graph, loading, failed, retry } = useGraphApi();
   const [from, setFrom] = useState(initialFrom ?? "redis");
   const [to, setTo] = useState(initialTo ?? "distributed-system");
   const [mode, setMode] = useState<Mode>("connection");
@@ -48,9 +49,8 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
   const hops = useMemo(() => (graph && mode === "connection" ? findPath(graph, from, to, { avoidHubs }) : null), [graph, from, to, mode, avoidHubs]);
   const route = useMemo(() => (graph && mode === "route" ? learningRoute(graph, to, known) : []), [graph, to, mode, known]);
 
-  if (loading || !graph) {
-    return <div className="rounded-xl border border-border bg-surface p-8 text-sm text-fg-faint">loading the graph…</div>;
-  }
+  if (failed) return <GraphUnavailable retry={retry} />;
+  if (loading || !graph) return <div className="rounded-xl border border-border bg-surface p-8 text-sm text-fg-faint">loading the graph…</div>;
 
   const fromNode = graph.nodes.get(from);
   const toNode = graph.nodes.get(to);

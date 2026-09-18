@@ -1,0 +1,38 @@
+# Pull requests get the same gates as main, minus the deploy. Keeping them in a
+# separate file means a change to the release process cannot quietly weaken the
+# checks a contributor sees.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Content, questions and paths
+        run: pnpm validate
+      - run: pnpm lint
+      - run: pnpm exec next typegen && pnpm typecheck
+      - name: Unit tests
+        run: pnpm gen && pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Links, sitemap and the published API
+        run: pnpm check:links

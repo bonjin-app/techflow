@@ -1,0 +1,18 @@
+# Weekly, grouped, and limited — a wall of individual bumps gets ignored, which
+# is the failure mode this is meant to prevent.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      production:
+        dependency-type: production
+      development:
+        dependency-type: development
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

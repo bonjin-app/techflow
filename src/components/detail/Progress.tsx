@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useGraphApi, type ApiNode } from "@/lib/useGraphApi";
+import { GraphUnavailable } from "@/components/graph/GraphUnavailable";
 import { useBuildGoals } from "@/lib/useSearchIndex";
 import { useLocalRaw } from "@/lib/useLocal";
 import { KEYS, getStreak, setKnown } from "@/lib/local";
@@ -43,7 +44,7 @@ function Row({ node, onKnown, note }: { node: ApiNode; onKnown?: () => void; not
  * ticked, and which single page is standing in front of several others.
  */
 export function Progress() {
-  const { graph, loading } = useGraphApi();
+  const { graph, loading, failed, retry } = useGraphApi();
   const goals = useBuildGoals();
   const knownRaw = useLocalRaw(KEYS.known);
   const recentRaw = useLocalRaw(KEYS.recent);
@@ -58,9 +59,8 @@ export function Progress() {
   const next = useMemo(() => (graph ? frontier(graph, known) : { ready: [], nearly: [] }), [graph, known]);
   const cover = useMemo(() => (graph ? coverage(graph, known) : []), [graph, known]);
 
-  if (loading || !graph) return <div className="rounded-xl border border-border bg-surface p-8 text-sm text-fg-faint">loading the graph…</div>;
-
-  const total = cover.reduce((a, c) => a + c.total, 0);
+  if (failed) return <GraphUnavailable retry={retry} />;
+  if (loading || !graph) return <div className="rounded-xl border border-border bg-surface p-8 text-sm text-fg-faint">loading the graph…</div>;const total = cover.reduce((a, c) => a + c.total, 0);
   const totalKnown = cover.reduce((a, c) => a + c.known, 0);
 
   if (totalKnown === 0 && recent.length === 0) {

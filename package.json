@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "validate": "tsx scripts/validate-content.ts && tsx scripts/check-intent.ts",
     "check:intent": "tsx scripts/check-intent.ts",
     "gen:index": "tsx scripts/gen-search-index.ts",
@@ -37,7 +39,8 @@
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.1"
   },
   "packageManager": "pnpm@11.10.0"
 }

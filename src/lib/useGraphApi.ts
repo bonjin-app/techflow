@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { NodeType, Relation } from "./content/types";
 import { BASE_PATH } from "./useSearchIndex";
 
@@ -56,7 +56,12 @@ function load(): Promise<GraphApi | null> {
       cache = index(raw);
       return cache;
     })
-    .catch(() => null);
+    .catch(() => null)
+    .finally(() => {
+      // A failed fetch must not be cached as "in flight" forever, or Retry
+      // would hand the caller the same rejection it already saw.
+      if (!cache) inFlight = null;
+    });
   return inFlight;
 }
 
@@ -65,22 +70,30 @@ function load(): Promise<GraphApi | null> {
  * walk from node to node without a page load; the same file is the public
  * `/api/graph.json` a developer can curl.
  */
-export function useGraphApi(): { graph: GraphApi | null; loading: boolean } {
-  const [graph, setGraph] = useState<GraphApi | null>(() => cache);
-  const [loading, setLoading] = useState(!cache);
+export function useGraphApi(): { graph: GraphApi | null; loading: boolean; failed: boolean; retry: () => void } {
+  // One piece of state, written only from the async callback and from the retry
+  // handler: setting state synchronously inside the effect would cascade renders.
+  const [state, setState] = useState<{ graph: GraphApi | null; status: "loading" | "ready" | "failed" }>(() =>
+    cache ? { graph: cache, status: "ready" } : { graph: null, status: "loading" },
+  );
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (cache) return;
     let live = true;
     load().then((g) => {
-      if (!live) return;
-      setGraph(g);
-      setLoading(false);
+      if (live) setState({ graph: g, status: g ? "ready" : "failed" });
     });
     return () => {
       live = false;
     };
+  }, [attempt]);
+
+  const retry = useCallback(() => {
+    inFlight = null;
+    setState({ graph: null, status: "loading" });
+    setAttempt((a) => a + 1);
   }, []);
 
-  return { graph, loading };
+  return { graph: state.graph, loading: state.status === "loading", failed: state.status === "failed", retry };
 }
