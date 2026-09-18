@@ -103,6 +103,15 @@ function main() {
 
   const pages = walk(OUT, (f) => f.endsWith(".html"));
   const problems: string[] = [];
+
+  // GitHub Pages serves 404.html for anything it cannot resolve. Without it a
+  // mistyped URL gets GitHub's own page rather than ours, which is the one
+  // moment a visitor most needs a way back into the site.
+  const notFound = path.join(OUT, "404.html");
+  if (!fs.existsSync(notFound)) problems.push("404.html is missing — the host would serve its own not-found page");
+  else if (!fs.readFileSync(notFound, "utf8").includes("Explore the graph")) {
+    problems.push("404.html does not look like the site's own not-found page");
+  }
   let worst = { file: "", kb: 0 };
 
   for (const file of pages) {

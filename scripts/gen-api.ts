@@ -115,6 +115,13 @@ function main() {
   writeJson("index.json", {
     name: "TechFlow knowledge graph",
     description: "Static JSON of the whole graph. No auth, no rate limit, regenerated on every build.",
+    // Anyone building on this needs to know what may move under them.
+    version: 1,
+    stability: {
+      stable: "The shape of graph.json and nodes/{id}.json: field names, the relation vocabulary, and node ids. Ids are only removed when a page is, and that is rare.",
+      changes: "Content changes on every build — nodes, edges, taglines and review dates. `generated` tells you when.",
+      breaking: "A breaking change to the shape increments `version` and is noted at /api-docs.",
+    },
     generated: new Date().toISOString().slice(0, 10),
     license: "Content is TechFlow's editorial assessment; check the review date on each node.",
     endpoints: {

@@ -143,6 +143,31 @@ curl -s https://techflow.dev/api/graph.json \\
 }`}</Code>
       </section>
 
+      <section className="mb-10">
+        <SectionHeading eyebrow="Contract" title="What is stable" />
+        <div className="space-y-3 text-sm text-fg-muted">
+          <p>
+            <strong className="font-semibold text-fg">Stable:</strong> the shape — field names, the relation vocabulary, and node ids. An id is
+            removed only when its page is, which is rare and never silent: it disappears from{" "}
+            <code className="font-mono text-xs">graph.json</code> and from the sitemap in the same build.
+          </p>
+          <p>
+            <strong className="font-semibold text-fg">Changes on every build:</strong> the content. Nodes, edges, taglines and review dates move as
+            pages are written and revised. <code className="font-mono text-xs">generated</code> in{" "}
+            <code className="font-mono text-xs">/api/index.json</code> tells you when.
+          </p>
+          <p>
+            <strong className="font-semibold text-fg">Breaking changes</strong> increment{" "}
+            <code className="font-mono text-xs">version</code> (currently <code className="font-mono text-xs">1</code>) and are described here. There
+            is no deprecation window to promise you, so pin the version you read and check it.
+          </p>
+          <p>
+            Every build verifies the files against the site it shipped: counts against contents, every edge endpoint published, every relation in the
+            stated vocabulary, a node file per node, and every <code className="font-mono text-xs">href</code> a page that exists.
+          </p>
+        </div>
+      </section>
+
       <section className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted">
         <h2 className="mb-2 text-sm font-semibold text-fg">Fair use</h2>
         <p>

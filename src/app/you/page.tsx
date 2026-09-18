@@ -4,12 +4,17 @@ import { pageMetadata } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
 import { Progress } from "@/components/detail/Progress";
 
-export const metadata: Metadata = pageMetadata({
+export const metadata: Metadata = {
+  ...pageMetadata({
   title: "Your progress",
   description:
     "What this browser remembers — pages you have ticked as known, your streak and what you have read — plus the pages whose prerequisites you have already covered.",
   path: "/you",
-});
+  }),
+  // Nothing here exists until a visitor has ticked something, so a crawler would
+  // only ever index a permanently empty page.
+  robots: { index: false, follow: true },
+};
 
 export default function Page() {
   return (
