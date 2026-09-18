@@ -148,7 +148,7 @@ function ConnectionView({
           ? " Hub pages are avoided where a more specific route exists, because “they are both connected to Backend” explains nothing."
           : " Hub avoidance is off, so this is the shortest route regardless of how general the pages in the middle are."}
       </p>
-      <ol className="space-y-2">
+      <ol aria-label="Route between the two pages" className="space-y-2">
         {chain.map((id, i) => {
           const node = graph.nodes.get(id);
           if (!node) return null;
@@ -205,7 +205,7 @@ function RouteView({
         {route.length} pages, ordered so nothing comes before what it depends on — {remaining} still to read. Tick what you already know and the count
         follows; it is stored in this browser only.
       </p>
-      <ol className="space-y-1.5">
+      <ol aria-label="What to read first" className="space-y-1.5">
         {route.map((step, i) => {
           const node = graph.nodes.get(step.id);
           if (!node) return null;

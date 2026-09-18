@@ -11,6 +11,7 @@ pnpm validate      # content, graph links, example questions, path algorithms
 pnpm test          # unit tests (run `pnpm gen` once first)
 pnpm lint && pnpm typecheck
 pnpm build && pnpm check:links && pnpm check:build
+pnpm e2e           # needs `pnpm exec playwright install chromium` once
 ```
 
 CI runs exactly these on every pull request. If one fails locally it will fail

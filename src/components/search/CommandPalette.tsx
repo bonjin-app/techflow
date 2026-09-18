@@ -181,6 +181,7 @@ export function CommandPalette() {
             className="h-12 w-full bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-faint"
             role="combobox"
             aria-expanded="true"
+            aria-label="Search the knowledge graph"
             aria-controls="palette-list"
             aria-activedescendant={commands[active] ? `cmd-${commands[active].id}` : undefined}
             autoComplete="off"

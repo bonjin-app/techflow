@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useGraphApi, type ApiNode } from "@/lib/useGraphApi";
 import { GraphUnavailable } from "@/components/graph/GraphUnavailable";
 import { useBuildGoals } from "@/lib/useSearchIndex";
@@ -49,7 +49,6 @@ export function Progress() {
   const knownRaw = useLocalRaw(KEYS.known);
   const recentRaw = useLocalRaw(KEYS.recent);
   const challengeRaw = useLocalRaw(CHALLENGE_KEY);
-  const [cleared, setCleared] = useState(false);
 
   const known = useMemo(() => new Set(parse<string[]>(knownRaw, [])), [knownRaw]);
   const recent = useMemo(() => parse<{ id: string; at: number }[]>(recentRaw, []), [recentRaw]);
@@ -218,15 +217,16 @@ export function Progress() {
           onClick={() => {
             try {
               for (const k of [KEYS.known, KEYS.recent, KEYS.streak, CHALLENGE_KEY]) window.localStorage.removeItem(k);
+              // Every key is gone, so the component falls through to its empty
+              // state — which is the confirmation, and a truer one than a label.
               window.dispatchEvent(new CustomEvent("tf:storage", { detail: { key: KEYS.known } }));
-              setCleared(true);
             } catch {
               /* private mode — nothing to clear */
             }
           }}
           className="mt-3 rounded-md border border-border px-3 py-1.5 text-xs text-fg-muted transition-colors hover:border-danger hover:text-danger"
         >
-          {cleared ? "Cleared" : "Forget everything"}
+          Forget everything
         </button>
       </section>
     </div>

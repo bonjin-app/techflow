@@ -26,6 +26,7 @@ pnpm test         # unit tests (vitest) — needs `pnpm gen` once for the genera
 pnpm lint && pnpm typecheck
 pnpm check:links  # after a build: links, sitemap coverage, published API
 pnpm check:build  # after a build: static accessibility audit + page budgets
+pnpm e2e          # after a build: 32 end-to-end tests against the exported site
 ```
 
 ## Project layout
@@ -104,7 +105,8 @@ Every gate runs on pull requests (`.github/workflows/ci.yml`) and again before d
 | `pnpm test` | 55 unit tests over the pure logic: path finding, learning routes, the frontier, search ranking and typo tolerance, question parsing, the fence grammars, and localStorage behaviour including private mode |
 | `pnpm lint` / `pnpm typecheck` | React compiler rules and types |
 | `pnpm check:links` | 23,000 internal links, sitemap coverage, and that the published JSON API matches what was built |
-| `pnpm check:build` | every page: one `h1`, no skipped heading levels, no duplicate ids, a name on every link, button and input — plus a 45KB gzipped page budget and a 420KB JS budget |
+| `pnpm check:build` | every page: one `h1`, no skipped heading levels, no duplicate ids, a name on every link, button and input — plus a 45KB gzipped page budget and a 420KB JS budget, and that `404.html` is ours |
+| `pnpm e2e` | 32 Playwright tests against the **exported** site, served the way GitHub Pages resolves it: 21 pages that must render with an empty console (a hydration mismatch logs and looks fine otherwise), and 11 journeys — the spec's first walk, the palette, a question, the path finder, the learning route, the mind map, an architecture animation, a challenge, a simulator, progress, and the 404 |
 
 ## Deployment
 

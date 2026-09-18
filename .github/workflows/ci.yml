@@ -38,3 +38,7 @@ jobs:
         run: pnpm check:links
       - name: Accessibility and page budgets
         run: pnpm check:build
+      - name: Install the browser for end-to-end tests
+        run: pnpm exec playwright install --with-deps chromium
+      - name: End-to-end tests against the built export
+        run: pnpm e2e
