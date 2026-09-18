@@ -1,6 +1,5 @@
 import { devices, expect, test } from "@playwright/test";
-import fs from "node:fs";
-import path from "node:path";
+import { samplePages } from "./pages";
 
 /**
  * A phone-sized viewport, checking the failure that keeps coming back: a grid
@@ -11,27 +10,7 @@ import path from "node:path";
  */
 test.use({ ...devices["Pixel 7"] });
 
-/** Every distinct route shape, plus every nth page of the long tails. */
-function sample(): string[] {
-  const xml = fs.readFileSync(path.join(process.cwd(), "out", "sitemap.xml"), "utf8");
-  const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-    .map((m) => m[1].replace(/^https?:\/\/[^/]+/, "").replace(/\/$/, "") || "/")
-    .sort();
-  const byShape = new Map<string, string[]>();
-  for (const p of paths) {
-    const shape = p === "/" ? "/" : `/${p.split("/")[1]}`;
-    byShape.set(shape, [...(byShape.get(shape) ?? []), p]);
-  }
-  const picked: string[] = [];
-  for (const [, list] of byShape) {
-    // the index page of each shape, then a deterministic spread through it
-    picked.push(list[0]);
-    for (let i = 1; i < list.length; i += Math.max(1, Math.ceil(list.length / 5))) picked.push(list[i]);
-  }
-  return [...new Set(picked)];
-}
-
-for (const route of sample()) {
+for (const route of samplePages()) {
   test(`${route} does not scroll sideways on a phone`, async ({ page }) => {
     await page.goto(route, { waitUntil: "domcontentloaded" });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -49,7 +28,7 @@ test("the header navigation stays reachable on a phone", async ({ page }) => {
 
 test("the mind map centres itself rather than starting at its left edge", async ({ page }) => {
   await page.goto("/map?focus=redis");
-  await expect(page.getByRole("img", { name: /Mind map centred on Redis/ })).toBeVisible();
+  await expect(page.getByRole("group", { name: /Mind map centred on Redis/ })).toBeVisible();
   const centred = await page.evaluate(() => {
     const wrap = document.querySelector("div.overflow-x-auto");
     if (!wrap) return null;

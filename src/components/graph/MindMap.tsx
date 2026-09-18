@@ -224,7 +224,7 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
           viewBox={`${-W / 2} ${-height / 2} ${W} ${height}`}
           className="block w-full min-w-[760px]"
           style={{ height: Math.min(720, Math.max(420, height)) }}
-          role="img"
+          role="group"
           aria-label={`Mind map centred on ${centre.name}, with ${branches.length} branches. A text version follows.`}
         >
           {branches.map((b) => {

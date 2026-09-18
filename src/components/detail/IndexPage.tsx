@@ -57,7 +57,7 @@ export function IndexPage({
           <section key={cat}>
             {groupBy === "category" && (
               <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-fg-faint">
-                {cat} <span className="ml-1 text-fg-faint/70">{items.length}</span>
+                {cat} <span className="ml-1 text-fg-faint">{items.length}</span>
               </h2>
             )}
             <NodeGrid nodes={items} />

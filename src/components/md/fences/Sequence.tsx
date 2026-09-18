@@ -94,7 +94,7 @@ export function Sequence({ data, refs }: { data: SequenceData; refs: RefMap }) {
           width={width}
           height={height}
           className="block max-w-none text-fg"
-          role="img"
+          role="group"
           aria-label={a11y}
         >
           {/* lifelines */}

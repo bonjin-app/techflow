@@ -63,7 +63,7 @@ export function SearchResults() {
           <section key={g.type}>
             <h2 className="mb-3 flex items-baseline gap-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint">
               <span data-type={g.type} className="size-2 rounded-full" style={{ background: "var(--type)" }} aria-hidden />
-              {TYPE_LABEL[g.type]} <span className="text-fg-faint/70">{g.items.length}</span>
+              {TYPE_LABEL[g.type]} <span className="text-fg-faint">{g.items.length}</span>
             </h2>
             <NodeGrid nodes={g.items} />
           </section>

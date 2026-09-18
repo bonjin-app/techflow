@@ -266,7 +266,7 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
         onWheel={onWheel}
-        role="img"
+        role="group"
         aria-label={`Relationship graph with ${nodes.length} nodes and ${links.length} connections. A text list follows.`}
         data-tick={tick}
       >

@@ -13,23 +13,23 @@
   --border-strong: #c9c9d3;
   --fg: #141519;
   --fg-muted: #565a66;
-  --fg-faint: #8a8f9c;
-  --accent: #4f5fe6;
+  --fg-faint: #636774;
+  --accent: #4455e4;
   --accent-fg: #ffffff;
-  --accent-soft: rgba(79, 95, 230, 0.1);
-  --ring: rgba(79, 95, 230, 0.45);
+  --accent-soft: rgba(68, 85, 228, 0.1);
+  --ring: rgba(68, 85, 228, 0.45);
 
-  --c-technology: #2f6fe4;
-  --c-concept: #0f9d6e;
-  --c-pattern: #c27a05;
-  --c-architecture: #7c3aed;
-  --c-comparison: #0891b2;
-  --c-roadmap: #db2777;
-  --c-system-design: #ea580c;
+  --c-technology: #1c5ed8;
+  --c-concept: #0b7452;
+  --c-pattern: #905b04;
+  --c-architecture: #7b38ed;
+  --c-comparison: #067089;
+  --c-roadmap: #bd2066;
+  --c-system-design: #b14209;
 
-  --ok: #0f9d6e;
-  --warn: #c27a05;
-  --danger: #dc2626;
+  --ok: #0b7452;
+  --warn: #905b04;
+  --danger: #c32020;
 
   --shadow-sm: 0 1px 2px rgba(20, 21, 25, 0.06), 0 1px 1px rgba(20, 21, 25, 0.04);
   --shadow-md: 0 8px 24px -12px rgba(20, 21, 25, 0.25);
@@ -46,7 +46,7 @@
   --border-strong: #34373f;
   --fg: #ececf0;
   --fg-muted: #a0a3ad;
-  --fg-faint: #6b6f7b;
+  --fg-faint: #888c97;
   --accent: #7c8cff;
   --accent-fg: #0b0c10;
   --accent-soft: rgba(124, 140, 255, 0.14);
@@ -192,6 +192,16 @@ kbd {
   transition: text-decoration-color 120ms ease;
 }
 .prose a:hover { text-decoration-color: var(--accent); }
+
+/* A link inside a sentence has to be more than a colour — readers who cannot
+   see the hue have nothing else to go on, and the accent only reaches 1.34:1
+   against body text. Links that stand alone (cards, nav, buttons) read as
+   links from their position, so this is scoped to running text. */
+p a[href] {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 3px;
+}
 .prose ul, .prose ol { padding-left: 1.25rem; }
 .prose ul { list-style: disc; }
 .prose ol { list-style: decimal; }

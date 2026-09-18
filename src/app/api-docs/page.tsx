@@ -13,7 +13,13 @@ export const metadata: Metadata = pageMetadata({
 });
 
 function Code({ children }: { children: React.ReactNode }) {
-  return <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-4 font-mono text-xs leading-relaxed">{children}</pre>;
+  // A box that scrolls has to be reachable by keyboard, or its overflow is
+  // simply unreadable without a mouse.
+  return (
+    <pre tabIndex={0} className="overflow-x-auto rounded-lg border border-border bg-surface p-4 font-mono text-xs leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+      {children}
+    </pre>
+  );
 }
 
 export default function Page() {

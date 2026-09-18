@@ -97,7 +97,7 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="relative">
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full max-w-[720px]" role="img" aria-label="Technology radar: four rings (adopt, trial, assess, caution) across four quadrants. A list version follows.">
+        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full max-w-[720px]" role="group" aria-label="Technology radar: four rings (adopt, trial, assess, caution) across four quadrants. A list version follows.">
           {RING_R.map((r, i) => (
             <circle key={i} cx={C} cy={C} r={r} fill={i === 0 ? "var(--accent-soft)" : "none"} stroke="var(--border-strong)" strokeOpacity={0.8} strokeDasharray={i === 3 ? "4 4" : undefined} />
           ))}

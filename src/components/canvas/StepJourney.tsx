@@ -19,9 +19,9 @@ export function StepJourney({ steps, refs }: { steps: SystemDesignStep[]; refs: 
   return (
     <div>
       {/* Rail */}
-      <ol className="no-scrollbar mb-6 flex items-stretch gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Design steps">
+      <div className="no-scrollbar mb-6 flex items-stretch gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Design steps">
         {steps.map((s, i) => (
-          <li key={i} className="flex shrink-0 items-center gap-2">
+          <div key={i} className="flex shrink-0 items-center gap-2" role="presentation">
             <button
               role="tab"
               aria-selected={i === idx}
@@ -35,9 +35,9 @@ export function StepJourney({ steps, refs }: { steps: SystemDesignStep[]; refs: 
               <span className="text-xs text-fg-muted">{s.title}</span>
             </button>
             {i < steps.length - 1 && <span className="text-fg-faint" aria-hidden>→</span>}
-          </li>
+          </div>
         ))}
-      </ol>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div key={idx} className="animate-fade-up">
