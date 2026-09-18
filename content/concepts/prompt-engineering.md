@@ -20,6 +20,7 @@ related:
   - { to: rag, rel: RELATED_TO }
   - { to: ai-agent, rel: RELATED_TO }
   - { to: fine-tuning, rel: ALTERNATIVE_TO }
+  - { to: rag-vs-fine-tuning, rel: RELATED_TO }
   - { to: threat-modeling, rel: RELATED_TO }
   - { to: serialization, rel: RELATED_TO }
   - { to: ai-rag, rel: USED_IN }

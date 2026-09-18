@@ -63,6 +63,25 @@ function main() {
         if (whens.length < n.subjects.length) {
           problems.push(`${n.id}: ${whens.length} 'When …' section(s) for ${n.subjects.length} subjects — each side needs its case made`);
         }
+        // A title is a promise: "Kubernetes vs Serverless" tells the reader
+        // this page is about Serverless, so /concept/serverless must link back
+        // to it. That edge comes from `subjects` or from `related`, and when
+        // neither names the node the title does, the comparison is invisible
+        // from the page it is named after — which is how this page listed
+        // Docker where it meant Serverless, unnoticed, for months.
+        const linked = new Set([...n.subjects, ...n.related.map((r) => r.to)]);
+        for (const side of n.name.split(/\s+vs\.?\s+/i)) {
+          const key = side.trim().toLowerCase();
+          const slug = key.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+          const hit = [...g.nodes.values()].find(
+            (c) => c.id !== n.id && (c.id === slug || c.name.toLowerCase() === key),
+          );
+          if (hit && !linked.has(hit.id)) {
+            problems.push(
+              `${n.id}: the title names '${hit.name}' but nothing links to ${hit.id} — add it to subjects or related, or the comparison never appears on its own page`,
+            );
+          }
+        }
       }
       const degree = g.adjacency.get(n.id)?.length ?? 0;
       if (degree < 3) warnings.push(`${n.id}: only ${degree} edges — the graph will feel thin here`);

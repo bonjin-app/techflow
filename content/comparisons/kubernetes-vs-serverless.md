@@ -5,7 +5,7 @@ tagline: Run your own containers on a cluster you operate, or hand them to a man
 category: decision
 tags: [Infrastructure, Containers, Serverless, Operations, Decision]
 difficulty: 4
-subjects: [kubernetes, docker]
+subjects: [kubernetes, serverless]
 related:
   - { to: microservices, rel: RELATED_TO }
   - { to: observability, rel: RELATED_TO }
@@ -30,7 +30,7 @@ control and portability for a much smaller operations surface.
 ## Comparison
 
 ```compare
-Feature              | Kubernetes [kubernetes]                            | Serverless / managed containers [docker]
+Feature              | Kubernetes [kubernetes]                            | Serverless / managed containers [serverless]
 Unit of deployment   | Pods you schedule on nodes you own                 | A function or a container image handed to the platform
 Who patches the host | You (or your platform team)                        | The provider
 Scaling              | HPA/KEDA on metrics; nodes must exist first        | Per request, to zero and back, automatically
@@ -49,14 +49,14 @@ Team cost to run     | High: upgrades, capacity, RBAC, cluster on-call    | Low:
 ? Is your traffic spiky, low-volume, or genuinely event-driven (uploads, webhooks, cron)?
   YES -> ? Does any request need to run longer than the platform's limit or hold a socket open?
     YES -> Kubernetes [kubernetes]
-    NO -> Serverless [docker]
+    NO -> Serverless [serverless]
   NO -> ? Do you need control the platform will not give you (GPUs, sidecars, custom networking, stateful sets)?
     YES -> Kubernetes [kubernetes]
     NO -> ? Do you have — and want to keep — a team that can carry a cluster on-call?
       YES -> ? Is steady utilisation high enough that reserved capacity is cheaper than per-request billing?
         YES -> Kubernetes [kubernetes]
-        NO -> Serverless [docker]
-      NO -> Serverless [docker]
+        NO -> Serverless [serverless]
+      NO -> Serverless [serverless]
 ```
 
 ## When Kubernetes

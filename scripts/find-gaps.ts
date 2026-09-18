@@ -15,6 +15,60 @@ import path from "node:path";
 import { buildGraph } from "../src/lib/content/graph";
 
 /**
+ * Pages whose prose covers the same ground but which the graph does not link.
+ *
+ * Cosine similarity over the full-text index. Almost every strong pair is
+ * already linked — the graph is dense and hand-curated, which is why this is a
+ * report for an author rather than a "similar pages" box for a reader: shipping
+ * it to readers would mostly restate the Related section. What is left after
+ * the linked pairs are removed is the useful part: a candidate edge somebody
+ * missed.
+ */
+function similarButUnlinked(): { a: string; b: string; score: number }[] {
+  const file = path.join(process.cwd(), "public", "search-text.json");
+  if (!fs.existsSync(file)) return [];
+  const idx = JSON.parse(fs.readFileSync(file, "utf8")) as { ids: string[]; terms: Record<string, number[]> };
+  const g = buildGraph();
+  const n = idx.ids.length;
+
+  const vectors: Map<string, number>[] = Array.from({ length: n }, () => new Map());
+  for (const [term, docs] of Object.entries(idx.terms)) {
+    const idf = Math.log(n / docs.length);
+    if (idf < 1.2) continue; // a word on a fifth of the site says nothing about a pair
+    for (const entry of docs) {
+      const prominent = entry < 0;
+      vectors[prominent ? -entry - 1 : entry].set(term, idf * (prominent ? 2.5 : 1));
+    }
+  }
+  const norms = vectors.map((v) => Math.hypot(...v.values()));
+  const linked = new Set<string>();
+  for (const e of g.edges) linked.add([e.from, e.to].sort().join("|"));
+
+  const pairs: { a: string; b: string; score: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const key = [idx.ids[i], idx.ids[j]].sort().join("|");
+      if (linked.has(key)) continue;
+      // Two roadmaps, two architectures or two system designs always read
+      // alike: each is a survey naming the same stack, so a high score says
+      // nothing. They swamped the report with pairs nobody would ever link.
+      const ta = g.nodes.get(idx.ids[i])?.type;
+      const SURVEY = new Set(["roadmap", "architecture", "system-design", undefined]);
+      if (ta === g.nodes.get(idx.ids[j])?.type && SURVEY.has(ta)) continue;
+      const [small, large] = vectors[i].size < vectors[j].size ? [vectors[i], vectors[j]] : [vectors[j], vectors[i]];
+      let dot = 0;
+      for (const [t, w] of small) {
+        const other = large.get(t);
+        if (other) dot += w * other;
+      }
+      const score = dot / (norms[i] * norms[j] || 1);
+      if (score > 0.12) pairs.push({ a: idx.ids[i], b: idx.ids[j], score });
+    }
+  }
+  return pairs.sort((x, y) => y.score - x.score).slice(0, 20);
+}
+
+/**
  * A term, and optionally the node that already covers it — "at-least-once" is
  * answered by the delivery-semantics page even though the slugs differ. Without
  * the second field the list keeps reporting work that is done.
@@ -85,6 +139,13 @@ function main() {
   console.log("  uses  pages  term");
   for (const r of rows) console.log(`  ${String(r.uses).padStart(4)}  ${String(r.pages).padStart(5)}  ${r.term}`);
   console.log(`\n${rows.length} of ${WATCH.length} watched terms have no node. A high count is a page worth writing.`);
+
+  const pairs = similarButUnlinked();
+  if (pairs.length) {
+    console.log("\nPages covering the same ground with no edge between them:\n");
+    for (const p of pairs) console.log(`  ${p.score.toFixed(3)}  ${p.a} ↔ ${p.b}`);
+    console.log("\nJudgement required: a high score can mean a missing link or just two pages about security.");
+  }
 }
 
 main();
