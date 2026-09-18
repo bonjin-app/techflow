@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { NodeSummary } from "@/lib/content/types";
 import { groupByType, searchNodes } from "@/lib/search";
+import { queryTerms, searchText, type TextIndex } from "@/lib/fulltext";
 
 const index = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "search-index.json"), "utf8")) as NodeSummary[];
 const first = (q: string) => searchNodes(index, q, 1)[0]?.item.id;
@@ -59,5 +60,41 @@ describe("groupByType", () => {
     expect(groups.reduce((a, g) => a + g.items.length, 0)).toBe(hits.length);
     const ids = groups.flatMap((g) => g.items.map((i) => i.id));
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("full text", () => {
+  const text = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "search-text.json"), "utf8")) as TextIndex;
+  const top = (q: string) => searchText(text, q, 4).map((h) => h.id);
+
+  it("finds pages by phrases that are nobody's title", () => {
+    expect(top("coordinated omission")).toContain("load-testing");
+    expect(top("coordinated omission")).toContain("tail-latency");
+    expect(top("semantic lock")[0]).toBe("saga");
+    expect(top("fencing token").slice(0, 3)).toEqual(expect.arrayContaining(["distributed-lock", "consensus"]));
+  });
+
+  it("ranks a page that says the word often above one that says it once", () => {
+    // delivery-semantics is about exactly-once; kafka mentions it
+    expect(top("exactly-once")[0]).toBe("delivery-semantics");
+  });
+
+  it("returns nothing for a word no page uses", () => {
+    expect(searchText(text, "zzzzxyq")).toEqual([]);
+    expect(searchText(text, "")).toEqual([]);
+  });
+
+  it("drops words too short or too common to narrow anything down", () => {
+    expect(queryTerms("a to the of redis")).toEqual(["the", "redis"]); // <3 chars gone
+    expect(text.terms["the"]).toBeUndefined(); // pruned as ubiquitous
+  });
+
+  it("every posting points at a real page", () => {
+    for (const [term, docs] of Object.entries(text.terms).slice(0, 400)) {
+      for (const entry of docs) {
+        const i = entry < 0 ? -entry - 1 : entry;
+        expect(text.ids[i], `${term} → ${entry}`).toBeDefined();
+      }
+    }
   });
 });

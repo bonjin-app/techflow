@@ -135,3 +135,12 @@ test("an answer can be copied out as Markdown", async ({ page, context }) => {
   expect(copied).toContain("## What to read before Sharding");
   expect(copied).toMatch(/- \[[ x]\] \[.+\]\(http/); // a checklist with absolute links
 });
+
+test("search finds pages by what they say, not only what they are called", async ({ page }) => {
+  // Nothing is called "coordinated omission"; two pages explain it.
+  await page.goto("/search?q=coordinated+omission");
+  const section = page.getByRole("heading", { name: "Mentioned on these pages" });
+  await expect(section).toBeVisible();
+  const list = section.locator("xpath=following-sibling::ul[1]");
+  await expect(list.getByRole("link").first()).toContainText(/Load Testing|Tail Latency/);
+});

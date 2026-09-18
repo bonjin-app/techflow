@@ -8,6 +8,7 @@ import { useBuildGoals, useSearchIndex } from "@/lib/useSearchIndex";
 import { detectIntent } from "@/lib/intent";
 import { IntentAnswer } from "./IntentAnswer";
 import { NodeGrid } from "@/components/ui/NodeCard";
+import { MentionedIn } from "./MentionedIn";
 
 /** Knowledge-graph search page body: query in the URL, results grouped by type. */
 export function SearchResults() {
@@ -67,9 +68,12 @@ export function SearchResults() {
             <NodeGrid nodes={g.items} />
           </section>
         ))}
+        <MentionedIn query={q} index={index} exclude={new Set(hits.map((h) => h.item.id))} />
+
         {q.trim() && hits.length === 0 && (
           <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-fg-muted">
-            Nothing matches “{q}”. Try a broader term like <em>cache</em>, <em>queue</em> or <em>consistency</em>.
+            Nothing is <em>called</em> “{q}”. If nothing appears below either, try a broader term like <em>cache</em>, <em>queue</em> or{" "}
+            <em>consistency</em>.
           </div>
         )}
       </div>
