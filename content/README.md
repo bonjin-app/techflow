@@ -279,3 +279,40 @@ must be `correct: true`. The home page features one per day, deterministically.
 platforms-delivery | data-messaging | architecture-operations` — keep the four roughly
 balanced, or labels collide in the chart. Rings describe how confidently
 *we* would start a new project with the item — never an absolute quality ranking.
+
+## What `pnpm validate` refuses
+
+Every rule below exists because the failure it prevents is invisible: the page
+renders, the build passes, and only a reader notices — usually by not noticing,
+which is worse. Read this before arguing with an error message.
+
+**Links.** A link to a node that does not exist, or to the right node under the
+wrong route (`/concept/microservices` when it is an architecture). A link whose
+text is the name of one page and whose href is another — the target resolves and
+the type matches, so nothing else can see it. A Markdown link inside a JSON file
+or inside a visual fence: both print the brackets at the reader.
+
+**Fences.** A `sequence` with no participants or no messages, or a message
+pointing past the participants it declared. A `compare` or `timeline` whose rows
+do not all have as many cells as the header. A `steps` or `decision` that parses
+to nothing. A `[node-id]` the renderer cannot resolve — these become links only
+at render time, so `check:links` never sees them.
+
+**The graph.** A prerequisite cycle. A `learningPath` step shaped like an id that
+matches no node — prose is fine, a typo is not, and the edge is dropped silently
+where it is derived. A page cut off from the rest of the graph, which breaks the
+path finder for that page alone.
+
+**Comparisons.** Required sections, a `compare` fence, a `decision` fence, and
+one `When …` section per subject. A title that names a page nothing links to:
+if the name says "Kubernetes vs Serverless", `subjects` or `related` has to
+reach Serverless, or the comparison never appears on the page it is named after.
+
+**Reasons.** A challenge option or a scale-journey step with no `why`, or one
+short enough to be a gesture. The reasoning *is* the content — picking the right
+answer teaches nothing, being told why the other three are wrong is the exercise.
+A challenge where every option is correct has nothing to work out.
+
+**Freshness.** `meta.lastReviewed` older than 12 months for a technology, 18 for
+anything else — a warning, not an error. And a technology written after the
+radar's last assessment with no ring: give it one, or decide it does not belong.
