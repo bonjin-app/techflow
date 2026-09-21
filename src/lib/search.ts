@@ -20,6 +20,15 @@ function norm(s: string) {
   return s.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}\s/-]/gu, " ");
 }
 
+/**
+ * Letters and digits only. Nobody types the punctuation in a name: "ci cd" and
+ * "cicd" both mean CI/CD, "fan out" means Fan-out, "next js" means Next.js.
+ * Comparing on this form makes those the exact matches they plainly are.
+ */
+function flat(s: string) {
+  return norm(s).replace(/[^\p{L}\p{N}]/gu, "");
+}
+
 /** Subsequence match ("rds" → "redis") — returns a small score or 0. */
 function fuzzy(query: string, target: string): number {
   let qi = 0;
@@ -69,6 +78,7 @@ function editDistance(a: string, b: string, max: number): number {
 export function searchNodes(index: NodeSummary[], rawQuery: string, limit = 24): SearchHit[] {
   const q = norm(rawQuery).trim();
   if (!q) return [];
+  const qFlat = flat(rawQuery);
   const words = q.split(/\s+/).filter(Boolean);
   // "k8s", "adr", "postgres" — what people type instead of the page's name.
   const aliased = ALIASES[q];
@@ -80,7 +90,11 @@ export function searchNodes(index: NodeSummary[], rawQuery: string, limit = 24):
     const tagline = norm(item.tagline);
     const id = item.id;
     let score = 0;
-    if (name === q || id === q || id === aliased) score += 100;
+    // An exact name is not a hint, it is the answer, so it outranks everything
+    // a partial match can accumulate. Typing "SQL" used to return SQLite and
+    // "Authentication" the authentication *system*, each beating the page named
+    // exactly that by a single point picked up from a tag.
+    if (name === q || id === q || id === aliased || flat(name) === qFlat || flat(id) === qFlat) score += 1000;
     // A prefix of a short name is a better match than a prefix of a long one:
     // "cach" means Cache, not Cache Invalidation, even though both start with it.
     else if (name.startsWith(q) || id.startsWith(q)) score += 60 + Math.round((40 * q.length) / Math.max(name.length, 1));

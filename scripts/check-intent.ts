@@ -159,10 +159,24 @@ function main() {
     if (first !== want) failures.push(`search "${q}" — ranked '${first ?? "nothing"}' first, expected '${want}'`);
   }
 
+  // The floor for a knowledge graph: a page wins a search for its own name,
+  // typed as it is written and typed the way a phone keyboard produces it —
+  // lowercase, no punctuation. "SQL" used to return SQLite and "ci cd" nothing
+  // relevant at all, each because a partial match had out-accumulated an exact
+  // one. Derived from the content, so it keeps holding as pages are added.
+  let named = 0;
+  for (const n of index) {
+    for (const q of new Set([n.name, n.name.toLowerCase().replace(/[^a-z0-9]+/gi, " ").trim()])) {
+      named++;
+      const first = searchNodes(index, q, 1)[0]?.item.id;
+      if (first !== n.id) failures.push(`search "${q}" — ranked '${first ?? "nothing"}' first, but that is the name of '${n.id}'`);
+    }
+  }
+
   failures.push(...checkPaths());
 
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s) and 15 graph assertion(s) checked`);
+  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s), ${named} name(s) and 15 graph assertion(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);

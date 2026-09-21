@@ -14,6 +14,22 @@ describe("searchNodes", () => {
     expect(searchNodes(index, "   ")).toEqual([]);
   });
 
+  it("lets an exact name beat anything a partial match can accumulate", () => {
+    // Each of these lost by a point or two to a longer name that merely
+    // carried the query as a tag.
+    expect(first("SQL")).toBe("sql"); // was sqlite
+    expect(first("Authentication")).toBe("authentication"); // was authentication-system
+    expect(first("Observability")).toBe("observability"); // was observability-stack
+  });
+
+  it("ignores the punctuation nobody types", () => {
+    expect(first("ci cd")).toBe("ci-cd");
+    expect(first("cicd")).toBe("ci-cd");
+    expect(first("fan out")).toBe("fan-out");
+    expect(first("fine tuning")).toBe("fine-tuning");
+    expect(first("next js")).toBe("nextjs");
+  });
+
   it("puts an exact name or id first", () => {
     expect(first("redis")).toBe("redis");
     expect(first("cache aside")).toBe("cache-aside");
