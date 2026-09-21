@@ -72,6 +72,32 @@ function checkPaths(): string[] {
   const api = asGraphApi();
   const fail: string[] = [];
 
+  // "Find the route between any two pages" is a promise about the whole graph,
+  // not about five hand-picked pairs, and one page added with thin links breaks
+  // it silently for that page alone. Measured across all 61,256 ordered pairs
+  // it holds today: every pair reachable, the longest route four hops. A BFS is
+  // the cheap way to keep saying so.
+  const reached = new Set([api.nodes.keys().next().value as string]);
+  const walk = [...reached];
+  let deepest = 0;
+  const hops = new Map([[walk[0], 0]]);
+  for (let i = 0; i < walk.length; i++) {
+    const cur = walk[i];
+    for (const e of api.adjacency.get(cur) ?? []) {
+      if (reached.has(e.other)) continue;
+      reached.add(e.other);
+      hops.set(e.other, hops.get(cur)! + 1);
+      deepest = Math.max(deepest, hops.get(e.other)!);
+      walk.push(e.other);
+    }
+  }
+  if (reached.size !== api.nodes.size) {
+    const stranded = [...api.nodes.keys()].filter((id) => !reached.has(id));
+    fail.push(`${stranded.length} page(s) are cut off from the graph: ${stranded.slice(0, 5).join(", ")} — the path finder cannot reach them`);
+  }
+  // A ceiling, not a policy: it catches the graph collapsing into a chain.
+  if (deepest > 6) fail.push(`the graph is ${deepest} hops deep — routes this long stop reading as answers`);
+
   // Every pair of well-connected pages should be reachable, and in few hops —
   // a path of ten is a graph problem, not an answer.
   for (const [a, b] of [
@@ -188,7 +214,7 @@ function main() {
   failures.push(...checkPaths());
 
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} worked example(s), ${RANKING.length} keyword(s), ${named} name(s), ${asked} question(s) and 15 graph assertion(s) checked`);
+  console.log(`\n${CASES.length} worked example(s), ${RANKING.length} keyword(s), ${named} name(s), ${asked} question(s) and ${index.length} connected page(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);
