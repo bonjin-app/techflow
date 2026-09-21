@@ -95,6 +95,67 @@ function auditA11y(file: string, html: string): string[] {
   return problems;
 }
 
+/**
+ * The half of the site no visitor reads. A canonical pointing at the wrong page,
+ * an og:image that 404s, structured data that stopped parsing — all of it fails
+ * without a symptom anyone would notice from the browser, and the deployed URLs
+ * differ from a local build's, so a local look proves nothing either.
+ */
+function auditMetadata(file: string, html: string, origin: string, basePath: string): string[] {
+  const rel = path.relative(OUT, file);
+  const problems: string[] = [];
+  const route = ("/" + rel.replace(/index\.html$/, "").replace(/\.html$/, "")).replace(/\/$/, "") || "/";
+  // Error pages are deliberately not canonical and not indexed.
+  if (/^\/(404|_not-found)$/.test(route)) return problems;
+
+  const here = (raw: string | undefined) => {
+    if (!raw) return undefined;
+    const p = new URL(raw, origin).pathname;
+    return (basePath && p.startsWith(basePath) ? p.slice(basePath.length) : p).replace(/\/$/, "") || "/";
+  };
+
+  const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
+  if (!canonical) problems.push(`${rel}: no canonical — search engines pick their own`);
+  else if (here(canonical) !== route) problems.push(`${rel}: canonical points at ${here(canonical)}, not this page`);
+
+  for (const [tag, re] of [
+    ["og:title", /property="og:title"/],
+    ["og:image", /property="og:image"/],
+    ["description", /<meta name="description"/],
+  ] as const) {
+    if (!re.test(html)) problems.push(`${rel}: no ${tag}`);
+  }
+
+  const og = /property="og:image" content="([^"]+)"/.exec(html)?.[1];
+  if (og) {
+    const p = here(og)!;
+    const candidates = [p, `${p}.png`, `${p}/index.png`, `${p}.jpg`].map((c) => path.join(OUT, c));
+    if (!candidates.some((c) => fs.existsSync(c))) problems.push(`${rel}: og:image ${p} is not in the build — it would 404 for every share`);
+  }
+
+  const blocks = [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)];
+  if (blocks.length === 0) problems.push(`${rel}: no structured data`);
+  for (const b of blocks) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(b[1].replace(/&quot;/g, '"'));
+    } catch (e) {
+      problems.push(`${rel}: structured data does not parse — ${(e as Error).message.slice(0, 70)}`);
+      continue;
+    }
+    for (const o of ([] as Record<string, unknown>[]).concat(parsed as Record<string, unknown>)) {
+      if (!o["@context"] || !o["@type"]) problems.push(`${rel}: a structured-data block is missing @context or @type`);
+      if (o["@type"] === "TechArticle") {
+        for (const k of ["headline", "description", "url", "dateModified", "author"]) {
+          if (!o[k]) problems.push(`${rel}: TechArticle has no ${k}`);
+        }
+        if (typeof o.url === "string" && here(o.url) !== route) problems.push(`${rel}: TechArticle url says ${here(o.url)}, not this page`);
+      }
+    }
+  }
+  return problems;
+}
+
 function main() {
   if (!fs.existsSync(OUT)) {
     console.error("✖ out/ not found — run `pnpm build` first.");
@@ -114,9 +175,22 @@ function main() {
   }
   let worst = { file: "", kb: 0 };
 
+  // Read the origin and base path out of the build rather than the environment:
+  // `out/` may have been produced by a different invocation than this one, and
+  // the home page's canonical is by definition the site root.
+  const home = fs.readFileSync(path.join(OUT, "index.html"), "utf8");
+  const root = /<link rel="canonical" href="([^"]+)"/.exec(home)?.[1];
+  if (!root) {
+    console.error("✖ the home page has no canonical — cannot tell what this build was built to be served as");
+    process.exit(1);
+  }
+  const origin = new URL(root).origin;
+  const basePath = new URL(root).pathname.replace(/\/$/, "");
+
   for (const file of pages) {
     const html = fs.readFileSync(file, "utf8");
     problems.push(...auditA11y(file, html));
+    problems.push(...auditMetadata(file, html, origin, basePath));
     const kb = gzipKb(html);
     if (kb > worst.kb) worst = { file: path.relative(OUT, file), kb };
     if (kb > BUDGET.pageGzipKb) problems.push(`${path.relative(OUT, file)}: ${kb.toFixed(0)}KB gzipped, over the ${BUDGET.pageGzipKb}KB page budget`);
