@@ -28,10 +28,11 @@ sitemap rather than a hand-written list:
 | `keyboard` | Focus traps, dead skip links, silent comboboxes |
 | `perf` | Content that jumps after paint, or a blocked main thread |
 
-The deploy workflow builds with `NEXT_PUBLIC_BASE_PATH=/techflow`, because
-GitHub Pages mounts a project site under the repository name. To run the suite
-the way the deploy does — which is the only way to catch a link that forgot the
-prefix — set the same variable:
+GitHub Pages mounts a project site under the repository name, so both workflows
+build with `NEXT_PUBLIC_BASE_PATH=/techflow` — CI as well as the deploy, because
+a pull request that builds for the root cannot see a base-path bug. The commands
+above run the root configuration instead, which is the one a custom domain would
+use and the one CI no longer covers. To reproduce what ships:
 
 ```bash
 NEXT_PUBLIC_BASE_PATH=/techflow pnpm build && NEXT_PUBLIC_BASE_PATH=/techflow pnpm e2e

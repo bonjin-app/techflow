@@ -1,6 +1,7 @@
-# Pull requests get the same gates as main, minus the deploy. Keeping them in a
-# separate file means a change to the release process cannot quietly weaken the
-# checks a contributor sees.
+# Pull requests get the same gates as main, minus the deploy — and the same
+# build configuration, so what a contributor sees is what ships. Keeping them in
+# a separate file means a change to the release process cannot quietly weaken
+# the checks a contributor sees.
 name: CI
 
 on:
@@ -18,6 +19,13 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      # The same two the deploy sets. A pull request that builds for the root
+      # while main builds for /<repo> cannot see a base-path bug, and did not:
+      # every route-driven end-to-end test 404'd under the deploy's own build
+      # for as long as the suite has existed, and CI was green throughout.
+      NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+      NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
