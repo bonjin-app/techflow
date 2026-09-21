@@ -8,6 +8,9 @@
 import { buildGraph, getBuilds, getSearchIndex, summarize } from "../src/lib/content/graph";
 import { detectIntent, type IntentKind } from "../src/lib/intent";
 import { searchNodes } from "../src/lib/search";
+import { queryTerms } from "../src/lib/fulltext";
+import fs from "node:fs";
+import path from "node:path";
 import { commonGround, coverage, findPath, frontier, learningRoute } from "../src/lib/path";
 import type { ApiNode, GraphApi } from "../src/lib/useGraphApi";
 import { RELATION_LABEL, type Relation } from "../src/lib/content/types";
@@ -185,6 +188,26 @@ function main() {
     if (first !== want) failures.push(`search "${q}" — ranked '${first ?? "nothing"}' first, expected '${want}'`);
   }
 
+  // "Mentioned on these pages" was silent for Redis, Cache, HTTP, REST and
+  // seventeen other page names, because the index dropped any word used on
+  // more than a quarter of the site — which is precisely the set a reader most
+  // wants to explore. Every page name should reach something.
+  const textIndex = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "search-text.json"), "utf8")) as {
+    ids: string[];
+    terms: Record<string, number[]>;
+  };
+  // Genuinely everywhere, even counting only the pages that lean on them.
+  const EVERYWHERE = new Set(["Database", "Database per Service"]);
+  let searchable = 0;
+  for (const n of index) {
+    if (EVERYWHERE.has(n.name)) continue;
+    const terms = queryTerms(n.name);
+    if (terms.length === 0) continue;
+    searchable++;
+    if (!terms.some((t) => textIndex.terms[t]))
+      failures.push(`no page can be found by the words in "${n.name}" — the text index has none of them`);
+  }
+
   // A question is never a declaration. "what is a chat system" used to answer
   // "You want to build Real-time Chat", because a goal keyword outranked the
   // question word — telling the reader what they wanted, and getting it wrong.
@@ -214,7 +237,7 @@ function main() {
   failures.push(...checkPaths());
 
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} worked example(s), ${RANKING.length} keyword(s), ${named} name(s), ${asked} question(s) and ${index.length} connected page(s) checked`);
+  console.log(`\n${CASES.length} worked example(s), ${RANKING.length} keyword(s), ${named} name(s), ${asked} question(s), ${searchable} searchable name(s) and ${index.length} connected page(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);

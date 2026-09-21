@@ -77,11 +77,33 @@ function main() {
       postings.set(term, [...(postings.get(term) ?? []), count > 2 ? -(doc + 1) : doc]);
     }
   }
-  // A term on a quarter of the site does not narrow anything down.
+  // A term on a quarter of the site does not narrow anything down — but the
+  // words that cross that line are the ones readers most want to explore, and
+  // dropping them outright left "Redis", "Cache", "HTTP" and eighteen other
+  // page names with nothing to search at all. So keep them, and keep only the
+  // pages that use the word more than twice: one that says Redis once mentions
+  // it, one that says it ten times is about it. That is the shorter list and
+  // the better one. A term still everywhere after that really does say nothing.
+  const LIMIT = ids.length * 0.25;
   const terms: Record<string, number[]> = {};
-  for (const [term, docs] of postings) if (docs.length <= ids.length * 0.25) terms[term] = docs;
+  for (const [term, docs] of postings) {
+    if (docs.length <= LIMIT) {
+      terms[term] = docs;
+      continue;
+    }
+    const prominent = docs.filter((d) => d < 0);
+    if (prominent.length > 0 && prominent.length <= LIMIT) terms[term] = prominent;
+  }
   const tkb = write("search-text.json", { ids, terms });
   console.log(`✔ public/search-text.json — ${ids.length} pages, ${Object.keys(terms).length} terms, ${tkb} KB`);
+  // Only the search page fetches this, and only once someone types, so it is
+  // off every other page's critical path. A ceiling all the same: it grew 16%
+  // the moment the pruning rule was relaxed, and nothing else would notice.
+  const CEILING = 600;
+  if (Number(tkb) > CEILING) {
+    console.error(`✖ search-text.json is ${tkb} KB, over the ${CEILING} KB ceiling — prune harder or store less per posting`);
+    process.exit(1);
+  }
 
   // "I want to build …" goals, so the search page can recognise a goal in a sentence.
   // `pages` is what the goal is made of, so a client can say how far in a
