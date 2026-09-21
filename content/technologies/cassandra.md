@@ -157,7 +157,7 @@ cheaply, because no node holds the whole dataset.
 ## Advantages
 
 - Very high, steady write throughput thanks to the LSM write path
-- Masterless: no failover window, no single write bottleneck, no leader election to operate
+- Masterless: no failover window, no single write bottleneck, no [leader election](/pattern/leader-election) to operate
 - Near-linear horizontal scaling by adding nodes to the ring
 - Multi-datacentre and multi-region replication is a first-class, configured feature
 - Per-query tunable consistency, so critical and cheap reads can differ

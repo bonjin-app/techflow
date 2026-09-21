@@ -47,7 +47,7 @@ Each of these was written by a job that reported success.
 
 The asymmetry matters: in a service, the blast radius of a bug is bounded by the request.
 In a pipeline, wrong data propagates downstream into every model, dashboard, export and
-model that reads it, and the backfill to correct it is often larger than the original
+model that reads it, and the [backfill](/concept/backfill) to correct it is often larger than the original
 build. Worse, trust is the real product of a data platform — once analysts start
 double-checking numbers in a spreadsheet, the platform has failed even when it is working.
 

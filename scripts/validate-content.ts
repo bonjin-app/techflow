@@ -41,6 +41,10 @@ function main() {
   }
   const problems = [...g.problems];
   const warnings: string[] = [];
+  /** Page name, lowercased, to its id — for spotting a label that names another page. */
+  const byName = new Map<string, string>();
+  for (const n of g.nodes.values()) byName.set(n.name.toLowerCase(), n.id);
+
 
   for (const n of g.nodes.values()) {
     if (n.difficulty < 1 || n.difficulty > 5) problems.push(`${n.id}: difficulty must be 1–5`);
@@ -139,6 +143,17 @@ function main() {
           for (const ref of fenceRefs(kind, body))
             if (!g.nodes.has(ref)) problems.push(`${n.id} › ${heading}: ${kind} fence refs '[${ref}]', which is not a node`);
         }
+        // A link labelled with one page's name and pointing at another is the
+        // one broken link nothing else can see: the target resolves, and it is
+        // the right kind of page, so both existing checks pass. "Redis vs
+        // Memcached" pointed at Redis for months.
+        for (const m of md.matchAll(/\[([^\]\n]{2,60})\]\(\/(?:technology|concept|pattern|architecture|compare|roadmap|system-design)\/([a-z0-9-]+)\)/g)) {
+          const named = byName.get(m[1].trim().toLowerCase());
+          if (named && named !== m[2]) {
+            problems.push(`${n.id} › ${heading}: link text "${m[1]}" is the name of '${named}' but it points at '${m[2]}'`);
+          }
+        }
+
         // internal links must resolve
         for (const m of md.matchAll(/\]\(\/(technology|concept|pattern|architecture|compare|roadmap|system-design)\/([a-z0-9-]+)\)/g)) {
           const target = g.nodes.get(m[2]);
@@ -198,8 +213,6 @@ function main() {
 
   // A roadmap step or stack item written as plain text when a node of that name
   // exists is a missed link — the graph should absorb it.
-  const byName = new Map<string, string>();
-  for (const n of g.nodes.values()) byName.set(n.name.toLowerCase(), n.id);
   for (const n of g.nodes.values()) {
     if (n.type !== "roadmap") continue;
     for (const step of n.steps) {

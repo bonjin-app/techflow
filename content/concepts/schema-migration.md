@@ -77,7 +77,7 @@ every environment the same schema by construction and makes the change reviewabl
 same pull request as the code that needs it.
 
 **Forward-only by default.** Down-migrations are attractive on paper and misleading in
-practice: dropping a column that a backfill has populated loses data, so the real recovery
+practice: dropping a column that a [backfill](/concept/backfill) has populated loses data, so the real recovery
 path is a new forward migration. Keep down-migrations for local development.
 
 **Where migrations run.** Three common placements, in increasing safety: as an application

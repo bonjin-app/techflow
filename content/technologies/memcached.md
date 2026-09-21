@@ -191,4 +191,4 @@ Memcached is the classic cache in front of a relational database in a
 of profiles, product pages and configuration while the database handles writes. In
 larger systems it is often the pure-cache tier next to Redis, which takes the roles
 that need data structures — the split behind the
-[Redis vs Memcached](/technology/redis) comparison.
+[Redis vs Memcached](/compare/redis-vs-memcached) comparison.

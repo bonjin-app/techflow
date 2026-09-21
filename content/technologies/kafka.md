@@ -94,7 +94,7 @@ into an external database still needs idempotent writes on your side.
 
 **Replication and ISR.** Each partition has a leader and followers. A write is
 acknowledged when all *in-sync replicas* have it (`acks=all`); `min.insync.replicas`
-bounds how many replicas may lag before writes are refused. Unclean leader election is
+bounds how many replicas may lag before writes are refused. Unclean [leader election](/pattern/leader-election) is
 disabled by default, trading availability for no data loss.
 
 **Retention and compaction.** Time/size retention drops old segments. Log compaction
