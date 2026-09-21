@@ -1,12 +1,312 @@
 {
-  "assessedOn": "2026-09-10",
+  "assessedOn": "2026-09-21",
   "method": "TechFlow editorial assessment for a typical product team building web/mobile backends in 2026. Rings describe how confidently we would start a new project with the item today — not how good the technology is in the abstract. Re-assessed quarterly; disagreement is expected and welcome.",
   "entries": [
     {
-      "ref": "typescript",
+      "ref": "circuit-breaker",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Mandatory once you call anything over a network you do not control."
+    },
+    {
+      "ref": "idempotency",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Design every mutating endpoint to be safely retried."
+    },
+    {
+      "ref": "incident-response",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Mitigate before diagnosing; the blameless postmortem is the product.",
+      "moved": "new"
+    },
+    {
+      "ref": "modular-monolith",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Best default architecture for a new product: clear modules, one deployable."
+    },
+    {
+      "ref": "oauth",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "The standard for delegated access; use authorization code with PKCE and nothing older.",
+      "moved": "new"
+    },
+    {
+      "ref": "observability",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "Logs, metrics and traces from day one — retrofitting is far more expensive."
+    },
+    {
+      "ref": "outbox",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "The reliable way to publish events alongside database writes."
+    },
+    {
+      "ref": "rag",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "The default way to ground answers in your own data; retrieval quality is the real work.",
+      "moved": "new"
+    },
+    {
+      "ref": "testing",
+      "ring": "adopt",
+      "quadrant": "architecture-operations",
+      "note": "A suite that is fast and trusted; a slow flaky one is worse than none.",
+      "moved": "new"
+    },
+    {
+      "ref": "ai-agent",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Tool-calling loops need step budgets, idempotent tools and a kill switch; a scripted pipeline often wins.",
+      "moved": "new"
+    },
+    {
+      "ref": "cqrs",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Solves real read/write asymmetry; frequently adopted where a good index would do."
+    },
+    {
+      "ref": "database-per-service",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Required for real service autonomy, and the moment you inherit distributed transactions.",
+      "moved": "new"
+    },
+    {
+      "ref": "ebpf",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Most teams meet it through their platform rather than by choice; writing it yourself needs recent kernels and patience with the verifier."
+    },
+    {
+      "ref": "fine-tuning",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Good for format and behaviour, poor for facts that change; try retrieval first.",
+      "moved": "new"
+    },
+    {
+      "ref": "microservices",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Organisational scaling tool; start with a modular monolith unless you already have many teams."
+    },
+    {
+      "ref": "saga",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Necessary for cross-service transactions; prefer avoiding the distributed transaction first."
+    },
+    {
+      "ref": "sidecar",
+      "ring": "assess",
+      "quadrant": "architecture-operations",
+      "note": "Useful when platform concerns must stay out of application code; another process to run.",
+      "moved": "new"
+    },
+    {
+      "ref": "contract-testing",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Replaces the shared integration environment once several teams own services.",
+      "moved": "new"
+    },
+    {
+      "ref": "event-driven-architecture",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Powerful decoupling; needs observability and idempotency to stay debuggable."
+    },
+    {
+      "ref": "llm-evaluation",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Without a golden set every prompt change is a guess; harder than it sounds.",
+      "moved": "new"
+    },
+    {
+      "ref": "prompt-engineering",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "A prompt is code: version it, structure the output, and test it.",
+      "moved": "new"
+    },
+    {
+      "ref": "semantic-search",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Strongest as hybrid retrieval alongside keyword search, not as a replacement.",
+      "moved": "new"
+    },
+    {
+      "ref": "slo",
+      "ring": "trial",
+      "quadrant": "architecture-operations",
+      "note": "Turns \"is it up?\" into a number you can act on; only useful if someone owns the budget.",
+      "moved": "new"
+    },
+    {
+      "ref": "cache-aside",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "The first performance lever to pull; low risk when TTLs are set."
+    },
+    {
+      "ref": "dbt",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Brings version control, review and tests to the transformation layer, which is where analytics engineering had none.",
+      "moved": "new"
+    },
+    {
+      "ref": "embedding",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Text as vectors is now ordinary infrastructure, not research.",
+      "moved": "new"
+    },
+    {
+      "ref": "mysql",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Mature and everywhere; choose it when your team or platform already runs it."
+    },
+    {
+      "ref": "postgresql",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "The default relational database; JSONB, extensions and managed offerings cover most needs."
+    },
+    {
+      "ref": "rabbitmq",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Pragmatic task queue and routing broker when you do not need a replayable log."
+    },
+    {
+      "ref": "redis",
+      "ring": "adopt",
+      "quadrant": "data-messaging",
+      "note": "Cache, session store, counters and pub/sub — nearly every backend ends up with one."
+    },
+    {
+      "ref": "cassandra",
+      "ring": "assess",
+      "quadrant": "data-messaging",
+      "note": "Linear write scaling with known access patterns; the data model must be designed around queries.",
+      "moved": "new"
+    },
+    {
+      "ref": "dynamodb",
+      "ring": "assess",
+      "quadrant": "data-messaging",
+      "note": "Superb at scale with known access patterns; painful when queries are not known upfront."
+    },
+    {
+      "ref": "memcached",
+      "ring": "assess",
+      "quadrant": "data-messaging",
+      "note": "Still excellent for pure multi-threaded caching, but Redis covers the same job plus more."
+    },
+    {
+      "ref": "semantic-cache",
+      "ring": "caution",
+      "quadrant": "data-messaging",
+      "note": "A similarity threshold is a correctness knob: near-miss questions can return the wrong answer.",
+      "moved": "new"
+    },
+    {
+      "ref": "write-behind",
+      "ring": "caution",
+      "quadrant": "data-messaging",
+      "note": "Fast, but data loss on cache failure is easy to underestimate."
+    },
+    {
+      "ref": "clickhouse",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Exceptional for aggregate queries over huge tables; not a transactional store.",
+      "moved": "new"
+    },
+    {
+      "ref": "elasticsearch",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "The search default; keep the source of truth elsewhere and treat the index as derived."
+    },
+    {
+      "ref": "kafka",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Unmatched for durable event streams; heavy to operate for a team without streaming needs."
+    },
+    {
+      "ref": "mongodb",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Good fit for document-shaped, schema-flexible data; think twice for relational domains."
+    },
+    {
+      "ref": "pgvector",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Keeps vectors next to the rows they belong to — start here before a separate store.",
+      "moved": "new"
+    },
+    {
+      "ref": "vector-database",
+      "ring": "trial",
+      "quadrant": "data-messaging",
+      "note": "Needed once similarity search is a product feature; a database extension often suffices.",
+      "moved": "new"
+    },
+    {
+      "ref": "accessibility",
       "ring": "adopt",
       "quadrant": "languages-interfaces",
-      "note": "Default for new JavaScript codebases; the ecosystem assumes it."
+      "note": "Semantics and keyboard support cost little up front and a fortune to retrofit.",
+      "moved": "new"
+    },
+    {
+      "ref": "go",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Small, fast, boring services with excellent concurrency and deployment ergonomics.",
+      "moved": "new"
+    },
+    {
+      "ref": "kotlin",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The Android default, and null safety plus coroutines remove the two bug classes that dominated the platform's crash reports.",
+      "moved": "new"
+    },
+    {
+      "ref": "nodejs",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Safe default for API servers and tooling; runtime alternatives exist but the ecosystem is here."
+    },
+    {
+      "ref": "openapi",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The default way to describe an HTTP API; clients, mocks and contract tests all follow from it. Keeping it true to the code takes discipline."
+    },
+    {
+      "ref": "python",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Default for data, scripting and ML work; the library ecosystem is the reason.",
+      "moved": "new"
     },
     {
       "ref": "react",
@@ -15,10 +315,49 @@
       "note": "Still the most widely deployed UI library; server components have matured."
     },
     {
-      "ref": "nodejs",
+      "ref": "rendering-strategies",
       "ring": "adopt",
       "quadrant": "languages-interfaces",
-      "note": "Safe default for API servers and tooling; runtime alternatives exist but the ecosystem is here."
+      "note": "Pick per route, not per project — most apps need more than one.",
+      "moved": "new"
+    },
+    {
+      "ref": "rest",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The default public API style; boring in the best way."
+    },
+    {
+      "ref": "swift",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The only route to full platform API coverage on Apple devices; strict concurrency checking has made large codebases safer to change.",
+      "moved": "new"
+    },
+    {
+      "ref": "typescript",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Default for new JavaScript codebases; the ecosystem assumes it."
+    },
+    {
+      "ref": "web-performance",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "Budgets beat heroics; the levers are few and well known.",
+      "moved": "new"
+    },
+    {
+      "ref": "websocket",
+      "ring": "adopt",
+      "quadrant": "languages-interfaces",
+      "note": "The standard for bidirectional real-time; plan for scaling connections across servers."
+    },
+    {
+      "ref": "webassembly",
+      "ring": "assess",
+      "quadrant": "languages-interfaces",
+      "note": "Real gains on a measurably CPU-bound path, and a cheap sandbox for untrusted code; for ordinary application work the extra toolchain costs more than it returns."
     },
     {
       "ref": "graphql",
@@ -33,191 +372,10 @@
       "note": "Excellent for service-to-service calls with strict contracts; browser story still needs a proxy."
     },
     {
-      "ref": "rest",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "The default public API style; boring in the best way."
-    },
-    {
-      "ref": "docker",
-      "ring": "adopt",
-      "quadrant": "platforms-delivery",
-      "note": "Containers are the unit of deployment almost everywhere."
-    },
-    {
-      "ref": "kubernetes",
-      "ring": "trial",
-      "quadrant": "platforms-delivery",
-      "note": "Right when you run many services and have platform capacity; a burden for a small team with one app."
-    },
-    {
-      "ref": "nginx",
-      "ring": "adopt",
-      "quadrant": "platforms-delivery",
-      "note": "Reverse proxy, TLS termination and static serving with decades of production mileage."
-    },
-    {
-      "ref": "cdn",
-      "ring": "adopt",
-      "quadrant": "platforms-delivery",
-      "note": "Put one in front of anything public; cheap latency and origin protection."
-    },
-    {
-      "ref": "s3",
-      "ring": "adopt",
-      "quadrant": "platforms-delivery",
-      "note": "Object storage is the durable, cheap default for files, backups and data lakes."
-    },
-    {
-      "ref": "prometheus",
-      "ring": "adopt",
-      "quadrant": "platforms-delivery",
-      "note": "Metrics standard; pair with a dashboard and tracing for full observability."
-    },
-    {
-      "ref": "observability",
-      "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "Logs, metrics and traces from day one — retrofitting is far more expensive."
-    },
-    {
-      "ref": "postgresql",
-      "ring": "adopt",
-      "quadrant": "data-messaging",
-      "note": "The default relational database; JSONB, extensions and managed offerings cover most needs."
-    },
-    {
-      "ref": "mysql",
-      "ring": "adopt",
-      "quadrant": "data-messaging",
-      "note": "Mature and everywhere; choose it when your team or platform already runs it."
-    },
-    {
-      "ref": "redis",
-      "ring": "adopt",
-      "quadrant": "data-messaging",
-      "note": "Cache, session store, counters and pub/sub — nearly every backend ends up with one."
-    },
-    {
-      "ref": "memcached",
-      "ring": "assess",
-      "quadrant": "data-messaging",
-      "note": "Still excellent for pure multi-threaded caching, but Redis covers the same job plus more."
-    },
-    {
-      "ref": "kafka",
-      "ring": "trial",
-      "quadrant": "data-messaging",
-      "note": "Unmatched for durable event streams; heavy to operate for a team without streaming needs."
-    },
-    {
-      "ref": "rabbitmq",
-      "ring": "adopt",
-      "quadrant": "data-messaging",
-      "note": "Pragmatic task queue and routing broker when you do not need a replayable log."
-    },
-    {
-      "ref": "mongodb",
-      "ring": "trial",
-      "quadrant": "data-messaging",
-      "note": "Good fit for document-shaped, schema-flexible data; think twice for relational domains."
-    },
-    {
-      "ref": "dynamodb",
-      "ring": "assess",
-      "quadrant": "data-messaging",
-      "note": "Superb at scale with known access patterns; painful when queries are not known upfront."
-    },
-    {
-      "ref": "elasticsearch",
-      "ring": "trial",
-      "quadrant": "data-messaging",
-      "note": "The search default; keep the source of truth elsewhere and treat the index as derived."
-    },
-    {
-      "ref": "cache-aside",
-      "ring": "adopt",
-      "quadrant": "data-messaging",
-      "note": "The first performance lever to pull; low risk when TTLs are set."
-    },
-    {
-      "ref": "outbox",
-      "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "The reliable way to publish events alongside database writes."
-    },
-    {
-      "ref": "circuit-breaker",
-      "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "Mandatory once you call anything over a network you do not control."
-    },
-    {
-      "ref": "idempotency",
-      "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "Design every mutating endpoint to be safely retried."
-    },
-    {
-      "ref": "event-driven-architecture",
-      "ring": "trial",
-      "quadrant": "architecture-operations",
-      "note": "Powerful decoupling; needs observability and idempotency to stay debuggable."
-    },
-    {
-      "ref": "cqrs",
-      "ring": "assess",
-      "quadrant": "architecture-operations",
-      "note": "Solves real read/write asymmetry; frequently adopted where a good index would do."
-    },
-    {
-      "ref": "saga",
-      "ring": "assess",
-      "quadrant": "architecture-operations",
-      "note": "Necessary for cross-service transactions; prefer avoiding the distributed transaction first."
-    },
-    {
-      "ref": "microservices",
-      "ring": "assess",
-      "quadrant": "architecture-operations",
-      "note": "Organisational scaling tool; start with a modular monolith unless you already have many teams."
-    },
-    {
-      "ref": "modular-monolith",
-      "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "Best default architecture for a new product: clear modules, one deployable."
-    },
-    {
-      "ref": "write-behind",
-      "ring": "caution",
-      "quadrant": "data-messaging",
-      "note": "Fast, but data loss on cache failure is easy to underestimate."
-    },
-    {
-      "ref": "sse",
+      "ref": "optimistic-ui",
       "ring": "trial",
       "quadrant": "languages-interfaces",
-      "note": "Underused: simpler than WebSocket for server → client streams such as AI token output."
-    },
-    {
-      "ref": "websocket",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "The standard for bidirectional real-time; plan for scaling connections across servers."
-    },
-    {
-      "ref": "go",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "Small, fast, boring services with excellent concurrency and deployment ergonomics.",
-      "moved": "new"
-    },
-    {
-      "ref": "python",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "Default for data, scripting and ML work; the library ecosystem is the reason.",
+      "note": "Great for reversible actions, wrong for money and anything irreversible.",
       "moved": "new"
     },
     {
@@ -228,10 +386,35 @@
       "moved": "new"
     },
     {
-      "ref": "terraform",
+      "ref": "sse",
+      "ring": "trial",
+      "quadrant": "languages-interfaces",
+      "note": "Underused: simpler than WebSocket for server → client streams such as AI token output."
+    },
+    {
+      "ref": "cdn",
       "ring": "adopt",
       "quadrant": "platforms-delivery",
-      "note": "Declarative infrastructure with a reviewable plan; state management is the operational cost.",
+      "note": "Put one in front of anything public; cheap latency and origin protection."
+    },
+    {
+      "ref": "ci-cd",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Merge to main should be enough to reach production safely.",
+      "moved": "new"
+    },
+    {
+      "ref": "docker",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Containers are the unit of deployment almost everywhere."
+    },
+    {
+      "ref": "feature-flag",
+      "ring": "adopt",
+      "quadrant": "platforms-delivery",
+      "note": "Decouples deploy from release; budget time to delete stale flags.",
       "moved": "new"
     },
     {
@@ -242,27 +425,6 @@
       "moved": "new"
     },
     {
-      "ref": "opentelemetry",
-      "ring": "adopt",
-      "quadrant": "platforms-delivery",
-      "note": "Vendor-neutral traces and metrics; instrument once, change backends later.",
-      "moved": "new"
-    },
-    {
-      "ref": "clickhouse",
-      "ring": "trial",
-      "quadrant": "data-messaging",
-      "note": "Exceptional for aggregate queries over huge tables; not a transactional store.",
-      "moved": "new"
-    },
-    {
-      "ref": "cassandra",
-      "ring": "assess",
-      "quadrant": "data-messaging",
-      "note": "Linear write scaling with known access patterns; the data model must be designed around queries.",
-      "moved": "new"
-    },
-    {
       "ref": "infrastructure-as-code",
       "ring": "adopt",
       "quadrant": "platforms-delivery",
@@ -270,164 +432,35 @@
       "moved": "new"
     },
     {
-      "ref": "ci-cd",
+      "ref": "nginx",
       "ring": "adopt",
       "quadrant": "platforms-delivery",
-      "note": "Merge to main should be enough to reach production safely.",
-      "moved": "new"
+      "note": "Reverse proxy, TLS termination and static serving with decades of production mileage."
     },
     {
-      "ref": "feature-flag",
+      "ref": "opentelemetry",
       "ring": "adopt",
       "quadrant": "platforms-delivery",
-      "note": "Decouples deploy from release; budget time to delete stale flags.",
+      "note": "Vendor-neutral traces and metrics; instrument once, change backends later.",
       "moved": "new"
     },
     {
-      "ref": "canary-release",
-      "ring": "trial",
+      "ref": "prometheus",
+      "ring": "adopt",
       "quadrant": "platforms-delivery",
-      "note": "Real evidence before full exposure — needs enough traffic to be statistically meaningful.",
-      "moved": "new"
+      "note": "Metrics standard; pair with a dashboard and tracing for full observability."
     },
     {
-      "ref": "slo",
-      "ring": "trial",
-      "quadrant": "architecture-operations",
-      "note": "Turns \"is it up?\" into a number you can act on; only useful if someone owns the budget.",
-      "moved": "new"
-    },
-    {
-      "ref": "oauth",
+      "ref": "s3",
       "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "The standard for delegated access; use authorization code with PKCE and nothing older.",
-      "moved": "new"
-    },
-    {
-      "ref": "database-per-service",
-      "ring": "assess",
-      "quadrant": "architecture-operations",
-      "note": "Required for real service autonomy, and the moment you inherit distributed transactions.",
-      "moved": "new"
-    },
-    {
-      "ref": "sidecar",
-      "ring": "assess",
-      "quadrant": "architecture-operations",
-      "note": "Useful when platform concerns must stay out of application code; another process to run.",
-      "moved": "new"
-    },
-    {
-      "ref": "rag",
-      "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "The default way to ground answers in your own data; retrieval quality is the real work.",
-      "moved": "new"
-    },
-    {
-      "ref": "embedding",
-      "ring": "adopt",
-      "quadrant": "data-messaging",
-      "note": "Text as vectors is now ordinary infrastructure, not research.",
-      "moved": "new"
-    },
-    {
-      "ref": "vector-database",
-      "ring": "trial",
-      "quadrant": "data-messaging",
-      "note": "Needed once similarity search is a product feature; a database extension often suffices.",
-      "moved": "new"
-    },
-    {
-      "ref": "pgvector",
-      "ring": "trial",
-      "quadrant": "data-messaging",
-      "note": "Keeps vectors next to the rows they belong to — start here before a separate store.",
-      "moved": "new"
-    },
-    {
-      "ref": "llm-evaluation",
-      "ring": "trial",
-      "quadrant": "architecture-operations",
-      "note": "Without a golden set every prompt change is a guess; harder than it sounds.",
-      "moved": "new"
-    },
-    {
-      "ref": "semantic-search",
-      "ring": "trial",
-      "quadrant": "architecture-operations",
-      "note": "Strongest as hybrid retrieval alongside keyword search, not as a replacement.",
-      "moved": "new"
-    },
-    {
-      "ref": "ai-agent",
-      "ring": "assess",
-      "quadrant": "architecture-operations",
-      "note": "Tool-calling loops need step budgets, idempotent tools and a kill switch; a scripted pipeline often wins.",
-      "moved": "new"
-    },
-    {
-      "ref": "fine-tuning",
-      "ring": "assess",
-      "quadrant": "architecture-operations",
-      "note": "Good for format and behaviour, poor for facts that change; try retrieval first.",
-      "moved": "new"
-    },
-    {
-      "ref": "semantic-cache",
-      "ring": "caution",
-      "quadrant": "data-messaging",
-      "note": "A similarity threshold is a correctness knob: near-miss questions can return the wrong answer.",
-      "moved": "new"
-    },
-    {
-      "ref": "serverless",
-      "ring": "trial",
       "quadrant": "platforms-delivery",
-      "note": "Excellent for spiky, short, stateless work; cold starts and execution limits decide it.",
-      "moved": "new"
+      "note": "Object storage is the durable, cheap default for files, backups and data lakes."
     },
     {
-      "ref": "testing",
+      "ref": "terraform",
       "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "A suite that is fast and trusted; a slow flaky one is worse than none.",
-      "moved": "new"
-    },
-    {
-      "ref": "contract-testing",
-      "ring": "trial",
-      "quadrant": "architecture-operations",
-      "note": "Replaces the shared integration environment once several teams own services.",
-      "moved": "new"
-    },
-    {
-      "ref": "accessibility",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "Semantics and keyboard support cost little up front and a fortune to retrofit.",
-      "moved": "new"
-    },
-    {
-      "ref": "web-performance",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "Budgets beat heroics; the levers are few and well known.",
-      "moved": "new"
-    },
-    {
-      "ref": "rendering-strategies",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "Pick per route, not per project — most apps need more than one.",
-      "moved": "new"
-    },
-    {
-      "ref": "prompt-engineering",
-      "ring": "trial",
-      "quadrant": "architecture-operations",
-      "note": "A prompt is code: version it, structure the output, and test it.",
+      "quadrant": "platforms-delivery",
+      "note": "Declarative infrastructure with a reviewable plan; state management is the operational cost.",
       "moved": "new"
     },
     {
@@ -438,38 +471,10 @@
       "moved": "new"
     },
     {
-      "ref": "incident-response",
-      "ring": "adopt",
-      "quadrant": "architecture-operations",
-      "note": "Mitigate before diagnosing; the blameless postmortem is the product.",
-      "moved": "new"
-    },
-    {
-      "ref": "optimistic-ui",
-      "ring": "trial",
-      "quadrant": "languages-interfaces",
-      "note": "Great for reversible actions, wrong for money and anything irreversible.",
-      "moved": "new"
-    },
-    {
-      "ref": "swift",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "The only route to full platform API coverage on Apple devices; strict concurrency checking has made large codebases safer to change.",
-      "moved": "new"
-    },
-    {
-      "ref": "kotlin",
-      "ring": "adopt",
-      "quadrant": "languages-interfaces",
-      "note": "The Android default, and null safety plus coroutines remove the two bug classes that dominated the platform's crash reports.",
-      "moved": "new"
-    },
-    {
-      "ref": "react-native",
+      "ref": "canary-release",
       "ring": "trial",
       "quadrant": "platforms-delivery",
-      "note": "The new architecture removed the old bridge bottleneck; adopt where the team already writes React and native dependencies stay few.",
+      "note": "Real evidence before full exposure — needs enough traffic to be statistically meaningful.",
       "moved": "new"
     },
     {
@@ -480,10 +485,23 @@
       "moved": "new"
     },
     {
-      "ref": "dbt",
-      "ring": "adopt",
-      "quadrant": "data-messaging",
-      "note": "Brings version control, review and tests to the transformation layer, which is where analytics engineering had none.",
+      "ref": "kubernetes",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "Right when you run many services and have platform capacity; a burden for a small team with one app."
+    },
+    {
+      "ref": "react-native",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "The new architecture removed the old bridge bottleneck; adopt where the team already writes React and native dependencies stay few.",
+      "moved": "new"
+    },
+    {
+      "ref": "serverless",
+      "ring": "trial",
+      "quadrant": "platforms-delivery",
+      "note": "Excellent for spiky, short, stateless work; cold starts and execution limits decide it.",
       "moved": "new"
     }
   ]

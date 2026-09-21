@@ -246,6 +246,21 @@ function main() {
     }
   }
 
+  // The radar is an editorial board, not a census — leaving Git or Linux off it
+  // is a judgement, not an omission. But a technology page written after the
+  // last assessment has never been judged at all, and nothing else would say so.
+  const rated = new Set(g.radar.entries.map((e) => e.ref));
+  for (const n of g.nodes.values()) {
+    if (n.type !== "technology" || rated.has(n.id)) continue;
+    const reviewed = (n as { meta?: { lastReviewed?: string } }).meta?.lastReviewed;
+    // `>=`, not `>`: a page reviewed on the assessment date and still unrated
+    // was not looked at. One reviewed earlier predates the assessment, so its
+    // absence is a decision somebody already made.
+    if (reviewed && String(reviewed) >= g.radar.assessedOn) {
+      warnings.push(`radar: '${n.id}' was written after the last assessment (${g.radar.assessedOn}) and has no ring — give it one or decide it does not belong`);
+    }
+  }
+
   for (const w of warnings) console.warn(`  ⚠ ${w}`);
   for (const p of problems) console.error(`  ✖ ${p}`);
 
