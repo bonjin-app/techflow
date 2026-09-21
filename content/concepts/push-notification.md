@@ -59,7 +59,7 @@ expensive thing you will ever ask for.
 
 ```sequence
 title: One notification, from event to lock screen
-participants: Service [backend], Queue [message-queue], Worker, Gateway [external], Device [mobile-networking], App
+participants: Service [backend], Queue [message-queue], Worker, Gateway (APNs / FCM), Device [mobile-networking], App
 Service -> Queue: order.shipped event (userId, orderId)
 Queue -> Worker: deliver (at least once)
 Worker -> Worker: look up device tokens, check preferences and quiet hours

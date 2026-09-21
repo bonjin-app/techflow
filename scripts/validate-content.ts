@@ -9,6 +9,18 @@ import path from "node:path";
 import { buildGraph, getNeighbors } from "../src/lib/content/graph";
 import { hrefFor, type DocNode } from "../src/lib/content/types";
 import { FIRST_JOURNEY } from "../src/lib/site";
+import { parseCompare, parseDecision, parseSequence, parseSteps, parseTimeline, type DecisionNode } from "../src/lib/fences";
+
+/** Every ref a fence renderer will try to turn into a link. */
+function fenceRefs(kind: string, body: string): string[] {
+  const leaves = (d: DecisionNode | null): string[] =>
+    d ? [...(d.ref ? [d.ref] : []), ...(d.answers ?? []).flatMap((a) => leaves(a.next))] : [];
+  if (kind === "steps") return parseSteps(body).steps.map((x) => x.ref).filter((r): r is string => !!r);
+  if (kind === "sequence") return parseSequence(body).participants.map((x) => x.ref).filter((r): r is string => !!r);
+  if (kind === "compare") return parseCompare(body).header.map((h) => /\[([a-z0-9-]+)\]\s*$/.exec(h)?.[1]).filter((r): r is string => !!r);
+  if (kind === "decision") return leaves(parseDecision(body).root);
+  return [];
+}
 
 const REQUIRED_SECTIONS: Record<DocNode["type"] | "comparison", string[]> = {
   comparison: ["TL;DR", "Comparison", "Decision"],
@@ -94,6 +106,38 @@ function main() {
         for (const block of md.matchAll(/^```(steps|sequence|compare|decision|timeline)\n([\s\S]*?)^```/gm)) {
           const bad = /\[[^\]\n]{1,60}\]\(\/[^)\n]{1,120}\)/.exec(block[2]);
           if (bad) problems.push(`${n.id} › ${heading}: Markdown link '${bad[0]}' inside a ${block[1]} fence — use \`Label [node-id]\``);
+
+          // A fence that cannot be parsed renders as less than it says, without
+          // an error anywhere: a dropped participant, a row short of a cell.
+          // Nothing else on the site fails this quietly.
+          const [kind, body] = [block[1], block[2]];
+          if (kind === "sequence") {
+            const d = parseSequence(body);
+            if (d.participants.length === 0) problems.push(`${n.id} › ${heading}: sequence fence declares no participants`);
+            if (d.messages.length === 0) problems.push(`${n.id} › ${heading}: sequence fence has no messages`);
+            for (const msg of d.messages)
+              for (const side of [msg.from, msg.to])
+                if (side < 0 || side >= d.participants.length)
+                  problems.push(`${n.id} › ${heading}: a sequence message points past the declared participants`);
+          } else if (kind === "compare") {
+            const d = parseCompare(body);
+            const ragged = d.rows.filter((r) => r.length !== d.header.length);
+            if (ragged.length) problems.push(`${n.id} › ${heading}: compare fence has ${d.header.length} columns but ${ragged.length} row(s) with a different cell count — "${ragged[0][0]}" has ${ragged[0].length}`);
+          } else if (kind === "timeline") {
+            const d = parseTimeline(body);
+            const wrong = d.rows.filter((r) => r.length !== d.columns.length);
+            if (wrong.length) problems.push(`${n.id} › ${heading}: timeline fence has ${d.columns.length} columns but ${wrong.length} row(s) with a different cell count`);
+          } else if (kind === "steps" && parseSteps(body).steps.length === 0) {
+            problems.push(`${n.id} › ${heading}: steps fence parsed to nothing`);
+          } else if (kind === "decision" && !parseDecision(body).root) {
+            problems.push(`${n.id} › ${heading}: decision fence parsed to nothing`);
+          }
+
+          // A `[node-id]` the renderer cannot resolve is a label that looks like
+          // a link and is not one. `check:links` never sees these — they are not
+          // Markdown links, and they only become hrefs at render time.
+          for (const ref of fenceRefs(kind, body))
+            if (!g.nodes.has(ref)) problems.push(`${n.id} › ${heading}: ${kind} fence refs '[${ref}]', which is not a node`);
         }
         // internal links must resolve
         for (const m of md.matchAll(/\]\(\/(technology|concept|pattern|architecture|compare|roadmap|system-design)\/([a-z0-9-]+)\)/g)) {
