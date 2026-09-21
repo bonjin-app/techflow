@@ -87,3 +87,19 @@ describe("the published API", () => {
     expect(Object.keys(documented.meta as object).sort()).toEqual(Object.keys(actual.meta as object).sort());
   });
 });
+
+/**
+ * A README that names a command nobody can run wastes the one hour a new
+ * contributor is most willing to spend. Renaming a script is exactly how it
+ * happens, and nothing else would notice.
+ */
+describe("the documented commands", () => {
+  it("all exist in package.json", () => {
+    const pkg = read<{ scripts: Record<string, string> }>("package.json");
+    const docs = ["README.md", "CONTRIBUTING.md"].map((f) => fs.readFileSync(path.join(process.cwd(), f), "utf8")).join("\n");
+    const named = new Set([...docs.matchAll(/`?pnpm ([a-z][a-z0-9:]*)/g)].map((m) => m[1]));
+    // pnpm's own verbs, not this project's scripts
+    for (const builtin of ["install", "exec", "add", "dlx", "audit", "outdated"]) named.delete(builtin);
+    expect([...named].filter((c) => !pkg.scripts[c]).sort()).toEqual([]);
+  });
+});

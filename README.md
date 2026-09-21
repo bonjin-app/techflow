@@ -24,9 +24,11 @@ pnpm validate     # content, graph links, and the example questions (also runs b
 pnpm build        # static production build
 pnpm test         # unit tests (vitest) — needs `pnpm gen` once for the generated JSON
 pnpm lint && pnpm typecheck
-pnpm check:links  # after a build: links, sitemap coverage, published API
-pnpm check:build  # after a build: static accessibility audit + page budgets
-pnpm e2e          # after a build: 32 end-to-end tests against the exported site
+pnpm check:links  # after a build: every internal link and sitemap coverage
+pnpm check:build  # after a build: accessibility, anchors, metadata, page budgets
+pnpm e2e          # after a build: seven sweeps against the exported site
+pnpm gaps         # terms the prose leans on with no page, and pages that link
+                  # each other without the graph knowing
 ```
 
 ## Project layout
@@ -101,12 +103,12 @@ Every gate runs on pull requests (`.github/workflows/ci.yml`) and again before d
 
 | Command | What it protects |
 | --- | --- |
-| `pnpm validate` | required sections, graph links and their types, prerequisite cycles, comparison structure, review dates, the four example questions, keyword ranking and the path algorithms |
-| `pnpm test` | 55 unit tests over the pure logic: path finding, learning routes, the frontier, search ranking and typo tolerance, question parsing, the fence grammars, and localStorage behaviour including private mode |
+| `pnpm validate` | required sections, graph links and their types, prerequisite cycles, comparison structure and subject coverage, review dates, every visual fence's grammar and the node ids inside it, learning-path steps that look like ids and match nothing, a link whose text names one page and points at another, a challenge option or scale-journey step with no reason given — then the example questions, keyword ranking, one assertion per page name and question form, and that every page is still reachable from every other |
+| `pnpm test` | the pure logic: path finding, learning routes, the frontier, search ranking and typo tolerance, question parsing, the fence grammars, localStorage including private mode, the published API against its own documentation, that untrusted input cannot become markup — and the claims each playground makes, so a simulator that misrepresents a fixed window fails rather than teaches |
 | `pnpm lint` / `pnpm typecheck` | React compiler rules and types |
-| `pnpm check:links` | 23,000 internal links, sitemap coverage, and that the published JSON API matches what was built |
-| `pnpm check:build` | every page: one `h1`, no skipped heading levels, no duplicate ids, a name on every link, button and input — plus a 45KB gzipped page budget and a 420KB JS budget, and that `404.html` is ours |
-| `pnpm e2e` | 100 Playwright tests against the **exported** site, served the way GitHub Pages resolves it: 21 pages that must render with an empty console (a hydration mismatch logs and looks fine otherwise), 11 journeys — the spec's first walk, the palette, a question, the path finder, the learning route, the mind map, an architecture animation, a challenge, a simulator, progress, the 404 — and a phone-sized sweep across a spread of every route shape, sampled from the sitemap, that nothing scrolls the document sideways |
+| `pnpm check:links` | every internal link across the build — 23,650 of them — and sitemap coverage |
+| `pnpm check:build` | every page: one `h1`, no skipped heading levels, no duplicate ids, a name on every link, button and input, and no link to a section that is not there — plus canonical, og:image, description and structured data on every page, each pointing at itself and at a file that exists, a 45KB gzipped page budget and a 420KB JS budget, and that `404.html` is ours |
+| `pnpm e2e` | Playwright against the **exported** site, served the way GitHub Pages resolves it — under `/<repo>`, as the deploy does. Seven sweeps: pages that must render with an empty console (a hydration mismatch logs and looks fine otherwise); journeys, from the spec's first walk to the 404; **every** page at phone width, because nothing may scroll the document sideways; **every** page through axe-core, themes alternating, because contrast belongs to the palette and roles do not change with it; focus order, so the skip link moves focus, the palette hands it back, and a combobox announces what it highlights; layout shift and blocked main thread at 4x CPU throttling; and markup pushed through every input a stranger can reach |
 
 ## Deployment
 
