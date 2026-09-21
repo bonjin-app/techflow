@@ -97,3 +97,36 @@ describe("private mode", () => {
     expect(getStreak().current).toBe(0);
   });
 });
+
+/**
+ * A streak is a promise about the reader's days, not UTC's. `todayKey` used
+ * `toISOString()` while `computeStreak` stepped backwards in local days, so the
+ * two halves disagreed for most of the world for part of every day.
+ */
+describe("the day a visit belongs to", () => {
+  const at = (iso: string) => new Date(iso);
+
+  // The bug it catches, concretely: for a reader in Seoul, 23:00 one day and
+  // 08:00 the next are two consecutive days on their calendar and one date in
+  // UTC, so the streak stalled on the second visit. Asserting that pair
+  // directly would only hold when the test runner sits east of UTC, so the
+  // invariant is stated instead — it fails in every zone where it is violated,
+  // and passes in UTC, where there was never anything to get wrong.
+  it("agrees with the calendar the reader is looking at", () => {
+    for (const iso of ["2026-01-01T00:30:00+09:00", "2026-12-31T23:30:00-08:00", "2026-06-15T12:00:00Z"]) {
+      const d = at(iso);
+      expect(todayKey(d)).toBe(d.toLocaleDateString("en-CA"));
+    }
+  });
+
+  it("steps one key per day across a month boundary", () => {
+    const d = at("2026-03-01T09:00:00Z");
+    const keys = new Set<string>();
+    for (let i = 0; i < 5; i++) {
+      keys.add(todayKey(d));
+      d.setDate(d.getDate() - 1);
+    }
+    expect(keys.size).toBe(5);
+    expect([...keys].sort()[0]).toMatch(/^2026-02-2[5-9]$/);
+  });
+});

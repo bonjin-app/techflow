@@ -58,7 +58,13 @@ export function pushRecent(id: string) {
 }
 
 export function todayKey(d = new Date()): string {
-  return d.toISOString().slice(0, 10);
+  // Local date parts, not `toISOString()`, which is UTC. A streak is a promise
+  // about the reader's days: in Seoul, 23:00 on one day and 08:00 the next are
+  // two visits that both fell on the same UTC date, so the streak stalled. The
+  // walk backwards in `computeStreak` already steps in local days, so formatting
+  // in UTC made the two halves disagree.
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export interface StreakInfo {
