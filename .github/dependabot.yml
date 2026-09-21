@@ -7,6 +7,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # The Node types describe the runtime, so they follow the version the
+      # workflows install — not the newest published. A bump here is a decision
+      # to run a different Node, and belongs with that change.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       production:
         dependency-type: production
