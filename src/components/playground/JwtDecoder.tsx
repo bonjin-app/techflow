@@ -1,62 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ago, b64urlEncode, decodeJwt } from "@/lib/jwt";
 
 const SAMPLE =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzQyIiwibmFtZSI6IkRldmVsb3BlciIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4ODk1MjAwMCwiZXhwIjoxNzg4OTU1NjAwfQ.c2lnbmF0dXJlLWlzLW5vdC12ZXJpZmllZC1oZXJl";
-
-function b64urlDecode(s: string): string {
-  const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
-  const b64 = s.replace(/-/g, "+").replace(/_/g, "/") + pad;
-  const bin = atob(b64);
-  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-function pretty(json: string) {
-  try {
-    return JSON.stringify(JSON.parse(json), null, 2);
-  } catch {
-    return json;
-  }
-}
-
-function ago(seconds: number): string {
-  const m = Math.round(seconds / 60);
-  if (m < 90) return `${m} minute${m === 1 ? "" : "s"}`;
-  const h = Math.round(m / 60);
-  if (h < 36) return `${h} hour${h === 1 ? "" : "s"}`;
-  return `${Math.round(h / 24)} days`;
-}
-
-/** base64url without padding, which is what a JWT uses. */
-function b64url(obj: unknown): string {
-  const json = JSON.stringify(obj);
-  const bin = String.fromCharCode(...new TextEncoder().encode(json));
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
 
 /** Decodes a JWT into header / payload / signature. Decoding is not verification — the page says so. */
 export function JwtDecoder() {
   const [token, setToken] = useState(SAMPLE);
   const parts = token.trim().split(".");
-  const decoded = useMemo(() => {
-    if (parts.length !== 3) return null;
-    try {
-      const header = pretty(b64urlDecode(parts[0]));
-      const payloadRaw = b64urlDecode(parts[1]);
-      const payload = pretty(payloadRaw);
-      let claims: Record<string, unknown> = {};
-      try {
-        claims = JSON.parse(payloadRaw);
-      } catch {
-        /* not JSON */
-      }
-      return { header, payload, claims };
-    } catch {
-      return null;
-    }
-  }, [parts]);
+  const decoded = useMemo(() => decodeJwt(token), [token]);
 
   // Captured once on mount; expiry text is informational.
   const [now] = useState(() => Math.floor(Date.now() / 1000));
@@ -74,8 +28,8 @@ export function JwtDecoder() {
               // The built-in sample was minted when this page was written, so it
               // reads as expired forever. One click mints a fresh one.
               const iat = Math.floor(Date.now() / 1000);
-              const header = b64url({ alg: "HS256", typ: "JWT" });
-              const payload = b64url({ sub: "user_42", name: "Developer", role: "admin", iat, exp: iat + 3600 });
+              const header = b64urlEncode({ alg: "HS256", typ: "JWT" });
+              const payload = b64urlEncode({ sub: "user_42", name: "Developer", role: "admin", iat, exp: iat + 3600 });
               setToken(`${header}.${payload}.c2lnbmF0dXJlLWlzLW5vdC12ZXJpZmllZC1oZXJl`);
             }}
             className="rounded-md border border-border px-2 py-1 text-xs text-fg-muted transition-colors hover:text-fg"

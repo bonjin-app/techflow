@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type Transport = "polling" | "long-polling" | "sse" | "websocket";
+import { add, BYTES, cost, type Transport } from "@/lib/transport";
 
 const LABEL: Record<Transport, string> = {
   polling: "Short polling",
@@ -17,14 +17,6 @@ const NOTE: Record<Transport, string> = {
   sse: "One long-lived HTTP response the server writes into. Framing is a few bytes per event, reconnection and Last-Event-ID are built into the browser.",
   websocket: "One upgraded connection, frames in both directions, a few bytes of framing per message. You implement reconnection and replay yourself.",
 };
-
-/** Illustrative byte costs — real numbers depend on your headers and cookies. */
-const REQ_HEADER_BYTES = 480;
-const RES_HEADER_BYTES = 220;
-const HANDSHAKE_BYTES = 700;
-const SSE_FRAME_BYTES = 12;
-const WS_FRAME_BYTES = 6;
-const PAYLOAD_BYTES = 90;
 
 const TICK_MS = 100;
 const LANE_TICKS = 90;
@@ -101,55 +93,43 @@ export function TransportSimulator() {
       // ── short polling: request on a timer, deliver whatever is waiting
       const p = next.polling;
       if (pollNow) {
-        p.requests++;
-        p.bytes += REQ_HEADER_BYTES + RES_HEADER_BYTES;
-        if (waiting.length > 0) {
-          p.delivered += waiting.length;
-          p.bytes += waiting.length * PAYLOAD_BYTES;
+        const batch = waiting.length;
+        Object.assign(p, add(p, cost("polling", batch > 0 ? "deliver" : "poll-empty", Math.max(1, batch))));
+        if (batch > 0) {
           for (const t of waiting) p.latencySum += now - t;
           p.marks.push("deliver");
-        } else {
-          p.marks.push("poll-empty");
-        }
+        } else p.marks.push("poll-empty");
       } else p.marks.push("idle");
 
       // ── long polling: connection is already waiting, so delivery is immediate,
       //    then the client reconnects (a new request per event)
       const lp = next["long-polling"];
       if (openLp) {
-        lp.requests++;
-        lp.bytes += REQ_HEADER_BYTES + RES_HEADER_BYTES;
+        Object.assign(lp, add(lp, cost("long-polling", "open")));
         lp.marks.push("open");
       } else if (eventNow) {
-        lp.delivered++;
-        lp.bytes += PAYLOAD_BYTES;
-        // response completes, client immediately opens the next request
-        lp.requests++;
-        lp.bytes += REQ_HEADER_BYTES + RES_HEADER_BYTES;
+        // the response completes and the client immediately reconnects
+        Object.assign(lp, add(lp, cost("long-polling", "deliver")));
         lp.marks.push("deliver");
       } else lp.marks.push("idle");
 
       // ── SSE: one response, tiny framing per event
       const sse = next.sse;
       if (openSse) {
-        sse.requests++;
-        sse.bytes += REQ_HEADER_BYTES + RES_HEADER_BYTES;
+        Object.assign(sse, add(sse, cost("sse", "open")));
         sse.marks.push("open");
       } else if (eventNow) {
-        sse.delivered++;
-        sse.bytes += PAYLOAD_BYTES + SSE_FRAME_BYTES;
+        Object.assign(sse, add(sse, cost("sse", "deliver")));
         sse.marks.push("deliver");
       } else sse.marks.push("idle");
 
       // ── WebSocket: handshake once, then frames
       const ws = next.websocket;
       if (openWs) {
-        ws.requests++;
-        ws.bytes += HANDSHAKE_BYTES;
+        Object.assign(ws, add(ws, cost("websocket", "open")));
         ws.marks.push("open");
       } else if (eventNow) {
-        ws.delivered++;
-        ws.bytes += PAYLOAD_BYTES + WS_FRAME_BYTES;
+        Object.assign(ws, add(ws, cost("websocket", "deliver")));
         ws.marks.push("deliver");
       } else ws.marks.push("idle");
 
@@ -259,8 +239,8 @@ export function TransportSimulator() {
       </div>
 
       <p className="text-sm text-fg-muted">
-        Byte counts are illustrative — roughly {REQ_HEADER_BYTES} bytes of request headers and {RES_HEADER_BYTES} of response headers per HTTP round
-        trip, against {SSE_FRAME_BYTES} bytes of SSE framing or {WS_FRAME_BYTES} of WebSocket framing per message. Set the poll interval well below
+        Byte counts are illustrative — roughly {BYTES.reqHeader} bytes of request headers and {BYTES.resHeader} of response headers per HTTP round
+        trip, against {BYTES.sseFrame} bytes of SSE framing or {BYTES.wsFrame} of WebSocket framing per message. Set the poll interval well below
         the event interval and short polling burns requests on empty responses; set it above and latency grows to half the interval on average. SSE
         and WebSocket both cost one connection and deliver immediately; the real choice between them is whether the client also needs to send.
       </p>

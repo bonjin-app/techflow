@@ -2,15 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type Policy = "lru" | "lfu" | "fifo";
-type Pattern = "zipf" | "uniform" | "scan";
+import { read, type Policy, type Slot } from "@/lib/cachesim";
 
-interface Slot {
-  key: number;
-  hits: number;
-  at: number;
-  expires: number;
-}
+type Pattern = "zipf" | "uniform" | "scan";
 
 interface Stats {
   requests: number;
@@ -64,34 +58,8 @@ export function CacheSimulator() {
   const step = useCallback(() => {
     const t = ++tickRef.current;
     const key = pick(pattern, t);
-    let s = slotsRef.current;
-    let expirations = 0;
-    if (ttl > 0) {
-      const before = s.length;
-      s = s.filter((x) => x.expires > t);
-      expirations = before - s.length;
-    }
-    const found = s.find((x) => x.key === key);
-    let hit = false;
-    let evictions = 0;
-    if (found) {
-      hit = true;
-      found.hits++;
-      found.at = t;
-    } else {
-      // A loop, not an if: the capacity slider can be dragged down mid-run, and
-      // evicting one per miss would leave the cache permanently larger than the
-      // capacity the reader just set — the hit ratio would then be a lie.
-      while (s.length >= capacity) {
-        let victim = 0;
-        if (policy === "lru") victim = s.reduce((m, x, i) => (x.at < s[m].at ? i : m), 0);
-        else if (policy === "lfu") victim = s.reduce((m, x, i) => (x.hits < s[m].hits || (x.hits === s[m].hits && x.at < s[m].at) ? i : m), 0);
-        else victim = 0; // fifo → oldest inserted is first
-        s.splice(victim, 1);
-        evictions++;
-      }
-      s.push({ key, hits: 0, at: t, expires: ttl > 0 ? t + ttl : Infinity });
-    }
+    const s = slotsRef.current;
+    const { hit, evictions, expirations } = read(s, key, t, { capacity, policy, ttl });
     slotsRef.current = s;
     setSlots([...s]);
     setLast({ key, hit });
