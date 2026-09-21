@@ -98,7 +98,7 @@ problem, and it interacts with autoscaling of both pods (HPA) and nodes (cluster
 autoscaler, Karpenter).
 
 **Networking.** Every pod gets its own IP; a CNI plugin makes all pods routable across
-nodes. A Service is a set of iptables/IPVS/eBPF rules on each node, not a process — it
+nodes. A Service is a set of iptables/IPVS/[eBPF](/technology/ebpf) rules on each node, not a process — it
 gives connection-level load balancing without retries or circuit breaking. Application-
 level resilience — [Retry](/pattern/retry), [Circuit Breaker](/pattern/circuit-breaker),
 timeouts — still belongs in the client or in a service mesh (Istio, Linkerd, Cilium).

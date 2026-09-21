@@ -67,7 +67,7 @@ title: One commit's journey to production
 staging and production, changing only injected configuration and secrets. Rebuilding per
 environment means the thing you tested is not the thing you shipped.
 
-**Trunk-based development.** Short-lived branches merged daily keep CI meaningful; a
+**[Trunk-based development](/pattern/trunk-based-development).** Short-lived branches merged daily keep CI meaningful; a
 week-old branch tests a codebase that no longer exists. Incomplete work ships dark behind
 a [Feature Flag](/pattern/feature-flag), which decouples *deploy* (a technical event)
 from *release* (a product decision).

@@ -233,6 +233,7 @@ p a[href] {
   overflow-x: auto;
   tab-size: 2;
 }
+.prose pre:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .prose pre code { color: var(--fg); }
 .prose blockquote {
   border-left: 2px solid var(--border-strong);

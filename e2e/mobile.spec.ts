@@ -1,5 +1,5 @@
 import { devices, expect, test } from "@playwright/test";
-import { samplePages } from "./pages";
+import { allPages } from "./pages";
 
 /**
  * A phone-sized viewport, checking the failure that keeps coming back: a grid
@@ -10,7 +10,7 @@ import { samplePages } from "./pages";
  */
 test.use({ ...devices["Pixel 7"] });
 
-for (const route of samplePages()) {
+for (const route of allPages()) {
   test(`${route} does not scroll sideways on a phone`, async ({ page }) => {
     await page.goto(route, { waitUntil: "domcontentloaded" });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

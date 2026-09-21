@@ -105,7 +105,7 @@ checkout function.
 
 - Deploy continuously while releasing on a product schedule
 - Kill switch in seconds, with no pipeline, no rebuild, no rollback deploy
-- Trunk-based development becomes practical — no long-lived feature branches
+- [Trunk-based development](/pattern/trunk-based-development) becomes practical — no long-lived feature branches
 - Targeting enables internal-first testing, beta cohorts and per-plan features
 - The natural substrate for A/B tests, since the same mechanism assigns users
 - Combines with a [Strangler Fig](/pattern/strangler-fig) migration to route users between old and new implementations

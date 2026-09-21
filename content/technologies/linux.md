@@ -113,7 +113,7 @@ restart-loops silently.
 
 **Where time actually goes.** High load average with low CPU means tasks blocked on IO;
 high `%sy` means syscall or context-switch churn. `/proc`, `ss`, `vmstat`, `pidstat`, `perf`
-and eBPF tools attribute latency to a subsystem: application metrics tell you *that* it is
+and [eBPF](/technology/ebpf) tools attribute latency to a subsystem: application metrics tell you *that* it is
 slow, these tell you *where*. See [Observability](/concept/observability).
 
 ## Why

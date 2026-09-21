@@ -122,7 +122,7 @@ one way (a batch SQL aggregate over a day of history) and the serving path compu
 another (a live query with a different time window or a different null handling). The model
 receives inputs it was never trained on, and quality drops for reasons no offline test can
 reproduce. The structural fix is one code path for feature computation in both places — the
-reason feature stores exist.
+reason [feature stores](/concept/feature-store) exist.
 
 **Drift comes in two kinds.** Feature drift is the input distribution moving: a new device
 type, a changed currency, an upstream default. Concept drift is the relationship itself

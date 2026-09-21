@@ -214,3 +214,23 @@ highest remaining term is "feature store" at 8 uses across 3 pages. "N+1" looked
 like a candidate and was not — most of its matches are the redundancy sense
 ("N+1 capacity"), and the query anti-pattern already has a section on the SQL
 page.
+
+# Wave 9 — the last of the watchlist worth a page
+
+Same evidence as wave 8, run again after two waves of writing had shifted what
+the prose leans on. Five terms were left with a real weight behind them —
+"feature store" used 9 times across 4 pages, "eBPF" 6 across 3 — and each was
+being name-dropped by a page that could not link anywhere.
+
+## technologies/
+ebpf · webassembly
+
+## patterns/
+trunk-based-development · monorepo
+
+## concepts/
+feature-store
+
+Three watched terms still have no page: "bloom filter", "spot instance" and
+"read repair". Each is used exactly once, in one page, which is the level at
+which a sentence of explanation beats a page nobody reaches.

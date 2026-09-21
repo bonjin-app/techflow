@@ -47,7 +47,9 @@ export function Markdown({
       const cls = (child as { props?: { className?: string } })?.props?.className ?? "";
       const lang = /language-(\w+)/.exec(cls)?.[1];
       if (isVisualFence(lang)) return <>{children}</>;
-      return <pre>{children}</pre>;
+      // A code block that scrolls sideways is unreadable without a mouse
+      // unless it can take focus and be scrolled with the arrow keys.
+      return <pre tabIndex={0}>{children}</pre>;
     },
     code({ className: cls, children }) {
       const lang = /language-(\w+)/.exec(cls ?? "")?.[1];

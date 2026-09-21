@@ -73,7 +73,7 @@ Where it fits naturally:
   one disk. See [Simple Web App](/architecture/simple-web-app).
 - **Data files and caches** — an analytical extract or shipped read-only dataset: a
   queryable file instead of a bespoke format.
-- **Edge and embedded** — routers, cars, browsers via WebAssembly.
+- **Edge and embedded** — routers, cars, browsers via [WebAssembly](/technology/webassembly).
 
 ## Deep Dive
 

@@ -142,7 +142,7 @@ export function LoadBalancerSimulator() {
       </aside>
 
       <div className="rounded-lg border border-border bg-surface p-4">
-        <svg viewBox="0 0 720 360" className="w-full" role="img" aria-label="Requests flowing from clients through a load balancer to servers">
+        <svg viewBox="0 0 720 360" className="w-full" role="group" aria-label="Requests flowing from clients through a load balancer to servers">
           {/* clients */}
           {Array.from({ length: 6 }, (_, i) => (
             <g key={i} transform={`translate(${60 + i * 120} 30)`}>

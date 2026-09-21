@@ -69,7 +69,7 @@ export async function handler(body: unknown) {
 }
 ```
 
-Share types between server and client in a monorepo so a renamed field breaks the
+Share types between server and client in a [monorepo](/pattern/monorepo) so a renamed field breaks the
 build, not production.
 
 ## Deep Dive

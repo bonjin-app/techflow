@@ -169,7 +169,7 @@ for "exactly this state of the world", so [CI/CD](/concept/ci-cd) can build it,
 - Don't use plain Git for large media or datasets — use Git LFS or object storage such as [S3](/technology/s3), and commit a pointer
 - Don't use it as a deployment mechanism for secrets or environment-specific credentials — that is [Secrets Management](/concept/secrets-management) territory, e.g. [Vault](/technology/vault)
 - Don't commit build output or dependency trees you can reproduce
-- Don't reach for long-lived release branches when [Feature Flag](/pattern/feature-flag) plus trunk-based development would keep integration continuous
+- Don't reach for long-lived release branches when [Feature Flag](/pattern/feature-flag) plus [trunk-based development](/pattern/trunk-based-development) would keep integration continuous
 - Don't rewrite published history to make the graph pretty; the cost lands on everyone else
 
 ## Real-world
@@ -180,7 +180,7 @@ In practice Git is the entry point to the whole delivery chain. A branch push tr
 review and merge — promotes that exact image through environments. The same commit drives
 [Terraform](/technology/terraform) plans, so infrastructure and application changes share
 one audit trail. In a [Microservices](/architecture/microservices) platform the repository
-layout becomes an architectural decision: a monorepo buys atomic cross-service changes at
+layout becomes an architectural decision: a [monorepo](/pattern/monorepo) buys atomic cross-service changes at
 the cost of tooling to keep checkouts fast, while repo-per-service keeps pipelines small and
 pushes coordination into versioned APIs. Both rest on the same primitive — an immutable,
 content-addressed snapshot that everything downstream can name.

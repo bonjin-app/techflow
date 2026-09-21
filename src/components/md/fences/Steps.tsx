@@ -23,7 +23,7 @@ export function Steps({ data, refs }: { data: StepsData; refs: RefMap }) {
                 aria-hidden
                 data-type={ref?.type}
               />
-              <div className="flex flex-wrap items-baseline gap-x-2">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                 {ref ? (
                   <Link href={ref.href} className="rounded hover:underline" data-type={ref.type}>
                     {body}
@@ -31,7 +31,10 @@ export function Steps({ data, refs }: { data: StepsData; refs: RefMap }) {
                 ) : (
                   body
                 )}
-                {s.note && <span className="text-xs text-fg-muted">{s.note}</span>}
+                {/* A note can hold a long unbroken token — a JSON payload, a URL.
+                    Without a break opportunity the flex item keeps its min-content
+                    width and pushes the whole document sideways on a phone. */}
+                {s.note && <span className="min-w-0 break-all text-xs text-fg-muted sm:break-words">{s.note}</span>}
               </div>
             </li>
           );

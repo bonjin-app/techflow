@@ -20,9 +20,14 @@ test("the first journey is one click per hop", async ({ page }) => {
 
 test("the command palette opens with a keystroke and navigates", async ({ page }) => {
   await page.goto("/");
-  await page.keyboard.press("/");
   const input = page.getByRole("combobox", { name: "Search the knowledge graph" });
-  await expect(input).toBeFocused();
+  // A global shortcut only works once the client has hydrated and attached its
+  // listener. Pressing once immediately after load is a race the test lost
+  // exactly often enough to look like a real failure.
+  await expect(async () => {
+    await page.keyboard.press("/");
+    await expect(input).toBeFocused({ timeout: 1000 });
+  }).toPass({ timeout: 15000 });
   await input.fill("kafka");
   await page.getByRole("option").first().click();
   await expect(page).toHaveURL(/\/technology\/kafka$/);

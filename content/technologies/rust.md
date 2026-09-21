@@ -52,7 +52,7 @@ Rust shows up in a narrower set of places than [Go](/technology/go) or
   hot loop without rewriting the product.
 - **Embedded and IoT firmware** — `no_std` builds with no allocator, on devices that report
   into an [IoT Telemetry](/architecture/iot-telemetry) pipeline.
-- **WebAssembly** — Rust is the best-supported source language for wasm modules.
+- **[WebAssembly](/technology/webassembly)** — Rust is the best-supported source language for wasm modules.
 
 ```text
 // axum handler: shared state, typed extraction, explicit error mapping

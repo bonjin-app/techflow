@@ -98,10 +98,14 @@ const WATCH: (string | [term: string, coveredBy: string])[] = [
   // "N+1" mostly matches the redundancy sense (N+1 capacity); the query
   // anti-pattern has its own section on the SQL page.
   ["N+1 quer", "sql"],
+  // Wave 9 wrote these; the mapping keeps them watched, so a term that starts
+  // drifting away from its page still shows up here.
+  ["trunk-based", "trunk-based-development"], ["monorepo", "monorepo"],
+  ["WebAssembly", "webassembly"], ["wasm", "webassembly"], ["eBPF", "ebpf"],
+  ["feature store", "feature-store"],
   // No page, and nothing covers them — these are the open candidates.
-  "vector clock", "bloom filter", "spot instance", "expand-contract", "trunk-based",
-  "monorepo", "semantic versioning", "WebAssembly", "eBPF", "gossip", "read repair",
-  "feature store",
+  "vector clock", "bloom filter", "spot instance", "expand-contract",
+  "semantic versioning", "gossip", "read repair",
 ];
 
 function walk(dir: string): string[] {
