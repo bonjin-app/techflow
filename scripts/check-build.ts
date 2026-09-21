@@ -156,6 +156,40 @@ function auditMetadata(file: string, html: string, origin: string, basePath: str
   return problems;
 }
 
+/**
+ * A link to a section that is not there scrolls nowhere and says nothing. The
+ * page resolves, so `check:links` is satisfied; only the fragment is wrong, and
+ * renaming a heading is exactly how that happens.
+ *
+ * Only the statically rendered links — anchors a client component builds at
+ * runtime are the end-to-end tests' job.
+ */
+function auditAnchors(pages: string[]): string[] {
+  const idsOf = new Map<string, Set<string>>();
+  const ids = (file: string) => {
+    let set = idsOf.get(file);
+    if (!set) {
+      const html = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+      set = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+      idsOf.set(file, set);
+    }
+    return set;
+  };
+  const problems: string[] = [];
+  for (const file of pages) {
+    const html = fs.readFileSync(file, "utf8");
+    for (const m of html.matchAll(/href="(\/[^"#]*)#([^"]+)"/g)) {
+      const target = m[1].replace(/\/$/, "");
+      const candidate = [path.join(OUT, `${target}.html`), path.join(OUT, target, "index.html")].find((c) => fs.existsSync(c));
+      if (!candidate) continue; // check:links owns a missing page
+      if (!ids(candidate).has(m[2])) {
+        problems.push(`${path.relative(OUT, file)}: links to ${m[1]}#${m[2]}, and that page has no such anchor`);
+      }
+    }
+  }
+  return problems;
+}
+
 function main() {
   if (!fs.existsSync(OUT)) {
     console.error("✖ out/ not found — run `pnpm build` first.");
@@ -195,6 +229,8 @@ function main() {
     if (kb > worst.kb) worst = { file: path.relative(OUT, file), kb };
     if (kb > BUDGET.pageGzipKb) problems.push(`${path.relative(OUT, file)}: ${kb.toFixed(0)}KB gzipped, over the ${BUDGET.pageGzipKb}KB page budget`);
   }
+
+  problems.push(...auditAnchors(pages));
 
   const js = walk(path.join(OUT, "_next"), (f) => f.endsWith(".js"));
   const jsKb = js.reduce((a, f) => a + gzipKb(fs.readFileSync(f)), 0);

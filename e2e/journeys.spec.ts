@@ -40,7 +40,15 @@ test("a question gets an answer card, not just a list", async ({ page }) => {
   await expect(card).toBeVisible();
   await expect(card).toContainText("why Redis is needed");
   // the card links to the section that answers it, not the top of the page
-  await expect(card.getByRole("link", { name: /Redis/ }).first()).toHaveAttribute("href", at("/technology/redis#why"));
+  const answer = card.getByRole("link", { name: /Redis/ }).first();
+  await expect(answer).toHaveAttribute("href", at("/technology/redis#why"));
+
+  // …and that section is really there. This anchor is built at runtime from the
+  // question, so no check over the built files can see it: rename the heading
+  // and the link would keep pointing at nothing, silently.
+  await answer.click();
+  await expect(page).toHaveURL(/\/technology\/redis#why$/);
+  await expect(page.locator("#why")).toBeVisible();
 });
 
 test("the path finder connects two pages and explains each hop", async ({ page }) => {
