@@ -22,6 +22,7 @@ related:
   - { to: rate-limiting, rel: RELATED_TO }
   - { to: simple-web-app, rel: USED_IN }
   - { to: e-commerce, rel: USED_IN }
+  - { to: eventual-consistency, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-09, confidence: high }
 ---
 

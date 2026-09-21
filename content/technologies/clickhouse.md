@@ -25,6 +25,7 @@ related:
   - { to: analytics-pipeline, rel: USED_IN }
   - { to: iot-telemetry, rel: USED_IN }
   - { to: search-system, rel: USED_IN }
+  - { to: cassandra, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-10, version: "ClickHouse 25.x/26.x (date-based monthly releases, two LTS lines per year)", confidence: medium }
 ---
 

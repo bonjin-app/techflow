@@ -12,6 +12,7 @@ related:
   - { to: cdn, rel: RELATED_TO }
   - { to: load-balancing, rel: RELATED_TO }
   - { to: grpc, rel: RELATED_TO }
+  - { to: udp, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-10, confidence: high }
 ---
 

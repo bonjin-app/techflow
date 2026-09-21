@@ -25,6 +25,7 @@ related:
   - { to: iot-telemetry, rel: USED_IN }
   - { to: video-streaming, rel: USED_IN }
   - { to: analytics-pipeline, rel: USED_IN }
+  - { to: python, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-10, version: "Rust 1.8x–1.9x stable (six-week releases); 2024 edition", confidence: medium }
 ---
 

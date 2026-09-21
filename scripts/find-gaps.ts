@@ -24,6 +24,41 @@ import { buildGraph } from "../src/lib/content/graph";
  * the linked pairs are removed is the useful part: a candidate edge somebody
  * missed.
  */
+/**
+ * Pages that link *each other* in prose and have no edge between them.
+ *
+ * A far better signal than a similarity score: two authors independently
+ * decided the other page was worth sending a reader to, which is what a
+ * relationship is. One-way prose links are not enough — "use PostgreSQL
+ * instead" in a *When not to use* bullet is navigation, not kinship, and
+ * deriving edges from all 2,100 of them would bury a deliberately curated
+ * graph. Reciprocity cuts that to a handful worth reading.
+ */
+function mutuallyLinkedButNoEdge(): string[] {
+  const g = buildGraph();
+  const out = new Map<string, Set<string>>();
+  for (const file of walk(path.join(process.cwd(), "content"))) {
+    if (!file.endsWith(".md") || /README|NODES/.test(file)) continue;
+    const src = fs.readFileSync(file, "utf8");
+    const id = /^id: (.+)$/m.exec(src)?.[1];
+    if (!id) continue;
+    const set = new Set<string>();
+    for (const m of src.matchAll(/\]\(\/(?:technology|concept|pattern|architecture|compare|roadmap|system-design)\/([a-z0-9-]+)\)/g)) {
+      if (m[1] !== id) set.add(m[1]);
+    }
+    out.set(id, set);
+  }
+  const found: string[] = [];
+  for (const [a, tos] of out) {
+    for (const b of tos) {
+      if (a >= b || !out.get(b)?.has(a)) continue;
+      const linked = (g.adjacency.get(a) ?? []).some((e) => e.from === b || e.to === b);
+      if (!linked) found.push(`${a} ↔ ${b}`);
+    }
+  }
+  return found.sort();
+}
+
 function similarButUnlinked(): { a: string; b: string; score: number }[] {
   const file = path.join(process.cwd(), "public", "search-text.json");
   if (!fs.existsSync(file)) return [];
@@ -143,6 +178,13 @@ function main() {
   console.log("  uses  pages  term");
   for (const r of rows) console.log(`  ${String(r.uses).padStart(4)}  ${String(r.pages).padStart(5)}  ${r.term}`);
   console.log(`\n${rows.length} of ${WATCH.length} watched terms have no node. A high count is a page worth writing.`);
+
+  const mutual = mutuallyLinkedButNoEdge();
+  if (mutual.length) {
+    console.log("\nPages that link each other in prose, with no edge between them:\n");
+    for (const m of mutual) console.log(`  ${m}`);
+    console.log("\nBoth authors thought the other page was worth a reader's time. The graph does not know.");
+  }
 
   const pairs = similarButUnlinked();
   if (pairs.length) {

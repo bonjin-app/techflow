@@ -12,6 +12,7 @@ related:
   - { to: cache, rel: RELATED_TO }
   - { to: react, rel: RELATED_TO }
   - { to: e-commerce, rel: RELATED_TO }
+  - { to: rest-vs-grpc, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-09, confidence: high }
 ---
 

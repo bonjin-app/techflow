@@ -23,6 +23,7 @@ related:
   - { to: redis, rel: RELATED_TO }
   - { to: postgresql, rel: RELATED_TO }
   - { to: e-commerce, rel: USED_IN }
+  - { to: transaction, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-09, confidence: high }
 ---
 

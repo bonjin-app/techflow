@@ -14,6 +14,7 @@ related:
   - { to: cap-theorem, rel: RELATED_TO }
   - { to: sql-vs-nosql, rel: RELATED_TO }
   - { to: mysql-vs-postgresql, rel: RELATED_TO }
+  - { to: acid, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-09, confidence: high }
 ---
 

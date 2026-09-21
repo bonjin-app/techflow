@@ -24,6 +24,7 @@ related:
   - { to: sidecar, rel: RELATED_TO }
   - { to: authentication-system, rel: USED_IN }
   - { to: multi-tenant-saas, rel: USED_IN }
+  - { to: git, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-10, version: "Vault 1.x (BUSL-licensed since 1.15; OpenBao is the MPL-licensed fork)", confidence: medium }
 ---
 

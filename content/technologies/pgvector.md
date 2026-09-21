@@ -26,6 +26,7 @@ related:
   - { to: semantic-search, rel: RELATED_TO }
   - { to: ai-rag, rel: USED_IN }
   - { to: search-system, rel: USED_IN }
+  - { to: semantic-vs-keyword-search, rel: RELATED_TO }
 meta: { lastReviewed: 2026-09-10, version: "pgvector 0.8.x", confidence: medium }
 ---
 
