@@ -153,7 +153,14 @@ export function detectIntent(rawQuery: string, index: NodeSummary[], builds: Bui
   // One or two bare words is a lookup, not a question — unless one of them is a
   // question word. "Why Redis?" is a question, and it is two words.
   const looksLikeSentence = words.length >= 3 || !!kindWord;
-  const { goal, word: goalWord } = findGoal(q, builds);
+  const { goal: goalMatch, word: goalWord } = findGoal(q, builds);
+  // A goal keyword is a topic, not an intention. "what is a chat system" asks
+  // what one is, and answering "You want to build Real-time Chat" tells the
+  // reader what they want — and gets it wrong. Asking about a thing outranks a
+  // bare keyword. Weighing two things up does not: in "rest vs graphql for a
+  // mobile app" the goal is the context the choice is being made in.
+  const ASKS_ABOUT_A_THING: IntentKind[] = ["why", "when", "how"];
+  const goal = goalMatch && !ASKS_ABOUT_A_THING.includes(kind) ? goalMatch : undefined;
   const { nodes: mentioned, words: mentionWords } = findMentions(q, index);
 
   // A question can name a goal *and* a choice ("build a chatbot, RAG or fine-tuning?"),
@@ -175,6 +182,7 @@ export function detectIntent(rawQuery: string, index: NodeSummary[], builds: Bui
   else if (goal && names.length > 0) reading = `You want to build ${goal.name}, and you asked about ${names.slice(0, 3).join(", ")}.`;
   else if (goal) reading = `You want to build ${goal.name}.`;
   else if (comparison) reading = `You are weighing up ${names.slice(0, 2).join(" against ")}.`;
+  else if (kind === "why" && kindWord?.startsWith("what")) reading = `You are asking what ${names[0]} is.`;
   else if (kind === "why") reading = `You are asking why ${names[0]} is needed.`;
   else if (kind === "when") reading = `You are asking when ${names[0]} is the right choice.`;
   else if (kind === "how") reading = `You are asking how ${names[0]} works.`;

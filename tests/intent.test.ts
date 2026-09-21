@@ -30,6 +30,22 @@ describe("detectIntent", () => {
     expect(ask("I want to build a mobile app")!.goal?.id).toBe("mobile-app");
   });
 
+  it("treats a goal keyword as a topic, not an intention", () => {
+    // Each of these used to answer "You want to build …" — telling the reader
+    // what they wanted, and getting it wrong.
+    expect(ask("what is a chat system")).toMatchObject({ kind: "why", goal: undefined });
+    expect(ask("why e-commerce")).toMatchObject({ kind: "why", goal: undefined });
+    expect(ask("when should I use notification system")).toMatchObject({ kind: "when", goal: undefined });
+    // A build phrase still means what it says.
+    expect(ask("how do I build a chat system")!.goal?.id).toBe("real-time-chat");
+    expect(ask("build an online store")!.goal?.id).toBe("e-commerce");
+  });
+
+  it("says what was asked, not the nearest question it knows", () => {
+    expect(ask("what is sharding")!.reading).toMatch(/asking what Sharding is/);
+    expect(ask("why sharding")!.reading).toMatch(/asking why Sharding is needed/);
+  });
+
   it("reads a whole phrase rather than a substring", () => {
     // "chatbot" must not be read as the real-time chat goal
     expect(ask("I want to build an AI chatbot")!.goal?.id).toBe("ai-application");

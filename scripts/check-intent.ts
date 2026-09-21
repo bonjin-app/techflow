@@ -159,6 +159,18 @@ function main() {
     if (first !== want) failures.push(`search "${q}" — ranked '${first ?? "nothing"}' first, expected '${want}'`);
   }
 
+  // A question is never a declaration. "what is a chat system" used to answer
+  // "You want to build Real-time Chat", because a goal keyword outranked the
+  // question word — telling the reader what they wanted, and getting it wrong.
+  let asked = 0;
+  for (const n of index) {
+    for (const q of [`what is ${n.name}`, `why ${n.name}`, `when should I use ${n.name}`]) {
+      asked++;
+      const i = detectIntent(q, index, builds);
+      if (i?.kind === "build") failures.push(`"${q}" — answered with a build card for '${i.goal?.id}'`);
+    }
+  }
+
   // The floor for a knowledge graph: a page wins a search for its own name,
   // typed as it is written and typed the way a phone keyboard produces it —
   // lowercase, no punctuation. "SQL" used to return SQLite and "ci cd" nothing
@@ -176,7 +188,7 @@ function main() {
   failures.push(...checkPaths());
 
   for (const f of failures) console.error(`  ✖ ${f}`);
-  console.log(`\n${CASES.length} question(s), ${RANKING.length} keyword(s), ${named} name(s) and 15 graph assertion(s) checked`);
+  console.log(`\n${CASES.length} worked example(s), ${RANKING.length} keyword(s), ${named} name(s), ${asked} question(s) and 15 graph assertion(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
     process.exit(1);
