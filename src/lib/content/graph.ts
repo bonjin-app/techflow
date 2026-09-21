@@ -18,6 +18,18 @@ import {
   type SystemDesignNode,
 } from "./types";
 
+
+/**
+ * A learning path may name a node or describe a step in prose. An entry that is
+ * shaped like an id and matches nothing is neither: the edge is dropped where it
+ * is derived, with no warning anywhere, so a typo quietly costs the graph a link.
+ */
+function unresolvedPathSteps(owner: string, steps: string[], nodes: Map<string, unknown>): string[] {
+  return steps
+    .filter((s) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) && !nodes.has(s))
+    .map((s) => `${owner}: learningPath step '${s}' looks like a node id but matches nothing — write prose or fix the id`);
+}
+
 export interface KnowledgeGraph {
   nodes: Map<string, AnyNode>;
   edges: Edge[];
@@ -140,6 +152,13 @@ export function buildGraph(): KnowledgeGraph {
   for (const b of builds) {
     for (const id of [b.architecture, b.systemDesign, ...b.technologies, ...b.concepts, ...b.patterns])
       if (id && !nodes.has(id)) problems.push(`build '${b.id}': unknown node '${id}'`);
+    problems.push(...unresolvedPathSteps(`build '${b.id}'`, b.learningPath ?? [], nodes));
+  }
+
+  for (const n of nodes.values()) {
+    if ("learningPath" in n && Array.isArray(n.learningPath)) {
+      problems.push(...unresolvedPathSteps(n.id, n.learningPath, nodes));
+    }
   }
 
   for (const e of radar.entries) if (!nodes.has(e.ref)) problems.push(`radar: entry ref '${e.ref}' unknown`);
