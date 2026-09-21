@@ -24,7 +24,7 @@ sitemap rather than a hand-written list:
 | --- | --- |
 | `journeys` | A reader cannot get from the front page to an answer |
 | `mobile` | A page scrolls sideways on a phone |
-| `a11y` | axe-core: contrast, roles, labels — 106 of these were live |
+| `a11y` | axe-core: contrast, roles, labels — 106 of these were live. Themes alternate by page, because Playwright renders light by default and 290 pages of dark mode went unchecked |
 | `keyboard` | Focus traps, dead skip links, silent comboboxes |
 | `perf` | Content that jumps after paint, or a blocked main thread |
 
