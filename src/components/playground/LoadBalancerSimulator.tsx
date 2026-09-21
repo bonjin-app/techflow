@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type Algo = "round-robin" | "least-connections" | "random" | "ip-hash" | "weighted";
+import { choose, type Algo } from "@/lib/balance";
 
 interface Server {
   id: number;
@@ -35,39 +35,18 @@ export function LoadBalancerSimulator() {
   const [running, setRunning] = useState(false);
   const [packets, setPackets] = useState<Packet[]>([]);
   const [rejected, setRejected] = useState(0);
-  const rr = useRef(0);
+  const rr = useRef({ next: 0 });
   const pid = useRef(0);
   const serversRef = useRef(servers);
   useEffect(() => {
     serversRef.current = servers;
   }, [servers]);
 
-  const choose = useCallback(
-    (list: Server[], client: number): Server | undefined => {
-      const healthy = list.filter((s) => s.healthy);
-      if (healthy.length === 0) return undefined;
-      switch (algo) {
-        case "round-robin":
-          return healthy[rr.current++ % healthy.length];
-        case "least-connections":
-          return healthy.reduce((m, s) => (s.active < m.active ? s : m));
-        case "random":
-          return healthy[Math.floor(Math.random() * healthy.length)];
-        case "ip-hash":
-          return healthy[client % healthy.length];
-        case "weighted": {
-          const total = healthy.reduce((a, s) => a + s.weight, 0);
-          let r = Math.random() * total;
-          for (const s of healthy) {
-            r -= s.weight;
-            if (r <= 0) return s;
-          }
-          return healthy[healthy.length - 1];
-        }
-      }
-    },
+  const route = useCallback(
+    (list: Server[], client: number): Server | undefined => choose(list, { algo, client, cursor: rr.current }),
     [algo],
   );
+
 
   const toggleHealth = useCallback((id: number) => {
     setServers((prev) => prev.map((p) => (p.id === id ? { ...p, healthy: !p.healthy } : p)));
@@ -75,7 +54,7 @@ export function LoadBalancerSimulator() {
 
   const send = useCallback(() => {
     const client = Math.floor(Math.random() * 6);
-    const target = choose(serversRef.current, client);
+    const target = route(serversRef.current, client);
     if (!target) {
       setRejected((r) => r + 1);
       return;
@@ -88,7 +67,7 @@ export function LoadBalancerSimulator() {
       setPackets((p) => p.filter((x) => x.id !== id));
       setServers((prev) => prev.map((s) => (s.id === target.id ? { ...s, active: Math.max(0, s.active - 1) } : s)));
     }, target.speed);
-  }, [choose]);
+  }, [route]);
 
   useEffect(() => {
     if (!running) return;
@@ -130,7 +109,7 @@ export function LoadBalancerSimulator() {
               setServers(makeServers(servers.length));
               setPackets([]);
               setRejected(0);
-              rr.current = 0;
+              rr.current = { next: 0 };
             }}
             className="h-9 rounded-md border border-border px-3 text-sm text-fg-muted hover:text-fg"
           >

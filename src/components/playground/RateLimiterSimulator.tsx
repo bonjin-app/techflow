@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { decide, drain, initialState, type Algo, type LimiterState } from "@/lib/ratelimit";
 
-type Algo = "fixed-window" | "sliding-log" | "sliding-counter" | "token-bucket" | "leaky-bucket";
 type Arrival = "steady" | "bursty" | "spike";
 
 const ALGO_LABEL: Record<Algo, string> = {
@@ -34,22 +34,6 @@ interface Event {
   allowed: boolean;
 }
 
-interface State {
-  // fixed window
-  windowStart: number;
-  count: number;
-  prevCount: number;
-  // sliding log
-  log: number[];
-  // buckets
-  tokens: number;
-  queue: number[];
-  lastRefill: number;
-}
-
-function freshState(now: number, limit: number): State {
-  return { windowStart: now, count: 0, prevCount: 0, log: [], tokens: limit, queue: [], lastRefill: now };
-}
 
 /**
  * Rate limiter simulator — five algorithms against the same arrival pattern.
@@ -72,13 +56,13 @@ export function RateLimiterSimulator() {
   const [peak, setPeak] = useState(0);
 
   const clock = useRef(0);
-  const st = useRef<State>(freshState(0, 10));
+  const st = useRef<LimiterState>(initialState(0, 10));
   const allowedLog = useRef<number[]>([]);
 
   const reset = useCallback(() => {
     setRunning(false);
     clock.current = 0;
-    st.current = freshState(0, limit);
+    st.current = initialState(0, limit);
     allowedLog.current = [];
     setSimTime(0);
     setPeak(0);
@@ -106,70 +90,7 @@ export function RateLimiterSimulator() {
     [arrival, limit, windowMs],
   );
 
-  const decide = useCallback(
-    (now: number): boolean => {
-      const s = st.current;
-      const rate = limit / windowMs; // tokens per ms
-      switch (algo) {
-        case "fixed-window": {
-          if (now - s.windowStart >= windowMs) {
-            s.prevCount = s.count;
-            s.count = 0;
-            s.windowStart = now - ((now - s.windowStart) % windowMs);
-          }
-          if (s.count < limit) {
-            s.count++;
-            return true;
-          }
-          return false;
-        }
-        case "sliding-log": {
-          s.log = s.log.filter((t) => t > now - windowMs);
-          if (s.log.length < limit) {
-            s.log.push(now);
-            return true;
-          }
-          return false;
-        }
-        case "sliding-counter": {
-          if (now - s.windowStart >= windowMs) {
-            // More than one window may have elapsed while nothing arrived. The
-            // window before this one was then empty, so carrying the old count
-            // forward would reject requests on the strength of ancient traffic.
-            s.prevCount = now - s.windowStart < windowMs * 2 ? s.count : 0;
-            s.count = 0;
-            s.windowStart = now - ((now - s.windowStart) % windowMs);
-          }
-          const elapsed = now - s.windowStart;
-          const overlap = 1 - elapsed / windowMs;
-          const estimate = s.prevCount * overlap + s.count;
-          if (estimate < limit) {
-            s.count++;
-            return true;
-          }
-          return false;
-        }
-        case "token-bucket": {
-          s.tokens = Math.min(limit, s.tokens + (now - s.lastRefill) * rate);
-          s.lastRefill = now;
-          if (s.tokens >= 1) {
-            s.tokens -= 1;
-            return true;
-          }
-          return false;
-        }
-        case "leaky-bucket": {
-          const capacity = limit;
-          if (s.queue.length < capacity) {
-            s.queue.push(now);
-            return true;
-          }
-          return false;
-        }
-      }
-    },
-    [algo, limit, windowMs],
-  );
+  const call = useCallback((now: number) => decide(st.current, now, { algo, limit, windowMs }), [algo, limit, windowMs]);
 
   const step = useCallback(() => {
     const now = (clock.current += TICK_MS);
@@ -177,20 +98,14 @@ export function RateLimiterSimulator() {
     const s = st.current;
 
     // leaky bucket drains at a constant rate regardless of arrivals
-    let leaked = 0;
-    if (algo === "leaky-bucket") {
-      const perTick = (limit / windowMs) * TICK_MS;
-      const wholeDrains = Math.floor(perTick) + (Math.random() < perTick % 1 ? 1 : 0);
-      leaked = Math.min(s.queue.length, wholeDrains);
-      s.queue.splice(0, leaked);
-    }
+    const leaked = algo === "leaky-bucket" ? drain(s, { algo, limit, windowMs }, TICK_MS, Math.random) : 0;
 
     const n = arrivals(now);
     const batch: Event[] = [];
     let allowed = 0;
     let rejected = 0;
     for (let i = 0; i < n; i++) {
-      const ok = decide(now);
+      const ok = call(now);
       batch.push({ t: now, allowed: ok });
       if (ok) allowed++;
       else rejected++;
@@ -214,7 +129,7 @@ export function RateLimiterSimulator() {
       const overlap = 1 - (now - s.windowStart) / windowMs;
       setGauge({ used: Math.round(s.prevCount * overlap + s.count), of: limit, label: "weighted estimate" });
     } else setGauge({ used: s.count, of: limit, label: "in window" });
-  }, [algo, arrivals, decide, limit, windowMs]);
+  }, [algo, arrivals, call, limit, windowMs]);
 
   useEffect(() => {
     if (!running) return;
