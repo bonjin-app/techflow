@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { at } from "./pages";
 
 /**
  * What axe cannot see. Every violation here was live: the skip link scrolled
@@ -17,7 +18,7 @@ const focused = (page: import("@playwright/test").Page) =>
   });
 
 test("the skip link is the first tab stop and actually moves focus", async ({ page }) => {
-  await page.goto("/concept/sharding");
+  await page.goto(at("/concept/sharding"));
   await page.keyboard.press("Tab");
   await expect(page.locator(":focus")).toHaveText(/skip to content/i);
 
@@ -28,7 +29,7 @@ test("the skip link is the first tab stop and actually moves focus", async ({ pa
 });
 
 test("the palette keeps focus inside it and hands it back on close", async ({ page }) => {
-  await page.goto("/concept/sharding");
+  await page.goto(at("/concept/sharding"));
   const opener = page.getByRole("button", { name: /search/i }).first();
   await opener.focus();
   await page.keyboard.press("Enter");
@@ -51,7 +52,7 @@ for (const { where, url, box } of [
   { where: "the path finder", url: "/path", box: /from/i },
 ]) {
   test(`${where} tells assistive technology which option is highlighted`, async ({ page }) => {
-    await page.goto(url);
+    await page.goto(at(url));
     const input = page.getByRole("combobox", { name: box }).first();
     await input.fill("redis");
     await expect(input).toHaveAttribute("aria-activedescendant", /.+/);

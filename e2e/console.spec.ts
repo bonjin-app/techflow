@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { at } from "./pages";
 
 /**
  * A hydration mismatch or a crashing client component logs to the console and
@@ -37,7 +38,7 @@ for (const path of PAGES) {
     });
     page.on("pageerror", (e) => errors.push(`uncaught: ${e.message}`));
 
-    const response = await page.goto(path, { waitUntil: "networkidle" });
+    const response = await page.goto(at(path), { waitUntil: "networkidle" });
     expect(response?.status(), `${path} should be served`).toBe(200);
     await expect(page.locator("h1")).toBeVisible();
     expect(errors, `${path} logged errors`).toEqual([]);

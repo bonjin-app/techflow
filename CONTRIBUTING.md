@@ -28,6 +28,15 @@ sitemap rather than a hand-written list:
 | `keyboard` | Focus traps, dead skip links, silent comboboxes |
 | `perf` | Content that jumps after paint, or a blocked main thread |
 
+The deploy workflow builds with `NEXT_PUBLIC_BASE_PATH=/techflow`, because
+GitHub Pages mounts a project site under the repository name. To run the suite
+the way the deploy does — which is the only way to catch a link that forgot the
+prefix — set the same variable:
+
+```bash
+NEXT_PUBLIC_BASE_PATH=/techflow pnpm build && NEXT_PUBLIC_BASE_PATH=/techflow pnpm e2e
+```
+
 The performance budgets are far above what the site does today (layout shift
 near zero, ~300ms blocked at 4x CPU throttling). They exist to catch a
 collapse — a heavy library pulled into the shared bundle — not to police

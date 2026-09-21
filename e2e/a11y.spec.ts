@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { allPages } from "./pages";
+import { allPages, at } from "./pages";
 
 // Entrance animations are mid-flight for a few hundred milliseconds after load,
 // and an ancestor at opacity 0.65 makes axe report a contrast failure against a
@@ -26,7 +26,7 @@ for (const [i, route] of routes.entries()) {
   const scheme = i % 2 === 0 ? "light" : "dark";
   test(`${route} has no accessibility violations (${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
-    await page.goto(route, { waitUntil: "domcontentloaded" });
+    await page.goto(at(route), { waitUntil: "domcontentloaded" });
     const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
     const report = violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`);
     expect(report, `${route} in ${scheme} mode\n${report.join("\n")}`).toEqual([]);
@@ -37,7 +37,7 @@ for (const [i, route] of routes.entries()) {
 // regardless of where it lands in the alternation.
 test("the home page has no accessibility violations (dark)", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto(at("/"), { waitUntil: "domcontentloaded" });
   const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   expect(violations.map((v) => v.id)).toEqual([]);
 });

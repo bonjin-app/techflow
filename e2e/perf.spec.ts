@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { at } from "./pages";
 
 /**
  * `check:build` weighs the bytes a page ships. That is not the same as what the
@@ -31,7 +32,7 @@ for (const route of ROUTES) {
       }).observe({ type: "longtask", buffered: true });
     });
 
-    await page.goto(route, { waitUntil: "networkidle" });
+    await page.goto(at(route), { waitUntil: "networkidle" });
     await page.waitForTimeout(2000);
     const { cls, blocked } = await page.evaluate(() => {
       const w = window as unknown as { __cls: number; __blocked: number };

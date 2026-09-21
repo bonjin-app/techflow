@@ -12,6 +12,14 @@ import path from "node:path";
 
 const ROOT = path.join(process.cwd(), "out");
 const PORT = Number(process.argv[2] ?? 4321);
+/**
+ * GitHub Pages mounts a project site under /<repo>, and a build made for it
+ * writes that prefix into every link and every sitemap entry. Serving `out/` at
+ * the root instead would 404 on all of them — which is what the deploy
+ * workflow's end-to-end step had been doing, silently, because the tests only
+ * ever ran against a root build locally.
+ */
+const BASE = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "");
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript",
@@ -27,7 +35,12 @@ const TYPES = {
 http
   .createServer((req, res) => {
     const url = decodeURIComponent((req.url ?? "/").split("?")[0]);
-    const safe = path.normalize(url).replace(/^(\.\.[/\\])+/, "");
+    // Strictly, as the host does: with a base path, anything outside it is not
+    // part of this site. A lenient server would let a link that forgot the
+    // prefix pass a test and 404 in production.
+    const inBase = !BASE || url === BASE || url.startsWith(`${BASE}/`);
+    const unprefixed = BASE && inBase ? url.slice(BASE.length) || "/" : url;
+    const safe = inBase ? path.normalize(unprefixed).replace(/^(\.\.[/\\])+/, "") : "/__outside_base__";
     const candidates = [path.join(ROOT, safe), path.join(ROOT, `${safe}.html`), path.join(ROOT, safe, "index.html")];
     const file = candidates.find((f) => f.startsWith(ROOT) && fs.existsSync(f) && fs.statSync(f).isFile());
     if (!file) {

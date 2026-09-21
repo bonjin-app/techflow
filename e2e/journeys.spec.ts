@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { at } from "./pages";
 
 /**
  * The interactive parts, exercised the way a reader uses them. Static checks
@@ -8,7 +9,7 @@ import { expect, test } from "@playwright/test";
 
 test("the first journey is one click per hop", async ({ page }) => {
   // The walk the product spec defines itself by: Redis → Cache → Cache Aside.
-  await page.goto("/technology/redis");
+  await page.goto(at("/technology/redis"));
   await expect(page.getByRole("heading", { level: 1, name: "Redis" })).toBeVisible();
 
   await page.getByRole("link", { name: "Cache", exact: true }).first().click();
@@ -19,7 +20,7 @@ test("the first journey is one click per hop", async ({ page }) => {
 });
 
 test("the command palette opens with a keystroke and navigates", async ({ page }) => {
-  await page.goto("/");
+  await page.goto(at("/"));
   const input = page.getByRole("combobox", { name: "Search the knowledge graph" });
   // A global shortcut only works once the client has hydrated and attached its
   // listener. Pressing once immediately after load is a race the test lost
@@ -34,16 +35,16 @@ test("the command palette opens with a keystroke and navigates", async ({ page }
 });
 
 test("a question gets an answer card, not just a list", async ({ page }) => {
-  await page.goto("/search?q=Why+Redis%3F");
+  await page.goto(at("/search?q=Why+Redis%3F"));
   const card = page.getByLabel("Interpretation of your question");
   await expect(card).toBeVisible();
   await expect(card).toContainText("why Redis is needed");
   // the card links to the section that answers it, not the top of the page
-  await expect(card.getByRole("link", { name: /Redis/ }).first()).toHaveAttribute("href", "/technology/redis#why");
+  await expect(card.getByRole("link", { name: /Redis/ }).first()).toHaveAttribute("href", at("/technology/redis#why"));
 });
 
 test("the path finder connects two pages and explains each hop", async ({ page }) => {
-  await page.goto("/path?from=jwt&to=sharding");
+  await page.goto(at("/path?from=jwt&to=sharding"));
   await expect(page.getByText(/hops\./)).toBeVisible();
   const chain = page.getByRole("list", { name: "Route between the two pages" }).getByRole("link");
   await expect(chain.first()).toContainText("JWT");
@@ -55,7 +56,7 @@ test("the path finder connects two pages and explains each hop", async ({ page }
 });
 
 test("the learning route orders prerequisites and responds to what you know", async ({ page }) => {
-  await page.goto("/path?from=redis&to=sharding");
+  await page.goto(at("/path?from=redis&to=sharding"));
   await page.getByRole("tab", { name: "What do I need first?" }).click();
   await expect(page.getByText(/still to read/)).toBeVisible();
 
@@ -66,7 +67,7 @@ test("the learning route orders prerequisites and responds to what you know", as
 });
 
 test("the mind map re-centres without a page load and keeps a trail", async ({ page }) => {
-  await page.goto("/map?focus=redis");
+  await page.goto(at("/map?focus=redis"));
   await expect(page.getByText("Redis", { exact: true }).first()).toBeVisible();
   const leaf = page.locator("svg a, svg [role=button]").first();
   await leaf.click();
@@ -75,7 +76,7 @@ test("the mind map re-centres without a page load and keeps a trail", async ({ p
 });
 
 test("an architecture runs its request animation", async ({ page }) => {
-  await page.goto("/architecture/chat-system");
+  await page.goto(at("/architecture/chat-system"));
   await page.getByRole("button", { name: /Run request/ }).click();
   await expect(page.getByRole("button", { name: /Stop/ })).toBeVisible();
   // a step caption appears as the packet moves
@@ -83,14 +84,14 @@ test("an architecture runs its request animation", async ({ page }) => {
 });
 
 test("a design challenge explains every option after you answer", async ({ page }) => {
-  await page.goto("/challenge");
+  await page.goto(at("/challenge"));
   const first = page.locator("[id]").filter({ hasText: "DESIGN CHALLENGE" }).first();
   await first.getByRole("button").first().click();
   await expect(first.getByText(/Correct|Not quite/).first()).toBeVisible();
 });
 
 test("the cache simulator responds to a smaller capacity", async ({ page }) => {
-  await page.goto("/playground/cache");
+  await page.goto(at("/playground/cache"));
   const capacity = page.getByRole("slider").first();
   await capacity.fill("4");
   await page.getByRole("button", { name: "Step" }).click({ clickCount: 12 });
@@ -98,7 +99,7 @@ test("the cache simulator responds to a smaller capacity", async ({ page }) => {
 });
 
 test("progress stays in the browser and can be forgotten", async ({ page }) => {
-  await page.goto("/you");
+  await page.goto(at("/you"));
   await expect(page.getByText(/Nothing recorded in this browser yet/)).toBeVisible();
 
   await page.evaluate(() => {
@@ -113,14 +114,14 @@ test("progress stays in the browser and can be forgotten", async ({ page }) => {
 });
 
 test("an unknown URL lands on the site's own 404, with a way back", async ({ page }) => {
-  const response = await page.goto("/technology/does-not-exist");
+  const response = await page.goto(at("/technology/does-not-exist"));
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/isn't in the graph/);
   await expect(page.getByRole("link", { name: /Explore the graph/ })).toBeVisible();
 });
 
 test("common ground answers with something specific, not a roadmap", async ({ page }) => {
-  await page.goto("/path?from=redis&to=kafka");
+  await page.goto(at("/path?from=redis&to=kafka"));
   await page.getByRole("tab", { name: "What do they share?" }).click();
   const list = page.getByRole("list", { name: /What .* share/ });
   await expect(list).toBeVisible();
@@ -131,7 +132,7 @@ test("common ground answers with something specific, not a roadmap", async ({ pa
 
 test("an answer can be copied out as Markdown", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.goto("/path?from=redis&to=sharding");
+  await page.goto(at("/path?from=redis&to=sharding"));
   await page.getByRole("tab", { name: "What do I need first?" }).click();
   await page.getByRole("button", { name: "Copy as Markdown" }).click();
   await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
@@ -143,7 +144,7 @@ test("an answer can be copied out as Markdown", async ({ page, context }) => {
 
 test("search finds pages by what they say, not only what they are called", async ({ page }) => {
   // Nothing is called "coordinated omission"; two pages explain it.
-  await page.goto("/search?q=coordinated+omission");
+  await page.goto(at("/search?q=coordinated+omission"));
   const section = page.getByRole("heading", { name: "Mentioned on these pages" });
   await expect(section).toBeVisible();
   const list = section.locator("xpath=following-sibling::ul[1]");

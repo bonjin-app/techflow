@@ -8,10 +8,26 @@ import path from "node:path";
  * unrelated commit — which is exactly how a code block that could not be
  * scrolled by keyboard went unnoticed.
  */
+/** Where the host mounts this site: "" at a domain root, "/<repo>" on Pages. */
+export const BASE = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "");
+
+/**
+ * A site-relative route as the server actually serves it. Playwright's baseURL
+ * cannot do this: a path beginning with "/" throws away the base URL's own
+ * path, so "/concept/cache" would never reach "/techflow/concept/cache".
+ */
+export const at = (route: string) => `${BASE}${route}`;
+
 export function allPages(): string[] {
+  // Site-relative, with the host's mount point removed: Playwright's baseURL
+  // carries it, so a test never has to know whether the site sits at the root
+  // or under /<repo>.
+  const base = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "");
   const xml = fs.readFileSync(path.join(process.cwd(), "out", "sitemap.xml"), "utf8");
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-    .map((m) => m[1].replace(/^https?:\/\/[^/]+/, "").replace(/\/$/, "") || "/")
+    .map((m) => m[1].replace(/^https?:\/\/[^/]+/, ""))
+    .map((p) => (base && p.startsWith(base) ? p.slice(base.length) : p))
+    .map((p) => p.replace(/\/$/, "") || "/")
     .sort();
 }
 
