@@ -136,6 +136,12 @@ export function buildGraph(): KnowledgeGraph {
     if (n.type === "system-design") {
       for (const step of n.steps) {
         const ids = new Set(step.nodes.map((x) => x.id));
+        // A scale journey is a sequence of decisions. A step that does not say
+        // what pressure it answers is a diagram, and the reader came for the
+        // reasoning, not the boxes.
+        if (!step.why || step.why.trim().length < 40) {
+          problems.push(`${n.id}: step '${step.title}' explains itself in ${step.why?.trim().length ?? 0} characters`);
+        }
         for (const an of step.nodes) {
           if (an.ref) {
             if (!nodes.has(an.ref)) problems.push(`${n.id}: step '${step.title}' node ref '${an.ref}' unknown`);
@@ -164,7 +170,16 @@ export function buildGraph(): KnowledgeGraph {
   for (const e of radar.entries) if (!nodes.has(e.ref)) problems.push(`radar: entry ref '${e.ref}' unknown`);
   for (const c of challenges) {
     for (const id of c.related) if (!nodes.has(id)) problems.push(`challenge '${c.id}': related '${id}' unknown`);
-    for (const o of c.options) if (o.ref && !nodes.has(o.ref)) problems.push(`challenge '${c.id}': option ref '${o.ref}' unknown`);
+    for (const o of c.options) {
+      if (o.ref && !nodes.has(o.ref)) problems.push(`challenge '${c.id}': option ref '${o.ref}' unknown`);
+      // The `why` is the whole lesson: picking an answer teaches nothing, being
+      // told why the other three are wrong is the point of the exercise.
+      if (!o.why || o.why.trim().length < 40) {
+        problems.push(`challenge '${c.id}': option '${o.label.slice(0, 40)}' explains itself in ${o.why?.trim().length ?? 0} characters`);
+      }
+      if (!o.ref) problems.push(`challenge '${c.id}': option '${o.label.slice(0, 40)}' has no ref — the reader has nowhere to go and read more`);
+    }
+    if (c.options.every((o) => o.correct)) problems.push(`challenge '${c.id}': every option is correct, so there is nothing to work out`);
   }
 
   for (const st of stacks) {
