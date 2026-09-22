@@ -237,6 +237,21 @@ function main() {
   failures.push(...checkPaths());
 
   for (const f of failures) console.error(`  ✖ ${f}`);
+  // These four counts are derived from the content, which is what makes them
+  // keep holding as pages are added — and also what lets them quietly shrink.
+  // A filter that excluded most pages would leave every assertion passing over
+  // a handful, reported as success. Each is pinned to the number of pages, so
+  // checking less has to be a deliberate change to this line.
+  for (const [what, got, want] of [
+    ["name", named, index.length * 2 - 10],
+    ["question", asked, index.length * 3],
+    ["searchable name", searchable, index.length - 10],
+  ] as const) {
+    if (got < want) {
+      failures.push(`only ${got} ${what} assertion(s) ran across ${index.length} pages — something is filtering the content out`);
+    }
+  }
+
   console.log(`\n${CASES.length} worked example(s), ${RANKING.length} keyword(s), ${named} name(s), ${asked} question(s), ${searchable} searchable name(s) and ${index.length} connected page(s) checked`);
   if (failures.length) {
     console.error(`✖ ${failures.length} search failure(s)`);
