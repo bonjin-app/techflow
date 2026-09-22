@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "validate": "tsx scripts/validate-content.ts && tsx scripts/check-intent.ts",
+    "validate": "pnpm gen:index && tsx scripts/validate-content.ts && tsx scripts/check-intent.ts",
     "check:intent": "tsx scripts/check-intent.ts",
     "gen:index": "tsx scripts/gen-search-index.ts",
     "check:links": "tsx scripts/check-links.ts",
