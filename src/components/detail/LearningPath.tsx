@@ -75,7 +75,11 @@ export function LearningPath({ items, currentId, title = "You should know" }: { 
               <div
                 className={`flex items-start gap-3 rounded-md px-2 py-1.5 ${isCurrent ? "bg-accent-soft" : ""}`}
               >
-                <label className="mt-0.5 inline-flex cursor-pointer items-center">
+                {/* The box stays 16px; the label around it is the target. A bare
+                    checkbox is a 16px square to hit, which on a phone is the
+                    hardest thing on the page to tap — and this is the only part
+                    of the learning path a reader interacts with. */}
+                <label className="-m-1.5 inline-flex cursor-pointer items-center p-1.5">
                   <input
                     type="checkbox"
                     checked={checked}

@@ -103,10 +103,18 @@ export function HomeSearch({ suggestions }: { suggestions: string[] }) {
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-fg-faint">
-        <span>Try</span>
+      {/* Horizontal padding only made these 16px tall — under a thumb on the
+          busiest page of the site. The vertical padding is what makes them
+          tappable; the look is otherwise unchanged. */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-fg-faint">
+        <span className="px-1 py-1.5">Try</span>
         {suggestions.map((s) => (
-          <button key={s} type="button" onClick={() => setQ(s)} className="rounded px-1 font-mono text-fg-muted hover:text-fg">
+          <button
+            key={s}
+            type="button"
+            onClick={() => setQ(s)}
+            className="rounded px-2 py-1.5 font-mono text-fg-muted hover:bg-surface-2 hover:text-fg"
+          >
             {s}
           </button>
         ))}

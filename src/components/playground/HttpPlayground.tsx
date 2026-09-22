@@ -99,15 +99,15 @@ export function HttpPlayground() {
           </select>
         </label>
         <div className="flex flex-wrap gap-4 text-xs">
-          <label className="inline-flex items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 py-1">
             <input type="checkbox" checked={auth} onChange={(e) => setAuth(e.target.checked)} className="size-4 accent-[var(--accent)]" />
             Authorization
           </label>
-          <label className="inline-flex items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 py-1">
             <input type="checkbox" checked={conditional} onChange={(e) => setConditional(e.target.checked)} className="size-4 accent-[var(--accent)]" />
             Conditional (ETag)
           </label>
-          <label className="inline-flex items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 py-1">
             <input
               type="checkbox"
               checked={idempotencyKey}
