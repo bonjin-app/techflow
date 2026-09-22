@@ -54,3 +54,14 @@ test("a long page can be navigated on a phone, not only scrolled", async ({ page
   // and it gets out of the way, so the reader lands on the section
   await expect(contents).not.toHaveAttribute("open", /.*/);
 });
+
+test("the graph tells a phone reader what a phone can do", async ({ page }) => {
+  await page.goto(at("/explore"));
+  // Hover is not available here, and the mouse hint was hidden with nothing in
+  // its place — so a touch reader was told either the wrong thing or nothing.
+  await expect(page.getByText("tap a node to open it")).toBeVisible();
+  await expect(page.getByText("Hover a node")).toBeHidden();
+  // Zoom stays off the touch line: the graph handles one pointer, so pinch does nothing.
+  await expect(page.getByText(/wheel to zoom/)).toBeHidden();
+  await expect(page.getByText("drag to move")).toBeVisible();
+});

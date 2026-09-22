@@ -431,6 +431,10 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
             </button>
           );
         })}
+        {/* The mouse wording was hidden on a phone and nothing replaced it, so a
+            touch reader got no instructions at all. Zoom is deliberately absent
+            from the touch line: this handles one pointer, so pinch does nothing. */}
+        <span className="ml-auto text-fg-faint sm:hidden">drag to move · tap a node to open it</span>
         <span className="ml-auto hidden text-fg-faint sm:inline">
           {mode === "ego" ? "drag to pan · ⌘+wheel to zoom · click a node to open it" : "drag to pan · wheel to zoom · click to open"}
         </span>

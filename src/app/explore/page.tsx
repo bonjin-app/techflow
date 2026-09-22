@@ -29,8 +29,11 @@ export default function Page() {
             The whole graph
           </h1>
           <p className="mt-2 max-w-2xl text-fg-muted">
-            {universe.nodes.length} nodes, {universe.edges.length} connections. Hover a node to see its neighbourhood, click to open it. Use the legend to
-            filter by type.
+            {universe.nodes.length} nodes, {universe.edges.length} connections.{" "}
+            {/* Hovering is not something a phone can do, and this page opens on one. */}
+            <span className="sm:hidden">Drag to move around, tap a node to open it.</span>
+            <span className="hidden sm:inline">Hover a node to see its neighbourhood, click to open it.</span>{" "}
+            Use the legend to filter by type.
           </p>
         </div>
         <div className="text-xs text-fg-faint">
