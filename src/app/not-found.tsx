@@ -1,5 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PaletteButton } from "@/components/search/PaletteButton";
+
+/**
+ * Without this the page inherits the site's default title, so a reader who
+ * lands here sees the home page's name in their tab, their history and any
+ * bookmark they make. `noindex` because a 404 is not a page to find in search.
+ */
+export const metadata: Metadata = {
+  title: "Not found",
+  description: "This page is not in the graph. Search it, or start from a hub.",
+  robots: { index: false, follow: true },
+};
 
 export default function NotFound() {
   return (
