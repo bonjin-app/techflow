@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TableOfContents } from "./TableOfContents";
 import type { DocNode } from "@/lib/content/types";
 import { getEgoGraph, getNeighbors, resolveRefs } from "@/lib/content/graph";
 import { buildRefMap, collectMarkdownRefs } from "@/lib/content/refs";
@@ -276,18 +277,7 @@ export function DocDetail({ node }: { node: DocNode }) {
 
         {/* Sticky TOC */}
         <aside className="hidden lg:block">
-          <nav aria-label="On this page" className="sticky top-20 text-sm">
-            <div className="mb-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint">On this page</div>
-            <ul className="space-y-1 border-l border-border">
-              {toc.map((t) => (
-                <li key={t.id}>
-                  <a href={`#${t.id}`} className="-ml-px block border-l border-transparent py-0.5 pl-3 text-fg-muted hover:border-fg hover:text-fg">
-                    {t.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <TableOfContents entries={toc} />
         </aside>
       </div>
     </article>

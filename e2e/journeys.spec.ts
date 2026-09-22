@@ -159,3 +159,20 @@ test("search finds pages by what they say, not only what they are called", async
   const list = section.locator("xpath=following-sibling::ul[1]");
   await expect(list.getByRole("link").first()).toContainText(/Load Testing|Tail Latency/);
 });
+
+test("the contents list says which section you are reading", async ({ page }) => {
+  await page.goto(at("/concept/sharding"));
+  const toc = page.getByRole("navigation", { name: "On this page" });
+  const here = toc.locator('[aria-current="location"]');
+
+  // At the top, the reader is in the opening section.
+  await expect(here).toHaveText("Overview");
+
+  // Jumping to a section marks that section — not the one before it, which is
+  // what a fixed offset gave: a contents link leaves the heading below both the
+  // sticky header and its own scroll-margin.
+  for (const label of ["Why", "Visual", "Related"]) {
+    await toc.getByRole("link", { name: label, exact: true }).click();
+    await expect(here).toHaveText(label);
+  }
+});
