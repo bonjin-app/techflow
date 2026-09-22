@@ -48,12 +48,14 @@ export function getPractice(id: string): Practice {
     .filter((s) => s.layers.some((l) => l.items.some((it) => it.ref === id)) || s.related.includes(id))
     .map((s) => ({ href: `/stack/${s.id}`, label: s.name, note: s.tagline }));
 
+  // A build's learning path is the route it teaches, so a page on that route is
+  // one the build practises — leaving it out hid the E-commerce build from SQL.
   const builds = getBuilds()
     .filter(
       (b) =>
         b.architecture === id ||
         b.systemDesign === id ||
-        [...b.technologies, ...b.concepts, ...b.patterns].includes(id),
+        [...b.technologies, ...b.concepts, ...b.patterns, ...(b.learningPath ?? [])].includes(id),
     )
     .map((b) => ({ href: `/build/${b.id}`, label: b.name, note: b.tagline }));
 

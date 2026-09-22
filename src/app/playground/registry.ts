@@ -86,6 +86,7 @@ export const PLAYGROUNDS: PlaygroundMeta[] = [
     description:
       "A JSON Web Token is three base64url segments. Two of them are readable by anyone — which is exactly why the third, the signature, matters. Paste a token to see its structure and claims, and to be reminded that decoding is not verification.",
     concepts: [
+      { label: "JWT", href: "/concept/jwt" },
       { label: "Authentication", href: "/concept/authentication" },
       { label: "Session", href: "/concept/session" },
       { label: "HTTPS", href: "/concept/https" },

@@ -54,7 +54,8 @@ describe("the responses the HTTP playground shows as fact", () => {
 
   it("only revalidates on a method that can be cached", () => {
     for (const [name, c] of entries) {
-      if (c.status === 304) expect(c.methods.every((m) => m === "GET" || m === "HEAD"), name).toBe(true);
+      // HEAD is not in this page's method list, so GET is the whole of it.
+      if (c.status === 304) expect(c.methods, name).toEqual(["GET"]);
     }
   });
 
