@@ -17,7 +17,7 @@ function Cell({ value }: { value: string }) {
 export function Compare({ data, refs }: { data: CompareData; refs: RefMap }) {
   const [first, ...subjects] = data.header;
   return (
-    <figure className="not-prose my-5 overflow-x-auto rounded-lg border border-border">
+    <figure tabIndex={0} className="not-prose my-5 overflow-x-auto rounded-lg border border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
       {data.title && (
         <figcaption className="border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint">
           {data.title}

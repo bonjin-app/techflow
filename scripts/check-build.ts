@@ -190,6 +190,30 @@ function auditAnchors(pages: string[]): string[] {
   return problems;
 }
 
+/**
+ * A box that scrolls must be reachable by keyboard — either it takes focus, or
+ * it holds something that does. axe only reports this once the content actually
+ * overflows, which depends on the viewport and on the font metrics of whatever
+ * machine is looking: /concept/dns passed on mine and failed on the runner.
+ * The markup either allows it or it does not, so check the markup.
+ */
+function auditScrollRegions(pages: string[]): string[] {
+  const problems: string[] = [];
+  for (const file of pages) {
+    const html = fs.readFileSync(file, "utf8");
+    // each overflow-x-auto element with its contents, non-greedy to its close
+    for (const m of html.matchAll(/<(\w+)([^>]*\boverflow-x-auto\b[^>]*)>([\s\S]*?)<\/\1>/g)) {
+      const [, , attrs, inner] = m;
+      if (/\stabindex="0"/i.test(attrs)) continue;
+      // a link, button, input or anything else that takes focus on its own
+      if (/<(a\s[^>]*href=|button|input|select|textarea)/i.test(inner)) continue;
+      if (/\stabindex="0"/i.test(inner)) continue;
+      problems.push(`${path.relative(OUT, file)}: a scrollable box holds nothing focusable and cannot take focus itself`);
+    }
+  }
+  return [...new Set(problems)];
+}
+
 function main() {
   if (!fs.existsSync(OUT)) {
     console.error("✖ out/ not found — run `pnpm build` first.");
@@ -231,6 +255,7 @@ function main() {
   }
 
   problems.push(...auditAnchors(pages));
+  problems.push(...auditScrollRegions(pages));
 
   const js = walk(path.join(OUT, "_next"), (f) => f.endsWith(".js"));
   const jsKb = js.reduce((a, f) => a + gzipKb(fs.readFileSync(f)), 0);

@@ -22,6 +22,7 @@ test.use({ reducedMotion: "reduce" });
  */
 const routes = allPages();
 
+
 for (const [i, route] of routes.entries()) {
   const scheme = i % 2 === 0 ? "light" : "dark";
   test(`${route} has no accessibility violations (${scheme})`, async ({ page }) => {

@@ -98,7 +98,7 @@ function Part({ title, color, body, note }: { title: string; color: keyof typeof
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
       <div className={`font-mono text-[11px] uppercase tracking-wider ${PART_COLOR[color]}`}>{title}</div>
-      <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-fg">{body}</pre>
+      <pre tabIndex={0} className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{body}</pre>
       <p className="mt-3 text-xs text-fg-muted">{note}</p>
     </div>
   );

@@ -105,7 +105,7 @@ curl -s https://techflow.dev/api/graph.json \\
           <code className="font-mono text-xs">ALTERNATIVE_TO</code>, <code className="font-mono text-xs">USED_WITH</code> and{" "}
           <code className="font-mono text-xs">RELATED_TO</code> as undirected.
         </p>
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div tabIndex={0} className="overflow-x-auto rounded-lg border border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-2/60">

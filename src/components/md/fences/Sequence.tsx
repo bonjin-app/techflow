@@ -88,7 +88,16 @@ export function Sequence({ data, refs }: { data: SequenceData; refs: RefMap }) {
           <span aria-hidden>▶</span> {playing ? "Playing" : "Replay"}
         </button>
       </div>
-      <div className="overflow-x-auto">
+      {/* A diagram whose participants all link is reachable through those links.
+          One where none do — dns, tcp, tls, udp, rpc — is a box that scrolls
+          with nothing inside to focus, so the box itself has to take focus or a
+          keyboard cannot read the half that is off-screen. */}
+      <div
+        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        tabIndex={data.participants.some((p) => p.ref) ? undefined : 0}
+        role={data.participants.some((p) => p.ref) ? undefined : "group"}
+        aria-label={data.participants.some((p) => p.ref) ? undefined : a11y}
+      >
         <svg
           viewBox={`0 0 ${width} ${height}`}
           width={width}

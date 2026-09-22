@@ -135,7 +135,7 @@ export function HttpPlayground() {
             ))}
             {requestBody && (
               <li className="px-4 py-2">
-                <pre className="overflow-x-auto font-mono text-xs text-fg">{JSON.stringify(requestBody, null, 2)}</pre>
+                <pre tabIndex={0} className="overflow-x-auto font-mono text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{JSON.stringify(requestBody, null, 2)}</pre>
                 <span className="text-xs text-fg-faint">body — only methods that change state send one</span>
               </li>
             )}
@@ -164,7 +164,7 @@ export function HttpPlayground() {
             ))}
             {res.body ? (
               <li className="px-4 py-2">
-                <pre className="overflow-x-auto font-mono text-xs text-fg">{JSON.stringify(res.body, null, 2)}</pre>
+                <pre tabIndex={0} className="overflow-x-auto font-mono text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{JSON.stringify(res.body, null, 2)}</pre>
               </li>
             ) : (
               <li className="px-4 py-3 text-xs text-fg-faint">No body — a 304 is the whole point: nothing is transferred.</li>

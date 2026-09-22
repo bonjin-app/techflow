@@ -4,7 +4,7 @@ import type { TimelineData } from "@/lib/fences";
 export function Timeline({ data }: { data: TimelineData }) {
   const cols = data.columns.length || 2;
   return (
-    <figure className="not-prose my-5 overflow-x-auto rounded-lg border border-border bg-surface">
+    <figure tabIndex={0} className="not-prose my-5 overflow-x-auto rounded-lg border border-border bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
       {data.title && (
         <figcaption className="border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint">
           {data.title}
