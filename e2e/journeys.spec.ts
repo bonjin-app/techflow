@@ -46,8 +46,9 @@ test("a question gets an answer card, not just a list", async ({ page }) => {
   // …and that section is really there. This anchor is built at runtime from the
   // question, so no check over the built files can see it: rename the heading
   // and the link would keep pointing at nothing, silently.
-  await answer.click();
-  await expect(page).toHaveURL(/\/technology\/redis#why$/);
+  // Start waiting before the click: under a loaded suite the navigation can
+  // land after a bare `toHaveURL` has already looked.
+  await Promise.all([page.waitForURL(/\/technology\/redis#why$/), answer.click()]);
   await expect(page.locator("#why")).toBeVisible();
 });
 

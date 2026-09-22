@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { NodeSummary } from "@/lib/content/types";
 import { groupByType, searchNodes } from "@/lib/search";
+import { ALIASES } from "@/lib/aliases";
 import { queryTerms, searchText, type TextIndex } from "@/lib/fulltext";
 
 const index = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "search-index.json"), "utf8")) as NodeSummary[];
@@ -20,6 +21,15 @@ describe("searchNodes", () => {
     expect(first("SQL")).toBe("sql"); // was sqlite
     expect(first("Authentication")).toBe("authentication"); // was authentication-system
     expect(first("Observability")).toBe("observability"); // was observability-stack
+  });
+
+  it("every alias points at a page and wins its own query", () => {
+    // An alias for a page that was renamed does nothing at all, silently, and
+    // one that loses to a fuzzy match is an alias in name only.
+    for (const [alias, id] of Object.entries(ALIASES)) {
+      expect(index.some((n) => n.id === id), `${alias} → ${id}, which is not a page`).toBe(true);
+      expect(first(alias), `"${alias}" should find ${id}`).toBe(id);
+    }
   });
 
   it("ignores the punctuation nobody types", () => {

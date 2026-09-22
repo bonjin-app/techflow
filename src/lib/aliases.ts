@@ -33,4 +33,18 @@ export const ALIASES: Record<string, string> = {
   "2pc": "two-phase-commit",
   owasp: "owasp-top-10",
   rn: "react-native",
+  // Standard in this domain, and each has exactly one page it could mean here.
+  // Deliberately absent: "es" (Elasticsearch or ECMAScript), "js" (no
+  // JavaScript page to land on) and "cd" (CDN is as likely as continuous
+  // delivery) — an alias that guesses wrong is worse than a fuzzy match.
+  oidc: "oauth",
+  sso: "oauth",
+  saml: "oauth",
+  gql: "graphql",
+  pg: "postgresql",
+  k8: "kubernetes",
+  ts: "typescript",
+  tf: "terraform",
+  ws: "websocket",
+  lb: "load-balancing",
 };
