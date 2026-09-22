@@ -27,6 +27,8 @@ sitemap rather than a hand-written list:
 | `a11y` | axe-core: contrast, roles, labels — 106 of these were live. Themes alternate by page, because Playwright renders light by default and 290 pages of dark mode went unchecked |
 | `keyboard` | Focus traps, dead skip links, silent comboboxes |
 | `perf` | Content that jumps after paint, or a blocked main thread |
+| `untrusted` | Markup pushed through every input a stranger can reach |
+| `resilience` | Readable with scripts off; reflows at twice the text size |
 
 GitHub Pages mounts a project site under the repository name, so both workflows
 build with `NEXT_PUBLIC_BASE_PATH=/techflow` — CI as well as the deploy, because
