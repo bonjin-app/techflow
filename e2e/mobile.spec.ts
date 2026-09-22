@@ -68,24 +68,32 @@ test("the graph tells a phone reader what a phone can do", async ({ page }) => {
 
 for (const route of ["/", "/build/ai-application", "/path", "/playground/http", "/concept/sharding"]) {
   test(`${route} has nothing too small to tap`, async ({ page }) => {
-    await page.goto(at(route));
+    await page.goto(at(route), { waitUntil: "networkidle" });
     // Buttons, disclosures and checkboxes are always presented as tappable, so
     // none of the inline-text exemptions in WCAG 2.5.8 apply to them. A
     // checkbox's target is the label around it, which is how a 16px box can be
     // fine and how these were not: the learning-path ticks had no label padding
     // and were the hardest thing on the page to hit.
-    const small = await page.evaluate(() => {
-      const out: string[] = [];
-      for (const el of document.querySelectorAll("button, summary, input[type=checkbox], input[type=radio]")) {
-        const target = el.closest("label") ?? el;
-        const r = target.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) continue; // not on screen
-        if (r.width >= 24 && r.height >= 24) continue;
-        const name = (el.textContent || el.getAttribute("aria-label") || "").trim().slice(0, 30);
-        out.push(`${el.tagName.toLowerCase()} ${Math.round(r.width)}x${Math.round(r.height)} "${name}"`);
-      }
-      return out;
-    });
-    expect(small, `${route}\n${small.join("\n")}`).toEqual([]);
+    // Polled, not sampled once: a control measured while its client component
+    // is still laying out is briefly small, which fails about half the runs
+    // under a loaded suite and none on its own.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const out: string[] = [];
+            for (const el of document.querySelectorAll("button, summary, input[type=checkbox], input[type=radio]")) {
+              const target = el.closest("label") ?? el;
+              const r = target.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0) continue; // not on screen
+              if (r.width >= 24 && r.height >= 24) continue;
+              const name = (el.textContent || el.getAttribute("aria-label") || "").trim().slice(0, 30);
+              out.push(`${el.tagName.toLowerCase()} ${Math.round(r.width)}x${Math.round(r.height)} "${name}"`);
+            }
+            return out;
+          }),
+        { message: `${route} has a target under 24px`, timeout: 10_000 },
+      )
+      .toEqual([]);
   });
 }

@@ -34,7 +34,8 @@ meta: { lastReviewed: 2026-09-15, confidence: high }
 
 Placing an order means creating the order, reserving stock and charging the card —
 three services, three databases. A single ACID [transaction](/concept/transaction)
-cannot span them, and two-phase commit across services is slow, holds locks while
+cannot span them, and [two-phase commit](/pattern/two-phase-commit) across services is
+slow — [the comparison](/compare/saga-vs-two-phase-commit) sets out the trade — holds locks while
 waiting on the network, and fails badly when a coordinator dies. Yet the business
 rule is clear: if the charge fails, the stock must be released and the order
 cancelled. You need "all or nothing" semantics without a global lock.

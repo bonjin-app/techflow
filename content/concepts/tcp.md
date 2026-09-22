@@ -127,7 +127,8 @@ accepting, drain in-flight requests, then close — and the balancer must stop r
 first.
 
 **When TCP is the wrong tool.** Real-time voice, video and game state prefer a late
-packet to be dropped rather than retransmitted; they use [UDP](/concept/udp) and
+packet to be dropped rather than retransmitted; they use [UDP](/concept/udp) — see
+[TCP vs UDP](/compare/tcp-vs-udp) for the whole fork — and
 handle loss at the application layer.
 
 ## Related

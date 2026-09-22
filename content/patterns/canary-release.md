@@ -135,7 +135,7 @@ sizing the sample deliberately and warming up before measuring.
 
 ## When not to use
 
-- Low traffic — the sample is too small to conclude anything; prefer [Blue-Green](/pattern/blue-green-deployment)
+- Low traffic — the sample is too small to conclude anything; prefer [Blue-Green](/pattern/blue-green-deployment) — [the two compared](/compare/blue-green-vs-canary)
 - Changes that cannot coexist: an incompatible schema migration, a breaking message format
 - Any exposure is unacceptable (a bug would misprice trades, send wrong invoices) — test differently, or shadow traffic instead
 - You have no per-version observability yet; build that first

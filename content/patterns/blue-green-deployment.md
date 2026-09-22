@@ -136,7 +136,7 @@ Either drain them gracefully on blue, or design them to reconnect.
 ## When not to use
 
 - Cost-sensitive systems where doubling capacity is not viable — use a rolling update
-- You need to limit *blast radius*, not just shorten rollback time: only a fraction of users should see the new version first — use a [Canary Release](/pattern/canary-release)
+- You need to limit *blast radius*, not just shorten rollback time: only a fraction of users should see the new version first — use a [Canary Release](/pattern/canary-release) — [the two compared](/compare/blue-green-vs-canary)
 - Schema changes cannot be made backward compatible in your data store
 - Heavy long-lived connections or in-process state that cannot be drained
 - Many small deploys per day; the ceremony and capacity cost per release add up

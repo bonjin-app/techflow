@@ -423,7 +423,7 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
                   return next.size === typesPresent.length ? null : next;
                 })
               }
-              className={`inline-flex items-center gap-1.5 rounded px-1 ${on ? "" : "opacity-40"}`}
+              className={`inline-flex items-center gap-1.5 rounded px-1.5 py-1 ${on ? "" : "opacity-40"}`}
               data-type={t}
             >
               <span className="size-2 rounded-full" style={{ background: "var(--type)" }} aria-hidden />
@@ -447,7 +447,7 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
 
       {/* text alternative */}
       <details className="mt-2 text-xs text-fg-faint">
-        <summary className="cursor-pointer">Text version of this graph</summary>
+        <summary className="cursor-pointer py-1">Text version of this graph</summary>
         <ul className="mt-1 columns-2 gap-4 sm:columns-3">
           {data.nodes.map((n) => (
             <li key={n.id}>

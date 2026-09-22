@@ -137,7 +137,7 @@ a common and unpleasant production incident.
 - High throughput or long-running business processes (hours, human approval steps)
 - Any participant lacking XA support, which includes most modern managed services
 - Availability matters more than instant consistency — prefer a
-  [Saga](/pattern/saga) with compensating actions, or the
+  [Saga](/pattern/saga) with compensating actions ([which to choose](/compare/saga-vs-two-phase-commit)), or the
   [Outbox](/pattern/outbox) pattern to make a single local commit plus a reliable event
 
 ## Real-world

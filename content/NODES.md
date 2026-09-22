@@ -234,3 +234,20 @@ feature-store
 Three watched terms still have no page: "bloom filter", "spot instance" and
 "read repair". Each is used exactly once, in one page, which is the level at
 which a sentence of explanation beats a page nobody reaches.
+
+# Wave 10 — forks the site already declared and never resolved
+
+Chosen from the graph rather than the prose: 44 pairs are declared
+`ALTERNATIVE_TO` each other and only 18 had a comparison behind them. Most of
+those 44 need none — a page's own *Alternatives* section is enough when the
+choice is not really a fork. Three were, and each is linked from the sentence
+on both pages where the question comes up.
+
+## comparisons/
+tcp-vs-udp · saga-vs-two-phase-commit · blue-green-vs-canary
+
+The rest of the 44 stay unwritten deliberately. "Java vs Python" is a taste
+argument, not a decision with conditions; "PostgreSQL vs SQLite" is already
+answered by each page's *When not to use*. A comparison earns its place when a
+reader is standing at the fork with a real constraint, which is what the
+`decision` fence has to be able to ask about.

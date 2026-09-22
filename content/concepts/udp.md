@@ -33,7 +33,8 @@ through QUIC, HTTP/3.
 
 ## Why it matters
 
-[TCP](/concept/tcp)'s reliability has a price: a handshake round trip, in-order
+[TCP](/concept/tcp)'s reliability has a price, laid out side by side in
+[TCP vs UDP](/compare/tcp-vs-udp): a handshake round trip, in-order
 delivery that stalls on a single lost packet, and congestion control tuned for bulk
 transfer. For a video call, a retransmitted frame arriving 300 ms late is useless — the
 conversation has moved on. For a DNS lookup, a handshake would double the latency of a

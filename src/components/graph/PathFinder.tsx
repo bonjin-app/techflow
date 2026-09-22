@@ -135,7 +135,7 @@ export function PathFinder({ initialFrom, initialTo }: { initialFrom?: string; i
           ))}
         </div>
         {mode === "connection" && (
-          <label className="flex items-center gap-2 text-fg-muted">
+          <label className="flex cursor-pointer items-center gap-2 py-1 text-fg-muted">
             <input type="checkbox" checked={avoidHubs} onChange={(e) => setAvoidHubs(e.target.checked)} className="accent-[var(--accent)]" />
             Avoid routing through hubs
           </label>
@@ -305,11 +305,13 @@ function RouteView({
           if (!node) return null;
           return (
             <li key={step.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+              {/* A bare checkbox is a 16px target; the padding is what a thumb lands on. */}
               <input
                 type="checkbox"
                 checked={step.known}
                 onChange={(e) => setKnown(step.id, e.target.checked)}
                 aria-label={`I already know ${node.name}`}
+                style={{ padding: "0.375rem", margin: "-0.375rem" }}
                 className="accent-[var(--accent)]"
               />
               <span className="w-6 shrink-0 text-right font-mono text-[11px] text-fg-faint">{i + 1}</span>
