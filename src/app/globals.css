@@ -285,3 +285,68 @@ p a[href] {
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
+
+/* ───────────────────────────────── Print ─────────────────────────────────
+   A reference page is something people print, and printing one used to lose a
+   quarter of it: the depth levels are tab panels, so only the open one reached
+   the paper, with nothing to say the rest existed. Everything prints now, each
+   level labelled, and the parts that only work on a screen stay off it. */
+@media print {
+  /* Chrome: navigation, the theme control, the contents list — none of it is
+     usable on paper, and the footer alone ran to a third of a page. */
+  header,
+  footer,
+  nav[aria-label="On this page"],
+  a[href="#main"],
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  /* Every depth level, not just the open one. Inside `base` deliberately:
+     Tailwind's reset hides `[hidden]` with an `!important` of its own, and
+     between two important declarations the layered one wins over an unlayered
+     one whatever its specificity. In the same layer, specificity decides. */
+  @layer base {
+    [role="tabpanel"][hidden] {
+      display: block !important;
+    }
+  }
+  [role="tabpanel"][data-level]::before {
+    content: attr(data-level);
+    display: block;
+    margin: 1.25rem 0 0.5rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #555;
+  }
+
+  /* The content column is the whole page once the sidebar is gone. */
+  main .grid {
+    display: block !important;
+  }
+
+  /* Ink, not screens: the dark theme is not something to print. */
+  :root,
+  [data-theme="dark"] {
+    --bg: #ffffff;
+    --bg-subtle: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f4f4f6;
+    --fg: #111114;
+    --fg-muted: #333338;
+    --fg-faint: #55555c;
+    --border: #cccccf;
+  }
+
+  /* A diagram or a table split across a page break is worth neither half. */
+  figure,
+  pre,
+  table {
+    break-inside: avoid;
+  }
+  h1, h2, h3 {
+    break-after: avoid;
+  }
+}

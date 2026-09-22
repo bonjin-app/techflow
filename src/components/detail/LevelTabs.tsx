@@ -44,7 +44,17 @@ export function LevelTabs({ levels }: { levels: Level[] }) {
         ))}
       </div>
       {levels.map((l, i) => (
-        <div key={l.key} role="tabpanel" id={`level-panel-${i}`} aria-labelledby={`level-tab-${i}`} hidden={i !== active} className="animate-fade-up">
+        <div
+          key={l.key}
+          role="tabpanel"
+          id={`level-panel-${i}`}
+          aria-labelledby={`level-tab-${i}`}
+          hidden={i !== active}
+          // Printing shows every level, and this is how each one says which it is
+          // once the tab strip is gone.
+          data-level={`L${i + 1} · ${l.label}`}
+          className="animate-fade-up"
+        >
           {l.content}
         </div>
       ))}

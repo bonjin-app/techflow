@@ -51,3 +51,31 @@ test.describe("at twice the text size", () => {
     });
   }
 });
+
+test.describe("on paper", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("printing a page does not lose a quarter of it", async ({ page }) => {
+    await page.goto(at("/concept/sharding"), { waitUntil: "networkidle" });
+    const read = () => page.evaluate(() => (document.getElementById("main")?.innerText ?? "").trim().split(/\s+/).length);
+
+    const onScreen = await read();
+    const deepDive = page.locator("#level-panel-1");
+    await expect(deepDive).toBeHidden(); // a tab panel, closed
+
+    await page.emulateMedia({ media: "print" });
+    // Every depth level reaches the paper — the open tab is not the whole page,
+    // and nothing on a printout says another level existed.
+    await expect(deepDive).toBeVisible();
+    await expect(await read()).toBeGreaterThan(onScreen);
+    // …each one saying which it is, now that the tab strip is gone.
+    const label = await deepDive.evaluate((el) => getComputedStyle(el, "::before").content);
+    expect(label).toContain("Deep dive");
+
+    // And the parts that only work on a screen stay off it: the footer alone
+    // ran to a third of a page.
+    for (const chrome of ["header", "footer", 'nav[aria-label="On this page"]']) {
+      await expect(page.locator(chrome).first(), chrome).toBeHidden();
+    }
+  });
+});
