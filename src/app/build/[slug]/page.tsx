@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getBuilds, getNode, resolveRefs } from "@/lib/content/graph";
 import { hrefFor, TYPE_LABEL, type AnyNode } from "@/lib/content/types";
-import { pageMetadata } from "@/lib/seo";
+import { pageMetadata, describe } from "@/lib/seo";
 import { ArchitectureView } from "@/components/canvas/ArchitectureView";
 import { LearningPath } from "@/components/detail/LearningPath";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/build/[slug]">): 
   if (!b) return {};
   return pageMetadata({
     title: `I want to build: ${b.name}`,
-    description: `${b.tagline}. Recommended architecture, technologies, required concepts and a learning path.`,
+    description: describe(b.tagline, "Recommended architecture, technologies, required concepts and a learning path."),
     path: `/build/${b.id}`,
   });
 }

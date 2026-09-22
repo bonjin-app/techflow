@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getNode, getStacks } from "@/lib/content/graph";
 import { hrefFor, TYPE_LABEL } from "@/lib/content/types";
-import { pageMetadata } from "@/lib/seo";
+import { pageMetadata, fit } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
 import { SectionHeading } from "@/components/ui/Badge";
 
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps<"/stack/[slug]">): 
   const s = getStacks().find((x) => x.id === slug);
   if (!s) return {};
   return pageMetadata({
-    title: `${s.name} stack: what it is made of and why`,
+    title: fit(`${s.name} stack: what it is made of and why`, `${s.name} stack`),
     description: s.tagline,
     path: `/stack/${s.id}`,
     type: "article",

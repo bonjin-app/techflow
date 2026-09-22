@@ -40,16 +40,47 @@ export function pageMetadata(opts: {
 }
 
 /** "Redis Explained: Cache, Pub/Sub, Distributed Lock" */
+/**
+ * What is left for the title once the layout has appended " | TechFlow", within
+ * the ~60 characters a search result shows before it cuts. Three tags were
+ * appended regardless of length, so 113 of 248 pages were truncated mid-phrase
+ * — and the tags are the least valuable part, so they are what gives way.
+ */
+const TITLE_BUDGET = 60 - " | TechFlow".length;
+
+/** The full form where it fits, the short one where it does not. */
+export const fit = (full: string, short: string) => (full.length <= TITLE_BUDGET ? full : short);
+
+/** Roughly what a search result shows of a description before it cuts. */
+export const DESCRIPTION_BUDGET = 160;
+
+/**
+ * A sentence of generated context, dropped when it would push an authored
+ * tagline past what a search result shows. The tagline is the part worth
+ * keeping; the boilerplate is the part that was making it disappear.
+ */
+export function describe(tagline: string, context: string): string {
+  const base = tagline.endsWith(".") ? tagline : `${tagline}.`;
+  const full = `${base} ${context}`;
+  return full.length <= DESCRIPTION_BUDGET ? full : base;
+}
+
 export function nodeTitle(n: AnyNode): string {
   if (n.type === "technology" || n.type === "concept" || n.type === "pattern") {
-    const facets = n.tags.slice(0, 3).join(", ");
     const verb = n.type === "technology" ? "Explained" : n.type === "pattern" ? "Pattern" : "";
-    return facets ? `${n.name} ${verb}: ${facets}`.replace(/\s+:/, ":") : `${n.name} ${verb}`.trim();
+    const head = `${n.name} ${verb}`.trim();
+    let title = head;
+    for (const tag of n.tags) {
+      const next = title === head ? `${head}: ${tag}` : `${title}, ${tag}`;
+      if (next.length > TITLE_BUDGET) break;
+      title = next;
+    }
+    return title;
   }
-  if (n.type === "architecture") return `${n.name} Architecture: how it works`;
-  if (n.type === "comparison") return `${n.name}: which one should you use?`;
+  if (n.type === "architecture") return fit(`${n.name} Architecture: how it works`, `${n.name} Architecture`);
+  if (n.type === "comparison") return fit(`${n.name}: which one should you use?`, n.name);
   if (n.type === "roadmap") return `${n.name} Roadmap`;
-  return `Design a ${n.name}: step-by-step system design`;
+  return fit(`Design a ${n.name}: step-by-step system design`, `Design a ${n.name}`);
 }
 
 export function nodeMetadata(n: AnyNode): Metadata {
