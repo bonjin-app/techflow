@@ -12,7 +12,11 @@ test.use({ ...devices["Pixel 7"] });
 
 for (const route of allPages()) {
   test(`${route} does not scroll sideways on a phone`, async ({ page }) => {
-    await page.goto(at(route), { waitUntil: "domcontentloaded" });
+    // `networkidle`, not `domcontentloaded`: the graphs render after hydration
+    // and they are the widest things on the site — a node page was measured at
+    // 629 of its 837 elements, /explore at 203 of 1,918, so the sweep was
+    // looking for a wide element with the wide elements still missing.
+    await page.goto(at(route), { waitUntil: "networkidle" });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${route} overflows by ${overflow}px`).toBeLessThanOrEqual(0);
   });
@@ -97,3 +101,16 @@ for (const route of ["/", "/build/ai-application", "/path", "/playground/http", 
       .toEqual([]);
   });
 }
+
+test("the overflow sweep measures pages with their widest parts present", async ({ page }) => {
+  // What the sweep is for is a wide element pushing the document sideways, and
+  // the widest elements here are the graphs — which arrive after hydration. If
+  // this ever measures an unrendered page again, the 293 tests above keep
+  // passing while looking at two thirds of each one.
+  await page.goto(at("/concept/sharding"), { waitUntil: "networkidle" });
+  await expect(page.locator("svg[data-tick]")).toHaveCount(1);
+
+  await page.goto(at("/explore"), { waitUntil: "networkidle" });
+  const elements = await page.evaluate(() => document.querySelectorAll("*").length);
+  expect(elements, "the force layout has not rendered; nothing wide is on the page to catch").toBeGreaterThan(1000);
+});

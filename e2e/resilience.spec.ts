@@ -38,7 +38,9 @@ test.describe("at twice the text size", () => {
 
   for (const route of allPages().filter((_, i) => i % 24 === 0)) {
     test(`${route} reflows rather than scrolling sideways`, async ({ page }) => {
-      await page.goto(at(route), { waitUntil: "domcontentloaded" });
+      // Settled, not on arrival: this measures horizontal overflow, and the
+      // graphs that arrive after hydration are the widest things on the page.
+      await page.goto(at(route), { waitUntil: "networkidle" });
       const before = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
       await page.evaluate(() => {
         document.documentElement.style.fontSize = "200%";
