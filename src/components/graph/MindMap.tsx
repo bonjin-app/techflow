@@ -5,7 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGraphApi, type ApiNode } from "@/lib/useGraphApi";
 import { GraphUnavailable } from "./GraphUnavailable";
 import { CopyButton } from "@/components/ui/CopyButton";
-import { TYPE_LABEL, type Relation } from "@/lib/content/types";
+import { TYPE_LABEL } from "@/lib/content/types";
+import { BRANCHES } from "@/lib/mindmap";
 
 /**
  * A mind map over the knowledge graph.
@@ -16,18 +17,6 @@ import { TYPE_LABEL, type Relation } from "@/lib/content/types";
  * a branch per kind of relationship, leaves along each branch — and clicking a leaf
  * re-centres instead of navigating, so a reader can wander without page loads.
  */
-
-/** Relation + direction → the branch it belongs on. Order sets the drawing order. */
-const BRANCHES: { key: string; label: string; match: (rel: Relation, dir: "out" | "in") => boolean }[] = [
-  { key: "requires", label: "Build on", match: (r, d) => r === "REQUIRES" && d === "out" },
-  { key: "alternatives", label: "Instead of", match: (r) => r === "ALTERNATIVE_TO" },
-  { key: "with", label: "Works with", match: (r) => r === "USED_WITH" },
-  { key: "implements", label: "Implements", match: (r, d) => (r === "IMPLEMENTS" || r === "SOLVES") && d === "out" },
-  { key: "usedin", label: "Appears in", match: (r, d) => (r === "USED_IN" || r === "PART_OF") && d === "out" },
-  { key: "uses", label: "Used here", match: (r, d) => (r === "USED_IN" || r === "PART_OF" || r === "IMPLEMENTS" || r === "SOLVES") && d === "in" },
-  { key: "requiredby", label: "Leads to", match: (r, d) => r === "REQUIRES" && d === "in" },
-  { key: "related", label: "Related", match: (r) => r === "RELATED_TO" },
-];
 
 const PER_BRANCH = 6;
 const X_HUB = 168;
