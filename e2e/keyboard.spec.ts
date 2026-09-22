@@ -63,3 +63,27 @@ for (const { where, url, box } of [
     expect(await input.getAttribute("aria-activedescendant")).not.toBe(first);
   });
 }
+
+test("the shortcuts are discoverable at all", async ({ page }) => {
+  await page.goto(at("/concept/sharding"));
+  const panel = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+
+  // The only visible way in, for a reader who does not already know the key.
+  const hint = page.getByRole("button", { name: /for shortcuts/i });
+  await hint.click();
+  await expect(panel).toBeVisible();
+
+  // Every section the header offers is listed with its key, from one source.
+  for (const label of ["Technologies", "Concepts", "Mind Map", "Playground"]) {
+    await expect(panel.getByText(label, { exact: true })).toBeVisible();
+  }
+
+  // Escape closes it and hands focus back, as the palette does.
+  await page.keyboard.press("Escape");
+  await expect(panel).not.toBeVisible();
+  await expect(hint).toBeFocused();
+
+  // …and the key itself works, which is the thing the panel is advertising.
+  await page.keyboard.press("?");
+  await expect(panel).toBeVisible();
+});

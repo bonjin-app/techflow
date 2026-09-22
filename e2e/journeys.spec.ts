@@ -46,9 +46,14 @@ test("a question gets an answer card, not just a list", async ({ page }) => {
   // …and that section is really there. This anchor is built at runtime from the
   // question, so no check over the built files can see it: rename the heading
   // and the link would keep pointing at nothing, silently.
-  // Start waiting before the click: under a loaded suite the navigation can
-  // land after a bare `toHaveURL` has already looked.
-  await Promise.all([page.waitForURL(/\/technology\/redis#why$/), answer.click()]);
+  // A click landing mid-hydration is intercepted by the router before the
+  // router can act on it, and the navigation never happens. Waiting for the URL
+  // was not enough on its own — under a loaded suite this lost about one run in
+  // three — so the click is retried until one of them takes.
+  await expect(async () => {
+    await answer.click();
+    await page.waitForURL(/\/technology\/redis#why$/, { timeout: 2000 });
+  }).toPass({ timeout: 20000 });
   await expect(page.locator("#why")).toBeVisible();
 });
 

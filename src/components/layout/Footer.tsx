@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { site } from "@/lib/site";
 import { Logo } from "./Header";
+import { ShortcutHint } from "./ShortcutHint";
 
 const columns = [
   {
@@ -76,6 +77,7 @@ export function Footer() {
               <kbd>K</kbd>
               <span className="ml-1">to search</span>
             </span>
+            <ShortcutHint />
           </span>
         </div>
       </div>

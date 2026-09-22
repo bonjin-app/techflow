@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { openPalette } from "@/components/search/PaletteButton";
 import { nav } from "@/lib/site";
 import { DevMode } from "./DevMode";
+import { ShortcutHelp, openShortcutHelp } from "./ShortcutHelp";
 
 const KONAMI = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
 
@@ -18,6 +19,7 @@ function isTyping(e: KeyboardEvent) {
 /**
  * Global keyboard layer:
  *   /  or ⌘K   → command palette
+ *   ?          → what all of this is (the only way to find the rest)
  *   G then X   → go to section (T technologies, A architecture, R roadmap …)
  *   ⌘⇧D        → developer mode overlay
  *   Konami     → 🎉
@@ -56,6 +58,11 @@ export function Shortcuts() {
         openPalette();
         return;
       }
+      if (e.key === "?") {
+        e.preventDefault();
+        openShortcutHelp();
+        return;
+      }
       const now = Date.now();
       if (e.key.toLowerCase() === "g" && !e.shiftKey) {
         pendingG = now;
@@ -75,6 +82,7 @@ export function Shortcuts() {
 
   return (
     <>
+      <ShortcutHelp />
       {dev && <DevMode onClose={() => setDev(false)} />}
       {party && (
         <div
