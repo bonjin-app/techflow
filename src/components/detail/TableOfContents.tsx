@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface TocEntry {
   id: string;
@@ -76,5 +76,40 @@ export function TableOfContents({ entries }: { entries: TocEntry[] }) {
         })}
       </ul>
     </nav>
+  );
+}
+
+/**
+ * The same contents on a phone, where the sidebar is hidden.
+ *
+ * A page here runs to nine screens on a 375px viewport, and without this a
+ * reader has no overview of it and no way to jump — only scrolling. A native
+ * `details` needs no JavaScript to open, is keyboard operable and announces its
+ * own state; the only script is closing it after a jump, so the reader lands on
+ * the section rather than on a list still covering it.
+ */
+export function TableOfContentsCompact({ entries }: { entries: TocEntry[] }) {
+  const box = useRef<HTMLDetailsElement>(null);
+  return (
+    <details ref={box} className="rounded-lg border border-border bg-surface lg:hidden">
+      <summary className="cursor-pointer px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-fg-faint marker:text-fg-faint">
+        On this page — {entries.length} sections
+      </summary>
+      <ul className="space-y-1 border-t border-border px-4 py-3 text-sm">
+        {entries.map((t) => (
+          <li key={t.id}>
+            <a
+              href={`#${t.id}`}
+              onClick={() => {
+                if (box.current) box.current.open = false;
+              }}
+              className="block py-0.5 text-fg-muted hover:text-fg"
+            >
+              {t.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

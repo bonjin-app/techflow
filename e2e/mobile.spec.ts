@@ -37,3 +37,20 @@ test("the mind map centres itself rather than starting at its left edge", async 
   });
   expect(centred, "the centre node must be on screen").toBe(true);
 });
+
+test("a long page can be navigated on a phone, not only scrolled", async ({ page }) => {
+  await page.goto(at("/concept/sharding"));
+  // Nine screens of content on this viewport, and the sidebar contents list is
+  // hidden below `lg` — without this a reader has no overview and no way to jump.
+  const contents = page.locator("details").first();
+  await expect(contents).toBeVisible();
+  await expect(contents).not.toHaveAttribute("open", /.*/); // collapsed, not in the way
+
+  await contents.getByRole("group").or(page.locator("summary").first()).click();
+  await expect(contents.getByRole("link", { name: "Visual", exact: true })).toBeVisible();
+
+  await contents.getByRole("link", { name: "Visual", exact: true }).click();
+  await expect(page).toHaveURL(/#visual$/);
+  // and it gets out of the way, so the reader lands on the section
+  await expect(contents).not.toHaveAttribute("open", /.*/);
+});

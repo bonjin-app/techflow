@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TableOfContents } from "./TableOfContents";
+import { TableOfContents, TableOfContentsCompact } from "./TableOfContents";
 import type { DocNode } from "@/lib/content/types";
 import { getEgoGraph, getNeighbors, resolveRefs } from "@/lib/content/graph";
 import { buildRefMap, collectMarkdownRefs } from "@/lib/content/refs";
@@ -92,6 +92,7 @@ export function DocDetail({ node }: { node: DocNode }) {
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_220px]">
         <div className="min-w-0 space-y-10">
+          <TableOfContentsCompact entries={toc} />
           {/* Overview — 3 depth levels */}
           <section id="overview" className="scroll-mt-20">
             <LevelTabs
