@@ -14,6 +14,7 @@ import { defineConfig, devices } from "@playwright/test";
 const BASE = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "");
 
 export default defineConfig({
+  globalSetup: "./e2e/global-setup.ts",
   testDir: "e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
