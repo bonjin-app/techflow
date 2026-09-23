@@ -244,7 +244,13 @@ choice is not really a fork. Three were, and each is linked from the sentence
 on both pages where the question comes up.
 
 ## comparisons/
-tcp-vs-udp · saga-vs-two-phase-commit · blue-green-vs-canary
+tcp-vs-udp · saga-vs-two-phase-commit · blue-green-vs-canary ·
+cache-aside-vs-write-through-vs-write-behind · outbox-vs-change-data-capture
+
+The last two came from the prose rather than the graph: the three caching write
+strategies mention each other seventeen times between them, and the outbox and
+CDC pages ten, each time sending the reader to the other page for half of an
+answer. The caching one is the site's first three-way comparison.
 
 The rest of the 44 stay unwritten deliberately. "Java vs Python" is a taste
 argument, not a decision with conditions; "PostgreSQL vs SQLite" is already

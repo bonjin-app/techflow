@@ -123,7 +123,7 @@ missed, not the normal update path.
 ## When not to use
 
 - Write-heavy data that is rarely read — you pay cache writes with no hits; use [Cache Aside](/pattern/cache-aside)
-- Write latency is the bottleneck — consider [Write Behind](/pattern/write-behind), which acknowledges the write before the database sees it
+- Write latency is the bottleneck — consider [Write Behind](/pattern/write-behind), which acknowledges the write before the database sees it; [all three compared](/compare/cache-aside-vs-write-through-vs-write-behind)
 - Several systems write the same tables — the cache will silently diverge from writes it did not see
 - The cache cannot hold the whole written set — evictions will make the "always current" promise false
 

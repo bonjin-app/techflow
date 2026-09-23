@@ -31,7 +31,7 @@ Writes are expensive and bursty. A counter that increments thousands of times pe
 second, a "last seen" timestamp updated on every request, a game leaderboard or a
 shopping-cart that changes on every click — each write, if sent straight to the
 database, costs a disk-backed transaction. [Write Through](/pattern/write-through)
-makes the client wait for that transaction; [Cache Aside](/pattern/cache-aside) does
+makes the client wait for that transaction ([the three side by side](/compare/cache-aside-vs-write-through-vs-write-behind)); [Cache Aside](/pattern/cache-aside) does
 too, and then evicts the value. When the write rate exceeds what the database can
 commit, latency climbs and the database, not the cache, decides how fast the
 application can go.

@@ -154,7 +154,7 @@ async function updatePrice(id: number, price: number) {
 
 - Data must always be current (balances, inventory at checkout) — read from the source
 - Write-heavy keys that are invalidated faster than they are read — the cache never pays off
-- The cache must never be stale for written keys — consider [Write Through](/pattern/write-through)
+- The cache must never be stale for written keys — consider [Write Through](/pattern/write-through); [all three compared](/compare/cache-aside-vs-write-through-vs-write-behind)
 - Everything is read once — caching adds cost without hits
 
 ## Real-world

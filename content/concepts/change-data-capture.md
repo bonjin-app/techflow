@@ -107,7 +107,7 @@ last committed position, so duplicates are normal. Upsert by key rather than ins
 
 ## Deep Dive
 
-**CDC gives you rows, the outbox gives you intent.** A CDC event says `status` went from
+**CDC gives you rows, the outbox gives you intent** — [the two compared](/compare/outbox-vs-change-data-capture). A CDC event says `status` went from
 `paid` to `shipped`. A business event says `OrderShipped`, with the fields that matter and a
 contract that survives a schema refactor. Coupling downstream services to your table layout
 is coupling them to your migrations — which is why CDC is excellent for analytics, search

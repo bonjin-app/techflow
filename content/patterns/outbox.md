@@ -81,7 +81,8 @@ Consumers de-duplicate by event id [idempotency]
 Two relay strategies are common. **Polling** is simple: a loop selects unpublished
 rows every few hundred milliseconds. **Change data capture (CDC)** tails the
 database's replication log and streams outbox inserts to the broker with lower
-latency and no polling load; it needs extra infrastructure.
+latency and no polling load; it needs extra infrastructure. When CDC is the whole answer
+and when it only relays an outbox is laid out in [Outbox vs Change Data Capture](/compare/outbox-vs-change-data-capture).
 
 ```sql
 CREATE TABLE outbox (
