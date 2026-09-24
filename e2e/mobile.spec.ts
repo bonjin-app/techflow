@@ -65,6 +65,33 @@ test("the relationship graph keeps every node and label on a phone's canvas", as
   }
 });
 
+test("an architecture diagram can be read on a phone, and follows its own request", async ({ page }) => {
+  // Fitted whole to a phone, the e-commerce diagram drew its 12.5px names at
+  // 3.5px, and "Run" animated a packet across components off to the right.
+  await page.goto(at("/architecture/e-commerce"), { waitUntil: "networkidle" });
+  const canvas = page.getByRole("application");
+  const smallest = await canvas.evaluate((el) =>
+    Math.min(...[...el.querySelectorAll("text")].filter((t) => (t.textContent ?? "").includes("Load Balancer")).map((t) => t.getBoundingClientRect().height)),
+  );
+  expect(smallest, "component names too small to read").toBeGreaterThanOrEqual(8);
+
+  const step = page.getByRole("button", { name: "Step" });
+  for (let i = 0; i < 4; i++) {
+    await step.click();
+    const label = (await canvas.locator("div.animate-fade-up span.font-semibold").textContent())!.trim();
+    await expect(async () => {
+      const inside = await canvas.evaluate((el, name) => {
+        const box = el.getBoundingClientRect();
+        const text = [...el.querySelectorAll("text")].find((t) => t.textContent?.trim().endsWith(name));
+        if (!text) return false;
+        const r = text.getBoundingClientRect();
+        return r.left >= box.left && r.left < box.right && r.top >= box.top && r.bottom <= box.bottom;
+      }, label);
+      expect(inside, `step ${i + 1}: ${label} is not on screen`).toBe(true);
+    }).toPass({ timeout: 3000 });
+  }
+});
+
 test("a long page can be navigated on a phone, not only scrolled", async ({ page }) => {
   await page.goto(at("/concept/sharding"));
   // Nine screens of content on this viewport, and the sidebar contents list is

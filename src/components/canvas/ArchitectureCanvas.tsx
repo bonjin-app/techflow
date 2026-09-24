@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ArchDecision, ArchEdge, ArchFlow, ArchNode, ArchNodeKind, ArchVersion } from "@/lib/content/types";
 import type { RefMap } from "@/components/md/refs";
 
@@ -10,6 +10,8 @@ const CELL_H = 104;
 const NODE_W = 150;
 const NODE_H = 48;
 const PAD = 40;
+/** The smallest scale at which a node's name (12.5px) still reads on a phone. */
+const NARROW_K = 0.7;
 
 const KIND_ICON: Record<ArchNodeKind, string> = {
   client: "◐",
@@ -57,6 +59,20 @@ interface Pt {
 
 function center(n: ArchNode): Pt {
   return { x: PAD + n.x * CELL_W + NODE_W / 2, y: PAD + n.y * CELL_H + NODE_H / 2 };
+}
+
+const PHONE = "(max-width: 639px)";
+/** Below Tailwind's sm breakpoint — the same line the canvas height is drawn at in CSS. */
+function usePhone() {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia(PHONE);
+      m.addEventListener("change", cb);
+      return () => m.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(PHONE).matches,
+    () => false,
+  );
 }
 
 /** Anchor points on node borders so edges don't start at the centre. */
@@ -116,12 +132,27 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
   const vh = compact ? Math.min(420, Math.max(300, worldH * 0.9)) : Math.min(720, Math.max(480, worldH * 0.85));
   const [fullscreen, setFullscreen] = useState(false);
   const [panning, setPanning] = useState(false);
-  const viewH = fullscreen && typeof window !== "undefined" ? window.innerHeight : vh;
-  // The displayed view is the user's override, or the auto-fit derived from the container size.
-  const fitted = useMemo(() => {
+  // A phone cannot show a six-column diagram whole and legibly: fitted to
+  // 358px the e-commerce one drew its 12.5px labels at 3.5px, in a canvas two
+  // thirds empty. Below the sm breakpoint it opens at a scale that can be read,
+  // on the flow's first component, in a canvas only as tall as the diagram;
+  // "Fit" still shows the whole thing, and the mini-map shows where you are.
+  const narrow = usePhone() && !compact;
+  const vhNarrow = Math.min(vh, Math.round(worldH * NARROW_K + 24));
+  const viewH = fullscreen && typeof window !== "undefined" ? window.innerHeight : narrow ? vhNarrow : vh;
+  const whole = useMemo(() => {
     const k = Math.min(1.1, (vw - 24) / worldW, (viewH - 24) / worldH);
     return { k, x: (vw - worldW * k) / 2, y: (viewH - worldH * k) / 2 };
   }, [vw, viewH, worldW, worldH]);
+  const entry = flows[0]?.path[0] ?? nodes[0]?.id;
+  const fitted = useMemo(() => {
+    if (!narrow || fullscreen || whole.k >= NARROW_K) return whole;
+    const k = NARROW_K;
+    const start = byId.get(entry ?? "");
+    const cx = start ? center(start).x * k : (worldW * k) / 2;
+    const x = Math.min(12, Math.max(vw - worldW * k - 12, vw / 2 - cx));
+    return { k, x, y: (viewH - worldH * k) / 2 };
+  }, [narrow, fullscreen, whole, byId, entry, vw, viewH, worldW, worldH]);
   const [viewOverride, setViewOverride] = useState<{ x: number; y: number; k: number } | null>(null);
   const view = viewOverride ?? fitted;
   const setView = useCallback(
@@ -129,7 +160,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
       setViewOverride((o) => updater(o ?? fitted)),
     [fitted],
   );
-  const fit = useCallback(() => setViewOverride(null), []);
+  const fit = useCallback(() => setViewOverride(whole), [whole]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -172,12 +203,39 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
     [],
   );
 
+  // When the diagram is larger than the canvas, keep the component the packet
+  // is at in view — otherwise "Run" animates somewhere off to the right.
+  const follow = useCallback(
+    (id: string) => {
+      const n = byId.get(id);
+      if (!n) return;
+      const c = center(n);
+      setViewOverride((o) => {
+        const v = o ?? fitted;
+        const sx = c.x * v.k + v.x;
+        const sy = c.y * v.k + v.y;
+        const mx = (NODE_W / 2) * v.k + 12;
+        const my = (NODE_H / 2) * v.k + 12;
+        if (sx >= mx && sx <= vw - mx && sy >= my && sy <= viewH - my) return o;
+        return { ...v, x: vw / 2 - c.x * v.k, y: viewH / 2 - c.y * v.k };
+      });
+    },
+    [byId, fitted, vw, viewH],
+  );
+  const moveTo = useCallback(
+    (i: number) => {
+      setStep(i);
+      if (flow && i >= 0) follow(flow.path[i]);
+    },
+    [flow, follow],
+  );
+
   const runFrom = useCallback(
     (i: number) => {
       if (!flow) return;
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       setPlaying(true);
-      setStep(i);
+      moveTo(i);
       const go = (idx: number) => {
         if (idx >= flow.path.length - 1) {
           setPlaying(false);
@@ -187,12 +245,12 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
         const from = byId.get(flow.path[idx])!;
         const to = byId.get(flow.path[idx + 1])!;
         if (reduce) {
-          setStep(idx + 1);
+          moveTo(idx + 1);
           go(idx + 1);
           return;
         }
         animateHop(from, to, 700, () => {
-          setStep(idx + 1);
+          moveTo(idx + 1);
           // dwell on the node so the caption can be read
           rafRef.current = requestAnimationFrame(() => {
             const dwell = performance.now();
@@ -206,7 +264,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
       };
       go(i);
     },
-    [flow, byId, animateHop],
+    [flow, byId, animateHop, moveTo],
   );
 
   const run = () => {
@@ -218,7 +276,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
     if (!flow) return;
     stopAnim();
     setPacket(null);
-    setStep((s) => (s + 1 >= flow.path.length ? 0 : s + 1));
+    moveTo(step + 1 >= flow.path.length ? 0 : step + 1);
   };
   const reset = () => {
     stopAnim();
@@ -249,7 +307,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
     setPanning(false);
     if (d && !d.moved) setSelected(null);
   };
-  const zoomBy = (factor: number, cx = vw / 2, cy = vh / 2) =>
+  const zoomBy = (factor: number, cx = vw / 2, cy = viewH / 2) =>
     setView((v) => {
       const k = Math.min(2.5, Math.max(0.35, v.k * factor));
       const r = k / v.k;
@@ -298,7 +356,6 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
   const sel = selected ? byId.get(selected) : undefined;
   const selRef = sel?.ref ? refs[sel.ref] : undefined;
 
-  const canvasH = fullscreen ? "100vh" : vh;
 
   return (
     <div
@@ -384,8 +441,17 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
       <div className={`grid ${compact || !sel ? "" : "lg:grid-cols-[1fr_300px]"} ${fullscreen ? "min-h-0 flex-1" : ""}`}>
         {/* Canvas */}
         <div
-          className="grid-bg relative touch-none select-none overflow-hidden outline-none"
-          style={{ height: canvasH, cursor: panning ? "grabbing" : "grab" }}
+          // Height by breakpoint in CSS, so the server-rendered canvas is
+          // already the height a phone will use and nothing shifts on hydration.
+          className={`grid-bg relative touch-none select-none overflow-hidden outline-none ${fullscreen ? "" : "h-[var(--arch-h-sm)] sm:h-[var(--arch-h)]"}`}
+          style={
+            {
+              height: fullscreen ? "100vh" : undefined,
+              "--arch-h": `${vh}px`,
+              "--arch-h-sm": `${compact ? vh : vhNarrow}px`,
+              cursor: panning ? "grabbing" : "grab",
+            } as React.CSSProperties
+          }
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -516,7 +582,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
           {/* Mini-map */}
           {!compact && (
             <svg
-              className="pointer-events-none absolute right-3 top-3 hidden rounded border border-border bg-surface/80 sm:block"
+              className="pointer-events-none absolute right-3 top-3 rounded border border-border bg-surface/80"
               width={110}
               height={Math.max(50, Math.round((110 * worldH) / worldW))}
               viewBox={`0 0 ${worldW} ${worldH}`}
