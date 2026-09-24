@@ -181,3 +181,27 @@ test("the contents list says which section you are reading", async ({ page }) =>
     await expect(here).toHaveText(label);
   }
 });
+
+test("a section can be shared by its heading, and the link lands on it", async ({ page }) => {
+  // Comparisons and architectures had no table of contents and no ids, so a
+  // reader could share the page but not "the part about when to use CDC".
+  await page.goto(at("/compare/outbox-vs-change-data-capture"));
+  const heading = page.getByRole("heading", { level: 2, name: "When Change Data Capture" });
+  await heading.getByRole("link").click();
+  await expect(page).toHaveURL(/#when-change-data-capture$/);
+
+  // Opened fresh, the address scrolls the heading clear of the sticky header.
+  for (const [route, name] of [
+    ["/compare/outbox-vs-change-data-capture#when-change-data-capture", "When Change Data Capture"],
+    ["/architecture/ai-rag#cache-answers-in-redis-with-a-ttl", "Cache answers in Redis with a TTL"],
+  ] as const) {
+    await page.goto(at(route));
+    const target = page.getByRole("heading", { name, exact: true });
+    await expect(async () => {
+      const top = await target.evaluate((el) => el.getBoundingClientRect().top);
+      const header = await page.locator("header").first().evaluate((el) => el.getBoundingClientRect().bottom);
+      expect(top).toBeGreaterThanOrEqual(header);
+      expect(top).toBeLessThan(await page.evaluate(() => innerHeight / 2));
+    }).toPass();
+  }
+});

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ArchitectureNode } from "@/lib/content/types";
 import { buildRefMap, collectArchRefs } from "@/lib/content/refs";
+import { anchorFor } from "@/lib/anchor";
+import { SelfLink } from "@/components/ui/Badge";
 import { ArchitectureCanvas } from "./ArchitectureCanvas";
 
 /** Server wrapper: resolves knowledge-graph refs and renders the interactive canvas + ADRs. */
@@ -29,7 +31,9 @@ export function DecisionRecords({ decisions }: { decisions: ArchitectureNode["de
       {decisions.map((d, i) => (
         <li key={i} className="rounded-lg border border-border bg-surface p-4">
           <div className="font-mono text-[10px] uppercase tracking-wider text-fg-faint">Decision {i + 1}</div>
-          <h3 className="mt-1 text-base font-semibold">{d.decision}</h3>
+          <h3 id={anchorFor(d.decision)} className="mt-1 scroll-mt-20 text-base font-semibold">
+            <SelfLink anchor={anchorFor(d.decision)}>{d.decision}</SelfLink>
+          </h3>
           <dl className="mt-3 space-y-2 text-sm">
             <div>
               <dt className="font-mono text-[10px] uppercase tracking-wider text-fg-faint">Why</dt>

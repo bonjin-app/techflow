@@ -4,8 +4,21 @@
     {
       "name": "techflow-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev", "--port", "3210"],
+      "runtimeArgs": [
+        "dev",
+        "--port",
+        "3210"
+      ],
       "port": 3210
+    },
+    {
+      "name": "techflow-out",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve-out.mjs",
+        "4390"
+      ],
+      "port": 4390
     }
   ]
 }

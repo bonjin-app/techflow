@@ -191,6 +191,33 @@ function auditAnchors(pages: string[]): string[] {
 }
 
 /**
+ * Sections are something a reader shares — "see the trade-offs" — so every
+ * section heading on a page you read must be reachable by a fragment, and every
+ * fragment a page links to must be on it. `auditAnchors` covers links between
+ * pages; this covers the table of contents, the jump lists and the headings'
+ * links to themselves. Duplicate ids are auditA11y's, which caught /build pages
+ * carrying `learning-path` twice once headings began deriving their own.
+ */
+function auditFragments(pages: string[]): string[] {
+  const problems: string[] = [];
+  for (const file of pages) {
+    const html = fs.readFileSync(file, "utf8").replace(/<script[\s\S]*?<\/script>/g, "");
+    const rel = path.relative(OUT, file);
+    const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+    for (const m of html.matchAll(/href="#([^"]+)"/g)) {
+      if (!ids.has(m[1])) problems.push(`${rel}: links to #${m[1]}, which is not on the page`);
+    }
+    // Index pages list cards and the playgrounds label panels; neither is a
+    // section anyone would link into.
+    if (!rel.includes("/") || rel.startsWith("playground/")) continue;
+    for (const m of html.matchAll(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/g)) {
+      if (!/\sid="/.test(m[1] ?? "")) problems.push(`${rel}: section "${m[2].replace(/<span aria-hidden[^>]*>[^<]*<\/span>/g, "").replace(/<[^>]+>/g, "")}" has no anchor`);
+    }
+  }
+  return problems;
+}
+
+/**
  * A box that scrolls must be reachable by keyboard — either it takes focus, or
  * it holds something that does. axe only reports this once the content actually
  * overflows, which depends on the viewport and on the font metrics of whatever
@@ -255,6 +282,7 @@ function main() {
   }
 
   problems.push(...auditAnchors(pages));
+  problems.push(...auditFragments(pages));
   problems.push(...auditScrollRegions(pages));
 
   const js = walk(path.join(OUT, "_next"), (f) => f.endsWith(".js"));

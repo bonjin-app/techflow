@@ -40,7 +40,7 @@ const KNOWN = new Set([
 function Section({ id, title, eyebrow, children }: { id: string; title: string; eyebrow?: string; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-20 border-t border-border pt-8">
-      <SectionHeading id={`${id}-h`} title={title} eyebrow={eyebrow} />
+      <SectionHeading id={`${id}-h`} anchor={id} title={title} eyebrow={eyebrow} />
       {children}
     </section>
   );

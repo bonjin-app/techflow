@@ -86,7 +86,7 @@ export default async function Page({ params }: PageProps<"/build/[slug]">) {
 
       {arch && arch.type === "architecture" && (
         <section id="architecture" className="mb-12 scroll-mt-20">
-          <SectionHeading eyebrow="Recommended architecture" title={arch.name}>
+          <SectionHeading id="architecture-h" anchor="architecture" eyebrow="Recommended architecture" title={arch.name}>
             <Link href={hrefFor(arch.type, arch.id)} className="text-sm text-accent hover:underline">
               Full walkthrough →
             </Link>
@@ -110,14 +110,14 @@ export default async function Page({ params }: PageProps<"/build/[slug]">) {
 
       {path.length > 0 && (
         <section id="learning-path" className="mt-12 scroll-mt-20">
-          <SectionHeading eyebrow="In order" title="Learning path" />
+          <SectionHeading id="learning-path-h" anchor="learning-path" eyebrow="In order" title="Learning path" />
           <LearningPath items={path} title={`Learning path for ${b.name}`} />
         </section>
       )}
 
       {sd && (
         <section id="system-design" className="mt-12 scroll-mt-20">
-          <SectionHeading eyebrow="Go deeper" title="System design walkthrough" />
+          <SectionHeading id="system-design-h" anchor="system-design" eyebrow="Go deeper" title="System design walkthrough" />
           <Link href={hrefFor(sd.type, sd.id)} className="block rounded-lg border border-border bg-surface p-5 transition-colors hover:border-border-strong">
             <div className="font-mono text-[10px] uppercase tracking-wider text-system-design">{TYPE_LABEL[sd.type]}</div>
             <div className="mt-1 text-lg font-semibold">Design a {sd.name}</div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TYPE_LABEL, type NodeType } from "@/lib/content/types";
+import { anchorFor } from "@/lib/anchor";
 
 export function TypeBadge({ type, size = "sm" }: { type: NodeType; size?: "xs" | "sm" }) {
   return (
@@ -69,25 +70,47 @@ export function Difficulty({ level, showLabel = true }: { level: number; showLab
   );
 }
 
+/**
+ * A heading's text, made into a link to itself — so the way to share "the
+ * trade-offs part" is to click the heading and copy the address, as on most
+ * documentation sites. The `#` is decoration; the accessible name stays the
+ * heading's own words.
+ */
+export function SelfLink({ anchor, children }: { anchor: string; children: React.ReactNode }) {
+  return (
+    <a href={`#${anchor}`} className="group/self hover:underline hover:decoration-border-strong hover:underline-offset-4">
+      {children}
+      <span aria-hidden className="ml-1.5 text-fg-faint opacity-0 transition-opacity group-hover/self:opacity-100 group-focus-visible/self:opacity-100">
+        #
+      </span>
+    </a>
+  );
+}
+
 export function SectionHeading({
   id,
+  anchor,
   eyebrow,
   title,
   children,
 }: {
+  /** The heading's own id; derived from the title when not given. */
   id?: string;
+  /** Where the heading links to, when an enclosing section owns the fragment. */
+  anchor?: string;
   eyebrow?: string;
   title: string;
   children?: React.ReactNode;
 }) {
+  const own = id ?? anchorFor(title);
   return (
     <div className="mb-4 flex items-end justify-between gap-4">
       <div>
         {eyebrow && (
           <div className="mb-1 font-mono text-[11px] uppercase tracking-wider text-fg-faint">{eyebrow}</div>
         )}
-        <h2 id={id} className="text-lg font-semibold tracking-tight text-fg">
-          {title}
+        <h2 id={own} className="scroll-mt-20 text-lg font-semibold tracking-tight text-fg">
+          <SelfLink anchor={anchor ?? own}>{title}</SelfLink>
         </h2>
       </div>
       {children}
