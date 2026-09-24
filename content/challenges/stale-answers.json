@@ -1,5 +1,6 @@
 {
   "id": "stale-answers",
+  "title": "A chatbot quoting an old policy",
   "question": "Your RAG assistant keeps citing a policy document that was replaced last week. The new version is in the source bucket. What is the fix?",
   "context": "Documents are chunked and embedded by a worker when they are uploaded. The old chunks are still in the vector store, and both versions score well for the same question.",
   "difficulty": 3,

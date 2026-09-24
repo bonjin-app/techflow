@@ -40,7 +40,10 @@ export function ChallengeCard({ challenge, refs, compact = false }: { challenge:
     // exercises them, and the header offset keeps it clear of the sticky nav.
     <div id={challenge.id} className="scroll-mt-24 rounded-xl border border-border bg-surface p-5">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-mono text-[11px] uppercase tracking-wider text-system-design">Design challenge</span>
+        <span className="min-w-0 text-[11px]">
+          <span className="font-mono uppercase tracking-wider text-system-design">Design challenge</span>
+          <span className="text-fg-muted"> · {challenge.title}</span>
+        </span>
         <span className="text-[11px] text-fg-faint">difficulty {challenge.difficulty}/5</span>
       </div>
       <h2 className="mt-2 text-lg font-semibold tracking-tight">{challenge.question}</h2>

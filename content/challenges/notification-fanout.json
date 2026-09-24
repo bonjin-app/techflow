@@ -1,5 +1,6 @@
 {
   "id": "notification-fanout",
+  "title": "Decoupling notifications from orders",
   "question": "You are designing a notification system that sends push, email and SMS for every order event. Which component should sit between the order service and the delivery workers?",
   "context": "Order events arrive in bursts (thousands per minute during sales). Each channel has a different rate limit and provider outages happen weekly. Losing a notification is acceptable only if it is retried later.",
   "difficulty": 3,

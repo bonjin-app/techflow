@@ -1,5 +1,6 @@
 {
   "id": "n-plus-one",
+  "title": "Fifty-one queries for one request",
   "question": "A GraphQL query for 50 posts, each with its author, takes two seconds. The database log shows 51 queries for one request. What is the usual fix?",
   "context": "Each field has its own resolver. The author resolver runs SELECT * FROM users WHERE id = ? for the post it is given.",
   "difficulty": 3,

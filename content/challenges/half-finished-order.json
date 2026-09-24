@@ -1,5 +1,6 @@
 {
   "id": "half-finished-order",
+  "title": "Charged for an order that cannot ship",
   "question": "An order flow reserves stock, charges the card, then books a courier. The courier service rejects the booking. The customer has been charged for an order that will never ship. What should the flow do?",
   "context": "Inventory, payments and shipping are separate services with their own databases. Each step commits on its own before the next begins.",
   "difficulty": 3,

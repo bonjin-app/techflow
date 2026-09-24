@@ -1,5 +1,6 @@
 {
   "id": "read-heavy-product-page",
+  "title": "A product page read 500 times a write",
   "question": "A product page is read 500 times for every write and the database CPU is at 90%. What is the first change you should make?",
   "context": "Latency is dominated by the same SELECT for popular products. Prices change a few times a day and a minute of staleness is acceptable.",
   "difficulty": 2,

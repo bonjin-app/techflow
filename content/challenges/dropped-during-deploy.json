@@ -1,5 +1,6 @@
 {
   "id": "dropped-during-deploy",
+  "title": "502s on every rolling deploy",
   "question": "Every rolling deploy on Kubernetes produces a burst of 502 errors lasting a few seconds, although the new version works. What removes them?",
   "context": "The Deployment has no readiness probe. When a pod is replaced, the old process exits as soon as it receives SIGTERM. The new app takes about eight seconds to load its caches.",
   "difficulty": 3,

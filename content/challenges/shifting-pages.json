@@ -1,5 +1,6 @@
 {
   "id": "shifting-pages",
+  "title": "A feed that repeats while scrolling",
   "question": "A mobile feed loads 20 posts per page with ?page=2, ?page=3. While someone scrolls, new posts arrive and they see the same posts twice, or skip some entirely. What fixes the API?",
   "context": "The endpoint runs ORDER BY created_at DESC LIMIT 20 OFFSET (page - 1) * 20 against a table that receives several new posts a minute.",
   "difficulty": 2,

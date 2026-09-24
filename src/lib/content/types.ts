@@ -269,6 +269,8 @@ export interface ChallengeOption {
 }
 export interface Challenge {
   id: string;
+  /** A few words naming the situation, for lists and links; the question is the challenge itself. */
+  title: string;
   question: string;
   context: string;
   options: ChallengeOption[];

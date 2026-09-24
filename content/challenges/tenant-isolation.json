@@ -1,5 +1,6 @@
 {
   "id": "tenant-isolation",
+  "title": "One tenant seeing another's data",
   "question": "In a multi-tenant SaaS, a bug in one endpoint returned another tenant's records. Every query already takes a tenant_id parameter. What is the durable fix?",
   "context": "One shared database, one schema, tenant_id on every table. The endpoint in question built its query without the filter. Code review missed it, and the tests all used a single tenant.",
   "difficulty": 4,

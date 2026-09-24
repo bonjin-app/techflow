@@ -1,5 +1,6 @@
 {
   "id": "lost-update",
+  "title": "Two withdrawals, one balance",
   "question": "Two requests read an account balance of 100, one subtracts 50 and the other 80, and the final balance is 20 instead of a rejection. What went wrong and what fixes it?",
   "context": "Both handlers do: read balance → check ≥ amount → write new balance. They ran at the same time on different app servers against the same PostgreSQL row.",
   "difficulty": 3,

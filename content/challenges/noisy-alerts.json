@@ -1,5 +1,6 @@
 {
   "id": "noisy-alerts",
+  "title": "Pages nobody answers any more",
   "question": "The on-call engineer is paged several times a night for brief error spikes that fix themselves, and has started ignoring pages. Last week a real outage went unanswered for forty minutes. What should the alerting be based on?",
   "context": "Today an alert fires whenever the 5xx rate is above 1% for one minute. The service's SLO is 99.9% of requests succeeding over 30 days.",
   "difficulty": 3,

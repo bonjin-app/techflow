@@ -1,5 +1,6 @@
 {
   "id": "upload-bottleneck",
+  "title": "Video uploads that crash the API",
   "question": "Users upload videos of up to 2 GB through the API, which streams them on to S3. API servers run out of memory and connections during busy hours, and uploads fail. What should change?",
   "context": "Uploads go browser → load balancer → API server → S3. The API also handles normal JSON requests, which slow down whenever several uploads are in progress.",
   "difficulty": 2,

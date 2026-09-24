@@ -1,5 +1,6 @@
 {
   "id": "realtime-dashboard",
+  "title": "A dashboard that updates live",
   "question": "A monitoring dashboard needs live metric updates from the server every second. The browser never sends data back except on page load. Which transport fits best?",
   "context": "Thousands of browsers, one-directional stream, must work through corporate proxies and reconnect automatically after network blips.",
   "difficulty": 2,

@@ -1,5 +1,6 @@
 {
   "id": "out-of-order-events",
+  "title": "Order events applied out of order",
   "question": "A service that tracks order status sometimes shows \"shipped\" orders as \"paid\". The events were published in the right order. What fixes it?",
   "context": "OrderPaid and OrderShipped go to a Kafka topic with twelve partitions, keyed randomly. Six consumer instances in one group process them and write the latest status to a table.",
   "difficulty": 3,

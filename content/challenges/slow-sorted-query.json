@@ -1,5 +1,6 @@
 {
   "id": "slow-sorted-query",
+  "title": "A sorted query that slows each month",
   "question": "The \"recent orders\" page runs WHERE customer_id = ? ORDER BY created_at DESC LIMIT 20. There is an index on customer_id, yet the query gets slower every month for the biggest customers. What fixes it?",
   "context": "PostgreSQL, 80 million orders. The largest customers have hundreds of thousands of rows each. EXPLAIN shows an index scan on customer_id followed by a sort.",
   "difficulty": 3,

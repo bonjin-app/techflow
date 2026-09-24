@@ -1,5 +1,6 @@
 {
   "id": "slow-dependency",
+  "title": "A slow service that stops checkout",
   "question": "A recommendations service starts taking 30 seconds to answer. Within minutes the checkout, which calls it for a \"you may also like\" strip, stops responding altogether. What stops this from happening again?",
   "context": "Checkout calls recommendations synchronously with the HTTP client's default settings. Its worker pool has 200 threads. Recommendations is not required to complete a purchase.",
   "difficulty": 3,

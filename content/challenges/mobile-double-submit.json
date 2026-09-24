@@ -1,5 +1,6 @@
 {
   "id": "mobile-double-submit",
+  "title": "An order sent twice from a phone",
   "question": "A user taps \"Place order\" on a phone. The request reaches your server and succeeds, but the reply never arrives — they walked out of Wi-Fi range. The app retries on resume. How do you avoid a second order?",
   "context": "The client genuinely cannot tell a lost reply from a lost request, so it must retry or risk silently losing the order. Retrying is correct behaviour; the server has to make it safe. The app may retry minutes later, after the OS suspended and resumed it.",
   "difficulty": 3,

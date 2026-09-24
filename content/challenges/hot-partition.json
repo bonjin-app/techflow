@@ -1,5 +1,6 @@
 {
   "id": "hot-partition",
+  "title": "Every write on one partition",
   "question": "A DynamoDB table of click events is throttled at a fraction of its provisioned capacity. Metrics show almost all writes landing on one partition. What is wrong with the design?",
   "context": "The partition key is the event date, such as 2026-09-24, and the sort key is a timestamp. Every event written today shares the same partition key.",
   "difficulty": 3,

@@ -1,5 +1,6 @@
 {
   "id": "agent-loop",
+  "title": "An agent that will not stop",
   "question": "An agent that calls your internal tools occasionally runs for minutes, repeats the same write twice and then times out. Which change addresses the root cause?",
   "context": "The loop is: ask the model what to do, call the tool it names, feed the result back, repeat until it says it is done. Tools include \"create refund\" and \"send email\".",
   "difficulty": 4,

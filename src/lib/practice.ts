@@ -39,7 +39,7 @@ export function getPractice(id: string): Practice {
     .filter((c) => c.related.includes(id) || c.options.some((o) => o.ref === id))
     .map((c) => ({
       href: `/challenge#${c.id}`,
-      label: c.question.length > 96 ? `${c.question.slice(0, 95).trimEnd()}…` : c.question,
+      label: c.title,
       note: `${c.options.length} options · difficulty ${c.difficulty}/5`,
     }));
 

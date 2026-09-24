@@ -1,5 +1,6 @@
 {
   "id": "read-your-writes",
+  "title": "A name change that reverts on reload",
   "question": "A user changes their display name, the page reloads, and it shows the old name. A second reload shows the new one. What is the right fix?",
   "context": "Writes go to the primary; all reads go to two asynchronous read replicas behind a load balancer. Replication lag is usually under a second.",
   "difficulty": 3,

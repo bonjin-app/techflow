@@ -1,5 +1,6 @@
 {
   "id": "risky-release",
+  "title": "Releasing a risky checkout change",
   "question": "You are shipping a rewritten checkout flow. It touches money, and you cannot fully reproduce production traffic in staging. How do you release it?",
   "context": "Deploys are automated and take two minutes. The old flow works. Rolling back a deploy is easy; rolling back a database migration is not. You want real traffic on the new code, but not all of it.",
   "difficulty": 3,

@@ -1,5 +1,6 @@
 {
   "id": "double-charge",
+  "title": "A payment charged twice",
   "question": "A mobile client retries a failed “pay” request after a timeout, and some customers are charged twice. What is the right fix?",
   "context": "The first request actually succeeded on the server but the response was lost on a flaky network. Retries are necessary — you cannot tell the client to stop retrying.",
   "difficulty": 3,

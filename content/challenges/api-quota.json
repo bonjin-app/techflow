@@ -1,5 +1,6 @@
 {
   "id": "api-quota",
+  "title": "Rate limiting a public API",
   "question": "Your public API allows 100 requests per minute per key. Customers complain that a well-behaved integration gets 429s, while a badly written one still manages short floods. Which limiter fits best?",
   "context": "Clients are batch-oriented: they sync every few minutes and want to send a short burst, then go quiet. The limit exists to protect the database, which can absorb a brief spike but not a sustained one.",
   "difficulty": 3,

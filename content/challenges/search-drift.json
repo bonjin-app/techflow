@@ -1,5 +1,6 @@
 {
   "id": "search-drift",
+  "title": "Search out of step with the database",
   "question": "Product search sometimes shows items that were deleted hours ago, and misses a few that were just added. How should the search index be kept in step with the database?",
   "context": "The API writes to PostgreSQL and then, in the same request handler, sends the change to Elasticsearch. Errors from Elasticsearch are logged and ignored so that saving a product never fails.",
   "difficulty": 3,

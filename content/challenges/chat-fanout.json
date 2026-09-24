@@ -1,5 +1,6 @@
 {
   "id": "chat-fanout",
+  "title": "Chat across four servers",
   "question": "Your chat app now runs on four servers. A user on server A sends a message to a friend connected to server C, and it never arrives. What is missing?",
   "context": "Each server keeps its WebSocket connections in memory and writes messages to PostgreSQL. Single-server deployments worked perfectly.",
   "difficulty": 3,

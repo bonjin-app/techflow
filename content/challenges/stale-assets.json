@@ -1,5 +1,6 @@
 {
   "id": "stale-assets",
+  "title": "New HTML, old stylesheet",
   "question": "After a deploy, some users see the new page layout with the old stylesheet — broken buttons, overlapping text — for up to an hour. How should the assets be cached?",
   "context": "HTML, CSS and JavaScript are all served through a CDN with a one-hour cache lifetime. Files keep the same names between releases, such as /app.css.",
   "difficulty": 2,

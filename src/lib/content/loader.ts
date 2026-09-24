@@ -284,13 +284,15 @@ function loadChallenges(): Challenge[] {
   return listFiles("challenges", ".json").map((file) => {
     const rel = path.relative(CONTENT_ROOT, file);
     const d = readJson<Record<string, unknown>>(file);
-    requireFields(d, ["id", "question", "context", "options"], rel);
+    requireFields(d, ["id", "title", "question", "context", "options"], rel);
+    if (String(d.title).length > 40) throw new Error(`${rel}: title is ${String(d.title).length} characters — it is a name for lists, keep it under 40`);
     if (path.basename(file, ".json") !== d.id) throw new Error(`${rel}: filename must match id '${d.id}'`);
     const options = d.options as Challenge["options"];
     if (!Array.isArray(options) || options.length < 2) throw new Error(`${rel}: need ≥ 2 options`);
     if (!options.some((o) => o.correct)) throw new Error(`${rel}: no option marked correct`);
     return {
       id: String(d.id),
+      title: String(d.title),
       question: String(d.question),
       context: String(d.context),
       options,
