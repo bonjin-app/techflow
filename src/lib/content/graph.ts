@@ -181,6 +181,19 @@ export function buildGraph(): KnowledgeGraph {
     }
     if (c.options.every((o) => o.correct)) problems.push(`challenge '${c.id}': every option is correct, so there is nothing to work out`);
   }
+  // The right answer is the one its author took most care over, so it tends to
+  // be the most specific and therefore the longest — ten of the first fourteen
+  // were. Past a handful, "pick the longest" becomes a strategy that beats
+  // reading. By chance it would be about one in four.
+  const longest = challenges.filter((c) => {
+    const max = Math.max(...c.options.map((o) => o.label.length));
+    return c.options.some((o) => o.correct && o.label.length === max);
+  });
+  if (challenges.length >= 8 && longest.length / challenges.length > 0.4) {
+    problems.push(
+      `challenges: the right answer is the longest option in ${longest.length} of ${challenges.length} — reword the distractors to be as specific (${longest.map((c) => c.id).join(", ")})`,
+    );
+  }
 
   for (const st of stacks) {
     for (const l of st.layers)

@@ -104,6 +104,21 @@ test("a design challenge explains every option after you answer", async ({ page 
   await expect(first.getByText(/Correct|Not quite/).first()).toBeVisible();
 });
 
+test("a challenge marks the right answer wherever it is shown, and remembers it", async ({ page }) => {
+  // Options are shown in an order derived from the id but stored by their
+  // position in the file; mixing the two up would mark the wrong answer right.
+  await page.goto(at("/challenge"));
+  const card = page.locator("#lost-update");
+  const right = card.getByRole("button", { name: /A race condition/ });
+  await expect(right).not.toHaveText(/^A/); // not where its author wrote it
+  await right.click();
+  await expect(card.getByText("Correct.")).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator("#lost-update").getByText("Correct.")).toBeVisible();
+  await expect(page.locator("#lost-update").getByRole("button", { name: /A race condition/ })).toHaveAttribute("aria-pressed", "true");
+});
+
 test("the cache simulator responds to a smaller capacity", async ({ page }) => {
   await page.goto(at("/playground/cache"));
   const capacity = page.getByRole("slider").first();

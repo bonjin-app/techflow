@@ -5,7 +5,7 @@
   "difficulty": 3,
   "options": [
     {
-      "label": "Wrap the charge in a database transaction",
+      "label": "Wrap the charge and the order update in one database transaction",
       "correct": false,
       "why": "A transaction makes one request atomic, but the two retries are two separate requests — both commit successfully.",
       "ref": "transaction"
@@ -17,7 +17,7 @@
       "ref": "idempotency"
     },
     {
-      "label": "Add a distributed lock around the endpoint",
+      "label": "Add a distributed lock around the payment endpoint",
       "correct": false,
       "why": "A lock serialises the two requests but the second still runs after the first releases — and charges again. Locks prevent concurrency, not duplication.",
       "ref": "distributed-lock"

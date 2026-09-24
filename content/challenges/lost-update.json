@@ -4,10 +4,10 @@
   "context": "Both handlers do: read balance → check ≥ amount → write new balance. They ran at the same time on different app servers against the same PostgreSQL row.",
   "difficulty": 3,
   "options": [
-    { "label": "A race condition — fix with a single atomic UPDATE ... WHERE balance >= amount, or SELECT ... FOR UPDATE", "correct": true, "why": "The read-check-write sequence is not atomic, so both saw 100. Pushing the check into one atomic statement (or locking the row for the transaction) makes the second writer see the first writer's result.", "ref": "race-condition" },
-    { "label": "A cache invalidation bug — clear Redis", "correct": false, "why": "No cache is involved; both reads hit the database. Adding or clearing a cache does not make read-then-write atomic.", "ref": "cache-invalidation" },
-    { "label": "Eventual consistency — wait longer", "correct": false, "why": "This is a single primary database, not replicas converging. Waiting does not restore the missing 50 or 80.", "ref": "eventual-consistency" },
-    { "label": "Deadlock — add retry", "correct": false, "why": "A deadlock would have errored one transaction. Here both succeeded silently, which is the signature of a lost update, not a deadlock.", "ref": "deadlock" }
+    { "label": "A race condition — make the check and the write one atomic step", "correct": true, "why": "The read-check-write sequence is not atomic, so both saw 100. Pushing the check into the write — UPDATE … SET balance = balance - 50 WHERE balance >= 50 — or locking the row with SELECT … FOR UPDATE makes the second writer see the first writer's result.", "ref": "race-condition" },
+    { "label": "A cache invalidation bug — clear the cached balance in Redis", "correct": false, "why": "No cache is involved; both reads hit the database. Adding or clearing a cache does not make read-then-write atomic.", "ref": "cache-invalidation" },
+    { "label": "Eventual consistency between replicas — wait for them to converge", "correct": false, "why": "This is a single primary database, not replicas converging. Waiting does not restore the missing 50 or 80.", "ref": "eventual-consistency" },
+    { "label": "A deadlock between the two transactions — add a retry", "correct": false, "why": "A deadlock would have errored one transaction. Here both succeeded silently, which is the signature of a lost update, not a deadlock.", "ref": "deadlock" }
   ],
   "related": ["race-condition", "transaction", "acid", "distributed-lock", "postgresql"]
 }

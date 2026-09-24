@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import type { Challenge } from "@/lib/content/types";
 import type { RefMap } from "@/components/md/refs";
 import { useLocalRaw } from "@/lib/useLocal";
+import { displayOrder } from "@/lib/challenge";
 
 const KEY = "tf:challenges"; // { [id]: chosenIndex }
 
@@ -45,7 +46,8 @@ export function ChallengeCard({ challenge, refs, compact = false }: { challenge:
       <h2 className="mt-2 text-lg font-semibold tracking-tight">{challenge.question}</h2>
       {!compact && <p className="mt-2 text-sm text-fg-muted">{challenge.context}</p>}
       <ol className="mt-4 space-y-2">
-        {challenge.options.map((o, i) => {
+        {displayOrder(challenge.id, challenge.options.length).map((i, shown) => {
+          const o = challenge.options[i];
           const isChosen = chosen === i;
           const state = !answered ? "idle" : o.correct ? "correct" : isChosen ? "wrong" : "muted";
           return (
@@ -66,7 +68,7 @@ export function ChallengeCard({ challenge, refs, compact = false }: { challenge:
                 }`}
               >
                 <div className="flex items-start gap-2">
-                  <span className="mt-px font-mono text-[11px] text-fg-faint">{String.fromCharCode(65 + i)}</span>
+                  <span className="mt-px font-mono text-[11px] text-fg-faint">{String.fromCharCode(65 + shown)}</span>
                   <span className="flex-1">
                     <span className="font-medium">{o.label}</span>
                     {answered && (
