@@ -51,10 +51,8 @@ describe("what a page offers to practise", () => {
     }
   });
 
-  // These two walk all 248 pages. `getPractice` re-reads the content on every
-  // call here, because React's `cache()` only memoises inside a render — in the
-  // build each page calls it once and the wrapper does its job.
-  it("caps each group, because a widely used page is in nearly every stack", { timeout: 60_000 }, () => {
+  // These two walk every page; tests/setup.ts makes the graph build once for them.
+  it("caps each group, because a widely used page is in nearly every stack", () => {
     for (const id of ids) {
       const p = getPractice(id);
       for (const [group, links] of Object.entries(p)) expect(links.length, `${id}.${group}`).toBeLessThanOrEqual(5);
@@ -66,7 +64,7 @@ describe("what a page offers to practise", () => {
     expect(getPractice("no-such-node")).toEqual({ playgrounds: [], challenges: [], stacks: [], builds: [] });
   });
 
-  it("every link it hands out goes somewhere real", { timeout: 60_000 }, () => {
+  it("every link it hands out goes somewhere real", () => {
     const slugs = new Set(PLAYGROUNDS.map((p) => p.slug));
     const challenges = new Set(getChallenges().map((c) => c.id));
     const stacks = new Set(getStacks().map((s) => s.id));
