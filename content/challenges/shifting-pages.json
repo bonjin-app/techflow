@@ -1,0 +1,13 @@
+{
+  "id": "shifting-pages",
+  "question": "A mobile feed loads 20 posts per page with ?page=2, ?page=3. While someone scrolls, new posts arrive and they see the same posts twice, or skip some entirely. What fixes the API?",
+  "context": "The endpoint runs ORDER BY created_at DESC LIMIT 20 OFFSET (page - 1) * 20 against a table that receives several new posts a minute.",
+  "difficulty": 2,
+  "options": [
+    { "label": "Cache each page for a minute so its contents stay stable while scrolling", "correct": false, "why": "Page 2 is cached at one moment and page 3 at another, so the boundary between them still moves. It also serves a minute-old feed to everyone to paper over a problem that only affects the pagination.", "ref": "cache-aside" },
+    { "label": "Return a cursor — the last post's position — and ask for posts after it", "correct": true, "why": "An offset counts rows from the top, and the top keeps changing; a cursor names a place in the ordering, which does not. New posts land above it and are fetched separately. It is also faster on deep pages, because the database seeks to the position instead of counting past it.", "ref": "rest" },
+    { "label": "Make each page larger, 100 posts, so fewer boundaries fall mid-scroll", "correct": false, "why": "Fewer page requests means fewer chances to shift, not none, and every request is now five times heavier. Any insert between two requests still moves every later row by one.", "ref": "rest" },
+    { "label": "Load the whole feed once and let the client split it into pages locally", "correct": false, "why": "It works for a feed of a few dozen items and fails for one that grows without bound: the first request gets slower every day, and the client still has to fetch new posts somehow.", "ref": "rest" }
+  ],
+  "related": ["rest", "indexing", "api-versioning", "sql"]
+}

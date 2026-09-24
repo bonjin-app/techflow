@@ -1,0 +1,13 @@
+{
+  "id": "noisy-alerts",
+  "question": "The on-call engineer is paged several times a night for brief error spikes that fix themselves, and has started ignoring pages. Last week a real outage went unanswered for forty minutes. What should the alerting be based on?",
+  "context": "Today an alert fires whenever the 5xx rate is above 1% for one minute. The service's SLO is 99.9% of requests succeeding over 30 days.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Raise the threshold to 5% so only the larger spikes wake anyone up", "correct": false, "why": "A slow, steady 2% failure rate — which spends a month's error budget in a day and a half — would now never page. The threshold is arbitrary either way, because it is not tied to what users were promised.", "ref": "slo" },
+    { "label": "Page on how fast the error budget is burning, over two time windows", "correct": true, "why": "The SLO says how much failure is acceptable; the burn rate says how quickly it is being used. A fast burn over a short window pages at once, a slow burn over hours opens a ticket, and a one-minute blip that barely touches the budget does neither — so a page means something again.", "ref": "slo" },
+    { "label": "Only page when the failure lasts for fifteen minutes without a break", "correct": false, "why": "A total outage now goes unanswered for fifteen minutes by design, and a failure that flaps on and off never pages at all. Duration alone ignores how much damage is being done.", "ref": "observability" },
+    { "label": "Send every alert to a chat channel and let the team triage by hand", "correct": false, "why": "It removes the noise by removing the page, so the forty-minute outage becomes a message nobody reads at 3 a.m. The problem is which signals page, not whether anything does.", "ref": "observability" }
+  ],
+  "related": ["slo", "observability", "availability"]
+}

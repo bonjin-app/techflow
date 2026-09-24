@@ -1,0 +1,13 @@
+{
+  "id": "stale-assets",
+  "question": "After a deploy, some users see the new page layout with the old stylesheet — broken buttons, overlapping text — for up to an hour. How should the assets be cached?",
+  "context": "HTML, CSS and JavaScript are all served through a CDN with a one-hour cache lifetime. Files keep the same names between releases, such as /app.css.",
+  "difficulty": 2,
+  "options": [
+    { "label": "Purge the whole CDN cache as the last step of every deploy", "correct": false, "why": "It narrows the window rather than closing it: browsers keep their own copy of /app.css, purges take time to reach every edge, and every deploy sends a burst of misses to the origin. The names still do not say which version a file is.", "ref": "cache-invalidation" },
+    { "label": "Lower the cache lifetime on everything to one minute", "correct": false, "why": "The mismatch still happens, for a minute instead of an hour, and the CDN now fetches everything from the origin sixty times as often. Short lifetimes trade correctness for cost without guaranteeing either.", "ref": "ttl" },
+    { "label": "Hash each file's content into its name; cache HTML only briefly", "correct": true, "why": "A new stylesheet gets a new name, so it can never be confused with the old one and can be cached for a year. Only the HTML, which names the assets it needs, has to be fresh — and it is small. Old and new versions coexist safely during the rollout.", "ref": "cdn" },
+    { "label": "Stop caching CSS and JavaScript at the CDN and serve them live", "correct": false, "why": "It removes the mismatch at the CDN by removing the CDN's benefit for the heaviest files, and browser caches still hold the old /app.css. Every page view now pays for the origin round trip.", "ref": "cdn" }
+  ],
+  "related": ["cdn", "cache-invalidation", "ttl", "cache"]
+}

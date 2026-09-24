@@ -1,0 +1,13 @@
+{
+  "id": "hot-partition",
+  "question": "A DynamoDB table of click events is throttled at a fraction of its provisioned capacity. Metrics show almost all writes landing on one partition. What is wrong with the design?",
+  "context": "The partition key is the event date, such as 2026-09-24, and the sort key is a timestamp. Every event written today shares the same partition key.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Provisioned capacity is too low; raise it until the throttling stops", "correct": false, "why": "Capacity is spread across partitions, and a single partition has its own limit. Doubling the table's capacity barely raises what one key can take, so most of what you pay for stays unused.", "ref": "dynamodb" },
+    { "label": "The key has one hot value a day; spread it with a high-cardinality key", "correct": true, "why": "A partition key should spread load, not group it. Keying by something with many values — the user or device id — or adding a suffix to the date and querying the suffixes in parallel, lets writes use every partition instead of one.", "ref": "dynamodb" },
+    { "label": "DynamoDB cannot take this write rate; move the events to PostgreSQL", "correct": false, "why": "It takes far higher write rates when they are spread across keys. The limit being hit is the design's, and a relational database would need the same thought about hot rows and indexes.", "ref": "postgresql" },
+    { "label": "Put a Redis cache in front of the table to absorb the incoming writes", "correct": false, "why": "A cache helps with repeated reads. These are unique writes that must be stored; putting a cache in front only moves the throttling or turns it into write-behind with its own risk of losing events.", "ref": "cache" }
+  ],
+  "related": ["dynamodb", "partitioning", "sharding", "consistent-hashing"]
+}

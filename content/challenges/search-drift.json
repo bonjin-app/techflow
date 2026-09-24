@@ -1,0 +1,13 @@
+{
+  "id": "search-drift",
+  "question": "Product search sometimes shows items that were deleted hours ago, and misses a few that were just added. How should the search index be kept in step with the database?",
+  "context": "The API writes to PostgreSQL and then, in the same request handler, sends the change to Elasticsearch. Errors from Elasticsearch are logged and ignored so that saving a product never fails.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Wrap both writes in a transaction so they succeed or fail together", "correct": false, "why": "PostgreSQL's transaction does not extend to Elasticsearch, so there is nothing to wrap them in. Rolling back the database when the index write fails would make saving depend on search being up — the coupling the team deliberately avoided.", "ref": "transaction" },
+    { "label": "Rebuild the whole index from the database every night at 3 a.m.", "correct": false, "why": "It bounds how long the index can be wrong to a day, which is worse than today for most changes. And a full rebuild gets slower as the catalogue grows, until it no longer finishes in the window.", "ref": "elasticsearch" },
+    { "label": "Publish changes from the database's log, and index from that stream", "correct": true, "why": "The dual write can fail halfway, and the handler hides it. Capturing committed changes — via change data capture or an outbox written in the same transaction — means the index is fed from what actually committed, and an indexer that falls behind or restarts catches up instead of losing the change.", "ref": "change-data-capture" },
+    { "label": "Retry the Elasticsearch write three times in the handler before logging", "correct": false, "why": "It makes a lost change rarer, not impossible: a crash between the two writes, or three failures in a row, still loses it silently. Retries also add latency to every save while search is slow.", "ref": "retry" }
+  ],
+  "related": ["elasticsearch", "change-data-capture", "outbox", "eventual-consistency", "postgresql"]
+}

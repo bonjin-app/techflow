@@ -1,0 +1,13 @@
+{
+  "id": "upload-bottleneck",
+  "question": "Users upload videos of up to 2 GB through the API, which streams them on to S3. API servers run out of memory and connections during busy hours, and uploads fail. What should change?",
+  "context": "Uploads go browser → load balancer → API server → S3. The API also handles normal JSON requests, which slow down whenever several uploads are in progress.",
+  "difficulty": 2,
+  "options": [
+    { "label": "Scale the API servers up so each has enough memory for many uploads", "correct": false, "why": "It buys headroom and keeps the design that causes the problem: every byte of every video still passes through servers whose job is answering requests. Busy hours will find the new limit.", "ref": "autoscaling" },
+    { "label": "Give the browser a short-lived presigned URL and upload straight to S3", "correct": true, "why": "The API only authorises the upload and records it; the bytes go directly to object storage, which is built for exactly this. Multipart uploads let large files resume after a failure, and the API servers go back to handling small requests.", "ref": "s3" },
+    { "label": "Put the uploads on a queue and process them one at a time in the background", "correct": false, "why": "The file still has to reach the server before anything can be queued, so the memory and connection pressure is unchanged. Queues help with the work after the upload, such as transcoding.", "ref": "message-queue" },
+    { "label": "Compress each video on the API server before sending it on to S3", "correct": false, "why": "Video is already compressed, so this gains little and costs a lot of CPU — on the same servers that were already overloaded, while holding the whole upload longer.", "ref": "s3" }
+  ],
+  "related": ["s3", "cdn", "message-queue", "file-storage-service"]
+}

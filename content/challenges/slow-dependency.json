@@ -1,0 +1,13 @@
+{
+  "id": "slow-dependency",
+  "question": "A recommendations service starts taking 30 seconds to answer. Within minutes the checkout, which calls it for a \"you may also like\" strip, stops responding altogether. What stops this from happening again?",
+  "context": "Checkout calls recommendations synchronously with the HTTP client's default settings. Its worker pool has 200 threads. Recommendations is not required to complete a purchase.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Retry the recommendations call up to three times before giving up", "correct": false, "why": "Every retry is another thread held for another 30 seconds and more load on a service that is already struggling. Retries help with brief, independent failures; against a slow dependency they multiply the damage.", "ref": "retry" },
+    { "label": "A short timeout and a circuit breaker, rendering checkout without it", "correct": true, "why": "The timeout bounds how long each request can hold a thread; the breaker stops calling once failures pile up, so threads are not spent discovering the same outage; and because the strip is optional, checkout renders without it. The failure stays inside the feature it belongs to.", "ref": "circuit-breaker" },
+    { "label": "Raise the worker pool from 200 threads to 2,000 to absorb the waiting", "correct": false, "why": "The same slow calls fill 2,000 threads, just a little later and with ten times the memory. Capacity does not help when every unit of it is spent waiting on something that will not answer.", "ref": "bulkhead" },
+    { "label": "Autoscale checkout on CPU so more instances take up the traffic", "correct": false, "why": "Threads blocked on a slow call use almost no CPU, so the scaler sees idle machines and does nothing — and new instances would block the same way. The resource being exhausted is threads, not processors.", "ref": "autoscaling" }
+  ],
+  "related": ["circuit-breaker", "timeout", "bulkhead", "retry", "backpressure"]
+}

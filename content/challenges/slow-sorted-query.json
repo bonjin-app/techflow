@@ -1,0 +1,13 @@
+{
+  "id": "slow-sorted-query",
+  "question": "The \"recent orders\" page runs WHERE customer_id = ? ORDER BY created_at DESC LIMIT 20. There is an index on customer_id, yet the query gets slower every month for the biggest customers. What fixes it?",
+  "context": "PostgreSQL, 80 million orders. The largest customers have hundreds of thousands of rows each. EXPLAIN shows an index scan on customer_id followed by a sort.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Add a second index, on created_at, so the ORDER BY can use it too", "correct": false, "why": "Two single-column indexes do not combine into an ordered walk. The planner can use one to find the customer's rows or the other to walk by date, but not both — so it still fetches every matching row, or walks the whole table by date looking for this customer.", "ref": "indexing" },
+    { "label": "Replace it with a composite index on (customer_id, created_at)", "correct": true, "why": "The index then stores each customer's rows already in date order, so the database jumps to the customer and reads the first twenty entries — no sort, and the cost stays the same whether the customer has a hundred orders or a million.", "ref": "indexing" },
+    { "label": "Cache each customer's recent orders in Redis for a minute", "correct": false, "why": "It hides the cost for repeat visits and makes a new order invisible for up to a minute. The first request for each customer still pays for the full fetch and sort, and that is the request getting slower.", "ref": "cache-aside" },
+    { "label": "Partition the orders table by month to keep each part small", "correct": false, "why": "Partitioning by time helps queries that filter by time. This one filters by customer and sorts by time across all months, so it now touches every partition — often slower than before.", "ref": "partitioning" }
+  ],
+  "related": ["indexing", "sql", "postgresql", "database", "partitioning"]
+}

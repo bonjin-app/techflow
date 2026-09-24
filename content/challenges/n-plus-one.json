@@ -1,0 +1,13 @@
+{
+  "id": "n-plus-one",
+  "question": "A GraphQL query for 50 posts, each with its author, takes two seconds. The database log shows 51 queries for one request. What is the usual fix?",
+  "context": "Each field has its own resolver. The author resolver runs SELECT * FROM users WHERE id = ? for the post it is given.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Batch the author lookups per request, loading all 50 in one query", "correct": true, "why": "The resolvers are fine individually; they are simply called once per post. A per-request loader collects the ids asked for in one tick and issues one WHERE id IN (…) query, then hands each resolver its row. Fifty-one queries become two, and resolvers stay simple.", "ref": "graphql" },
+    { "label": "Put a Redis cache in front of the users table for the author lookups", "correct": false, "why": "Fifty-one round trips become fifty-one cache round trips, which is faster but still fifty-one. The shape of the problem — one call per item — is unchanged, and a cache brings invalidation with it.", "ref": "cache-aside" },
+    { "label": "Replace the GraphQL endpoint with REST routes built for each screen", "correct": false, "why": "A hand-written endpoint can join posts and authors in one query, but so can a batched resolver without giving up the API. Changing the protocol is a large fix for a data-loading pattern.", "ref": "rest" },
+    { "label": "Add an index on users.id so each of the fifty lookups runs faster", "correct": false, "why": "users.id is the primary key and already indexed. Each query is fast; there are simply fifty of them, each paying a network round trip and a planning step.", "ref": "indexing" }
+  ],
+  "related": ["graphql", "database", "rest", "indexing"]
+}

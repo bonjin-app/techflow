@@ -1,0 +1,13 @@
+{
+  "id": "dropped-during-deploy",
+  "question": "Every rolling deploy on Kubernetes produces a burst of 502 errors lasting a few seconds, although the new version works. What removes them?",
+  "context": "The Deployment has no readiness probe. When a pod is replaced, the old process exits as soon as it receives SIGTERM. The new app takes about eight seconds to load its caches.",
+  "difficulty": 3,
+  "options": [
+    { "label": "A readiness probe, and a shutdown that drains before exiting", "correct": true, "why": "Both edges of the rollout drop traffic today: new pods get requests before they can serve, and old pods die with requests in flight. A readiness probe keeps traffic off a pod until it is ready; handling SIGTERM by finishing in-flight work, after a short pause while endpoints update, lets the old one leave cleanly.", "ref": "graceful-shutdown" },
+    { "label": "Run more replicas so each dropped pod is a smaller share of traffic", "correct": false, "why": "The errors get rarer per pod and more frequent overall, since a bigger rollout replaces more pods. Every replacement still drops its in-flight requests and receives traffic before it is ready.", "ref": "kubernetes" },
+    { "label": "Add a liveness probe so Kubernetes restarts pods that are not healthy", "correct": false, "why": "Liveness decides when to restart a container, not when to send it traffic. A pod still loading its caches is alive and unready; a liveness probe does nothing for it, and a strict one can restart it before it ever finishes.", "ref": "health-check" },
+    { "label": "Switch the rollout to blue-green so traffic moves over all at once", "correct": false, "why": "It changes how many pods move at a time, not how each one starts and stops. The new environment still takes traffic before it is warm unless something checks, and the old one still drops what it was handling when it is torn down.", "ref": "blue-green-deployment" }
+  ],
+  "related": ["kubernetes", "graceful-shutdown", "health-check", "load-balancing"]
+}

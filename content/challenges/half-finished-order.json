@@ -1,0 +1,13 @@
+{
+  "id": "half-finished-order",
+  "question": "An order flow reserves stock, charges the card, then books a courier. The courier service rejects the booking. The customer has been charged for an order that will never ship. What should the flow do?",
+  "context": "Inventory, payments and shipping are separate services with their own databases. Each step commits on its own before the next begins.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Undo the finished steps in reverse — refund, then release the stock", "correct": true, "why": "Each step has already committed, so there is nothing to roll back; the way out is a compensating action per step, run in reverse order, each one idempotent so it can be retried. That is a saga. Ordering matters too: putting the step most likely to fail first would have avoided the charge.", "ref": "saga" },
+    { "label": "Retry the courier booking every minute until it finally succeeds", "correct": false, "why": "Some failures are permanent — no courier covers the address, the parcel is too heavy — and a retry loop turns them into an order stuck forever with the customer's money. Retrying suits transient errors, not rejections.", "ref": "retry" },
+    { "label": "Wrap the three service calls in one database transaction from the start", "correct": false, "why": "Each service has its own database, so no single transaction spans them. Making one would mean two-phase commit across services owned by different teams, holding locks while a courier API decides.", "ref": "two-phase-commit" },
+    { "label": "Leave it, and let support refund the customer when they complain", "correct": false, "why": "It turns a system failure into a customer's problem and a manual process that scales with the failure rate. The flow knows exactly what happened and what undoes it; it should do so itself.", "ref": "saga" }
+  ],
+  "related": ["saga", "idempotency", "two-phase-commit", "outbox", "e-commerce"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "read-your-writes",
+  "question": "A user changes their display name, the page reloads, and it shows the old name. A second reload shows the new one. What is the right fix?",
+  "context": "Writes go to the primary; all reads go to two asynchronous read replicas behind a load balancer. Replication lag is usually under a second.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Make replication synchronous so every replica has the write", "correct": false, "why": "It fixes the symptom by making every write wait for every replica, so one slow or unreachable replica now stalls writes for the whole product. That is a large price for one user seeing their own change.", "ref": "replication" },
+    { "label": "Add more replicas so each one carries less load and lags less", "correct": false, "why": "Lag comes from applying the primary's changes, not from read load alone, and asynchronous replicas will always be some distance behind. More replicas make the window smaller at best; they cannot close it.", "ref": "replication" },
+    { "label": "Read from the primary for that user for a few seconds after a write", "correct": true, "why": "This gives read-your-writes consistency where it matters — to the person who just wrote — and leaves everyone else on the replicas. The window only needs to cover normal lag; tracking the write position and waiting for a replica to reach it is the stricter version of the same idea.", "ref": "consistency" },
+    { "label": "Put profiles in Redis and update the cached copy on every single write", "correct": false, "why": "Now there are two copies that can disagree. A reader that misses the cache still lands on a lagging replica and may put the old name back in, which is harder to see than the bug you started with.", "ref": "cache-invalidation" }
+  ],
+  "related": ["replication", "consistency", "eventual-consistency", "database", "postgresql"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "out-of-order-events",
+  "question": "A service that tracks order status sometimes shows \"shipped\" orders as \"paid\". The events were published in the right order. What fixes it?",
+  "context": "OrderPaid and OrderShipped go to a Kafka topic with twelve partitions, keyed randomly. Six consumer instances in one group process them and write the latest status to a table.",
+  "difficulty": 3,
+  "options": [
+    { "label": "Use one partition so every event is consumed in publish order", "correct": false, "why": "It restores order by giving up parallelism for every order in the system, so one slow event now delays all of them and the topic can never scale past one consumer. Order is needed per order, not globally.", "ref": "kafka" },
+    { "label": "Key the events by order id, so one order's events share a partition", "correct": true, "why": "Kafka keeps order within a partition, and a key always maps to the same partition. With the order id as the key, each order's events are read in the order they were written by exactly one consumer, while different orders still spread across all twelve.", "ref": "partitioning" },
+    { "label": "Sort by event timestamp in each consumer before writing the status", "correct": false, "why": "A consumer only sees its own partitions, so the event it needs to compare against may be with another consumer entirely. Timestamps from different producers also disagree. It moves the problem rather than removing it.", "ref": "event-driven-architecture" },
+    { "label": "Add consumer instances so each partition is processed without a queue", "correct": false, "why": "More consumers change how fast events are read, not which consumer reads which order's events. Two events for the same order can still land on different partitions and be applied in either order.", "ref": "message-queue" }
+  ],
+  "related": ["kafka", "partitioning", "event-driven-architecture", "message-queue", "delivery-semantics"]
+}
