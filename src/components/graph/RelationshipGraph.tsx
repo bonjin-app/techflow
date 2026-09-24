@@ -126,6 +126,22 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
       .force("x", forceX<SimNode>(w / 2).strength(mode === "universe" ? 0.025 : 0.04))
       .force("y", forceY<SimNode>(h / 2).strength(mode === "universe" ? 0.07 : 0.08));
 
+    // The ego graph is laid out at one density whatever the width, so on a
+    // 390px phone 4–13 nodes or labels per page came to rest outside the
+    // canvas — reachable only by panning, which nobody knows to do. Keep each
+    // node, and the label centred beneath it, inside the box. The universe
+    // view is meant to be panned and zoomed, so it is left to spread.
+    if (mode === "ego") {
+      simulation.force("bounds", () => {
+        for (const n of simNodes) {
+          if (n.fx != null) continue;
+          const half = Math.max(n.r, n.name.length * 3.3) + 4;
+          n.x = Math.min(w - half, Math.max(half, n.x ?? w / 2));
+          n.y = Math.min(h - n.r - 20, Math.max(n.r + 4, n.y ?? h / 2));
+        }
+      });
+    }
+
     simRef.current = simulation;
 
     let raf = 0;
@@ -327,7 +343,6 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
           {nodes.map((n) => {
             if (n.x == null || n.y == null) return null;
             const dim = isDim(n.id, n.type);
-            const showLabel = n.center || n.r >= 11 || hover === n.id || mode === "ego" || n.degree > 6;
             return (
               <g
                 key={n.id}
@@ -362,23 +377,39 @@ export function RelationshipGraph({ data, height = 440, mode = "ego", className 
                   strokeWidth={n.center ? 0 : hover === n.id ? 2.5 : 1.5}
                 />
                 {!n.center && <circle r={Math.max(2, n.r * 0.35)} fill="var(--type)" opacity={0.9} />}
-                {showLabel && (
-                  <text
-                    y={n.r + 13}
-                    textAnchor="middle"
-                    className="pointer-events-none select-none"
-                    style={{ fontSize: n.center ? 13 : 11, fontWeight: n.center ? 600 : 500 }}
-                    fill={n.center ? "var(--fg)" : "var(--fg-muted)"}
-                    stroke="var(--bg-subtle)"
-                    strokeWidth={3}
-                    paintOrder="stroke"
-                  >
-                    {n.name}
-                  </text>
-                )}
               </g>
             );
           })}
+          {/* Labels in a layer of their own, above every node: drawn inside each
+              node's group, a later node's circle covered an earlier one's name —
+              "Amazon DynamoDB" read "nazon DynamoDB" on a phone. The name is
+              already each node's accessible label, so this layer is hidden. */}
+          <g aria-hidden="true" className="pointer-events-none select-none">
+            {nodes.map((n) => {
+              if (n.x == null || n.y == null) return null;
+              if (!(n.center || n.r >= 11 || hover === n.id || mode === "ego" || n.degree > 6)) return null;
+              return (
+                <text
+                  key={n.id}
+                  x={n.x}
+                  y={n.y + n.r + 13}
+                  textAnchor="middle"
+                  style={{
+                    fontSize: n.center ? 13 : 11,
+                    fontWeight: n.center ? 600 : 500,
+                    opacity: isDim(n.id, n.type) ? 0.25 : 1,
+                    transition: settled ? "opacity 160ms ease" : undefined,
+                  }}
+                  fill={n.center || hover === n.id ? "var(--fg)" : "var(--fg-muted)"}
+                  stroke="var(--bg-subtle)"
+                  strokeWidth={3}
+                  paintOrder="stroke"
+                >
+                  {n.name}
+                </text>
+              );
+            })}
+          </g>
         </g>
       </svg>
 

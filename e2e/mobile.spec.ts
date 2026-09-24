@@ -42,6 +42,29 @@ test("the mind map centres itself rather than starting at its left edge", async 
   expect(centred, "the centre node must be on screen").toBe(true);
 });
 
+test("the relationship graph keeps every node and label on a phone's canvas", async ({ page }) => {
+  // Laid out at one density whatever the width, the ego graph left 4–13 nodes
+  // or labels per page outside a phone's canvas, where only panning could
+  // reach them. These are the first journey's pages plus the densest hub.
+  for (const route of ["/technology/redis", "/concept/cache", "/pattern/cache-aside", "/technology/postgresql", "/concept/backend"]) {
+    await page.goto(at(route), { waitUntil: "networkidle" });
+    const svg = page.locator("svg[data-tick]");
+    await expect(svg).toHaveCount(1);
+    await expect(async () => {
+      const outside = await svg.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const parts = [...el.querySelectorAll("circle, text")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+        return {
+          parts: parts.length,
+          outside: parts.filter((r) => r.left < box.left - 1 || r.right > box.right + 1 || r.top < box.top - 1 || r.bottom > box.bottom + 1).length,
+        };
+      });
+      expect(outside.parts, `${route}: the graph drew nothing`).toBeGreaterThan(20);
+      expect(outside.outside, `${route}: ${outside.outside} graph element(s) outside the canvas`).toBe(0);
+    }).toPass({ timeout: 8000 });
+  }
+});
+
 test("a long page can be navigated on a phone, not only scrolled", async ({ page }) => {
   await page.goto(at("/concept/sharding"));
   // Nine screens of content on this viewport, and the sidebar contents list is
