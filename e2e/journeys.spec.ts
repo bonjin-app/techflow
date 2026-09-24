@@ -234,3 +234,20 @@ test("a section can be shared by its heading, and the link lands on it", async (
     }).toPass();
   }
 });
+
+test("a technology page leads to a guide for running it, with versions and sources", async ({ page }) => {
+  await page.goto(at("/technology/redis"));
+  const setUp = page.locator("#set-it-up");
+  await setUp.getByRole("link", { name: /Redis \+ PostgreSQL on Docker Compose/ }).click();
+  await expect(page).toHaveURL(/\/setup\/redis-postgresql-docker-compose$/);
+
+  // Every component names the version the guide was written against.
+  const components = page.getByRole("region", { name: "Components" });
+  await expect(components.getByRole("link", { name: /PostgreSQL\s*17/ })).toBeVisible();
+  await expect(components.getByRole("link", { name: /Redis\s*8/ })).toBeVisible();
+
+  // The configuration is on the page to copy, and the claims can be checked.
+  await expect(page.locator("pre code").filter({ hasText: "maxmemory-policy" })).toBeVisible();
+  const sources = page.getByRole("heading", { name: "References" }).locator("xpath=ancestor::section[1]").locator('a[href^="https://"]');
+  expect(await sources.count()).toBeGreaterThanOrEqual(4);
+});

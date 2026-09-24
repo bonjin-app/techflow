@@ -43,7 +43,7 @@ function mutuallyLinkedButNoEdge(): string[] {
     const id = /^id: (.+)$/m.exec(src)?.[1];
     if (!id) continue;
     const set = new Set<string>();
-    for (const m of src.matchAll(/\]\(\/(?:technology|concept|pattern|architecture|compare|roadmap|system-design)\/([a-z0-9-]+)\)/g)) {
+    for (const m of src.matchAll(/\]\(\/(?:technology|concept|pattern|architecture|compare|roadmap|system-design|setup)\/([a-z0-9-]+)\)/g)) {
       if (m[1] !== id) set.add(m[1]);
     }
     out.set(id, set);

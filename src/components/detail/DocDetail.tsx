@@ -58,6 +58,7 @@ export function DocDetail({ node }: { node: DocNode }) {
   const archUsedIn = neighbors.filter((n) => n.node.type === "architecture");
   const alternatives = neighbors.filter((n) => n.rel === "ALTERNATIVE_TO");
   const comparisons = neighbors.filter((n) => n.node.type === "comparison");
+  const setups = neighbors.filter((n) => n.node.type === "setup");
 
   const practice = getPractice(node.id);
   const why = s["Why"] ?? s["Why it matters"];
@@ -68,6 +69,7 @@ export function DocDetail({ node }: { node: DocNode }) {
   const toc: { id: string; label: string }[] = [
     { id: "overview", label: "Overview" },
     ...(node.type === "technology" && node.usedFor.length ? [{ id: "used-for", label: "Used for" }] : []),
+    ...(setups.length ? [{ id: "set-it-up", label: "Set it up" }] : []),
     { id: "graph", label: "Relationship graph" },
     ...(why ? [{ id: "why", label: "Why" }] : []),
     ...(node.type === "pattern" && s["Problem"] ? [{ id: "problem", label: "Problem" }] : []),
@@ -115,6 +117,26 @@ export function DocDetail({ node }: { node: DocNode }) {
                   </Chip>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* How to actually run it, alongside what else: the question a developer
+              has once they have decided to use this. */}
+          {setups.length > 0 && (
+            <section id="set-it-up" aria-labelledby="set-it-up-h" className="scroll-mt-20">
+              <div id="set-it-up-h" className="mb-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint">
+                Set it up with
+              </div>
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {setups.map((g) => (
+                  <li key={g.node.id}>
+                    <Link href={g.node.href} data-type="setup" className="block rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong">
+                      <span className="font-medium">{g.node.name}</span>
+                      <span className="mt-0.5 block text-sm text-fg-muted">{g.node.tagline}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 

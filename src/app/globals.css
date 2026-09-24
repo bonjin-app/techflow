@@ -26,6 +26,7 @@
   --c-comparison: #067089;
   --c-roadmap: #bd2066;
   --c-system-design: #b14209;
+  --c-setup: #4d7c0f;
 
   --ok: #0b7452;
   --warn: #905b04;
@@ -59,6 +60,7 @@
   --c-comparison: #22d3ee;
   --c-roadmap: #f472b6;
   --c-system-design: #fb923c;
+  --c-setup: #a3e635;
 
   --ok: #34d399;
   --warn: #fbbf24;
@@ -91,6 +93,7 @@
   --color-comparison: var(--c-comparison);
   --color-roadmap: var(--c-roadmap);
   --color-system-design: var(--c-system-design);
+  --color-setup: var(--c-setup);
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -173,6 +176,7 @@ kbd {
 [data-type="comparison"] { --type: var(--c-comparison); }
 [data-type="roadmap"] { --type: var(--c-roadmap); }
 [data-type="system-design"] { --type: var(--c-system-design); }
+[data-type="setup"] { --type: var(--c-setup); }
 
 /* ───────────────────────────── Prose (markdown) ───────────────────────────── */
 .prose {

@@ -15,7 +15,8 @@ export type NodeType =
   | "architecture"
   | "comparison"
   | "roadmap"
-  | "system-design";
+  | "system-design"
+  | "setup";
 
 export type Relation =
   | "RELATED_TO"
@@ -166,6 +167,33 @@ export interface ComparisonNode extends BaseNode {
   related: { to: string; rel: Relation }[];
 }
 
+/** Where a setup guide runs, from a laptop to a managed platform. */
+export type SetupEnvironment = "local" | "vm" | "managed" | "kubernetes" | "serverless";
+
+export const ENVIRONMENT_LABEL: Record<SetupEnvironment, string> = {
+  local: "Local (Docker Compose)",
+  vm: "Single VM",
+  managed: "Managed cloud",
+  kubernetes: "Kubernetes",
+  serverless: "Serverless",
+};
+
+/**
+ * How to stand up a specific combination of technologies in a specific
+ * environment: which versions, why they fit together, the files to write,
+ * how to check it works and what changes in production. Practical rather
+ * than educational — the concept pages explain; this one builds.
+ */
+export interface SetupNode extends BaseNode {
+  type: "setup";
+  environment: SetupEnvironment;
+  /** The technologies being combined, each with the version the guide is written against. */
+  components: { ref: string; version: string; role: string }[];
+  sections: Record<string, string>;
+  sectionOrder: string[];
+  related: { to: string; rel: Relation }[];
+}
+
 export interface RoadmapStep {
   /** Knowledge-graph node id, or free text when the topic has no page yet. */
   ref?: string;
@@ -283,7 +311,8 @@ export type AnyNode =
   | ArchitectureNode
   | ComparisonNode
   | RoadmapNode
-  | SystemDesignNode;
+  | SystemDesignNode
+  | SetupNode;
 
 /** Lightweight projection used by search, graphs and tooltips. */
 export interface NodeSummary {
@@ -306,6 +335,7 @@ export const TYPE_ROUTE: Record<NodeType, string> = {
   comparison: "/compare",
   roadmap: "/roadmap",
   "system-design": "/system-design",
+  setup: "/setup",
 };
 
 export const TYPE_LABEL: Record<NodeType, string> = {
@@ -316,6 +346,7 @@ export const TYPE_LABEL: Record<NodeType, string> = {
   comparison: "Comparison",
   roadmap: "Roadmap",
   "system-design": "System Design",
+  setup: "Setup guide",
 };
 
 export function hrefFor(type: NodeType, id: string): string {

@@ -22,6 +22,8 @@ function fenceRefs(kind: string, body: string): string[] {
   return [];
 }
 
+const SETUP_SECTIONS = ["TL;DR", "Why this pairing", "Set it up", "Verify", "Going to production", "When not to", "References"];
+
 const REQUIRED_SECTIONS: Record<DocNode["type"] | "comparison", string[]> = {
   comparison: ["TL;DR", "Comparison", "Decision"],
   technology: ["TL;DR", "Why", "Advantages", "Trade-offs", "When to use", "When not to use"],
@@ -59,6 +61,24 @@ function main() {
       if (months > budget) warnings.push(`${n.id}: last reviewed ${reviewed}, ${Math.round(months)} months ago — the page tells the reader that date`);
     } else if (n.type === "technology") {
       warnings.push(`${n.id}: no lastReviewed date`);
+    }
+
+    // A setup guide is only worth following if it can be checked against the
+    // projects' own documentation, works when you run it, and admits where the
+    // combination is the wrong one.
+    if (n.type === "setup") {
+      for (const s of SETUP_SECTIONS) if (!n.sections[s]) problems.push(`${n.id}: missing required section '## ${s}'`);
+      if (!/^```steps\s*$/m.test(n.sections["Set it up"] ?? "")) problems.push(`${n.id}: '## Set it up' needs a \`steps\` fence`);
+      if (!/^```(yaml|ini|conf|nginx|toml|json|sh|bash|dockerfile|sql|ts|js|py|properties|xml)\s*$/m.test(n.sections["Set it up"] ?? "")) {
+        problems.push(`${n.id}: '## Set it up' has no configuration or command block to copy`);
+      }
+      const primary = [...(n.sections["References"] ?? "").matchAll(/\]\((https:\/\/[^)\s]+)\)/g)];
+      if (primary.length < n.components.length) {
+        problems.push(`${n.id}: ${primary.length} reference link(s) for ${n.components.length} components — cite each project's own documentation`);
+      }
+      for (const c of n.components) {
+        if (!/\d/.test(c.version)) problems.push(`${n.id}: component '${c.ref}' has version '${c.version}' — name the version it was written against`);
+      }
     }
 
     if (n.type === "technology" || n.type === "concept" || n.type === "pattern" || n.type === "comparison") {

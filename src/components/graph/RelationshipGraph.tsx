@@ -20,7 +20,7 @@ import { RELATION_LABEL, TYPE_LABEL, type NodeType, type Relation } from "@/lib/
 type SimNode = GraphView["nodes"][number] & SimulationNodeDatum & { r: number };
 type SimLink = SimulationLinkDatum<SimNode> & { rel: GraphView["edges"][number]["rel"] };
 
-const TYPE_LIST: NodeType[] = ["technology", "concept", "pattern", "architecture", "comparison", "system-design", "roadmap"];
+const TYPE_LIST: NodeType[] = ["technology", "concept", "pattern", "architecture", "comparison", "system-design", "setup", "roadmap"];
 
 export interface RelationshipGraphProps {
   data: GraphView;

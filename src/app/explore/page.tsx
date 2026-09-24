@@ -13,7 +13,7 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function Page() {
-  const universe = getUniverse(["technology", "concept", "pattern", "architecture", "comparison", "system-design"]);
+  const universe = getUniverse(["technology", "concept", "pattern", "architecture", "comparison", "system-design", "setup"]);
   const g = getGraph();
   const hubs = [...g.nodes.values()]
     .map((n) => ({ n, d: g.adjacency.get(n.id)?.length ?? 0 }))

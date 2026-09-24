@@ -19,13 +19,16 @@ const HEADINGS: Record<Relation, { out: string; in: string }> = {
 export function NeighborList({ neighbors, exclude = [] }: { neighbors: Neighbor[]; exclude?: string[] }) {
   const ex = new Set(exclude);
   const groups = new Map<string, Neighbor[]>();
-  // A comparison is the page that answers "this or that", so it gets its own
-  // group ahead of the relations. Filed under Related it competed on degree with
-  // every other neighbour and fell past the cut: /concept/rest is the subject of
-  // three comparisons and linked to none of them.
-  const comparisons = neighbors.filter((n) => n.node.type === "comparison" && !ex.has(n.node.id));
-  if (comparisons.length > 0) groups.set("Comparisons", comparisons);
-  for (const n of comparisons) ex.add(n.node.id);
+  // A comparison answers "this or that", and a setup guide "how do I run these
+  // together", so each gets its own group ahead of the relations. Filed under
+  // Related they competed on degree with every other neighbour and fell past
+  // the cut: /concept/rest is the subject of three comparisons and linked to
+  // none of them.
+  for (const [type, heading] of [["comparison", "Comparisons"], ["setup", "Setup guides"]] as const) {
+    const items = neighbors.filter((n) => n.node.type === type && !ex.has(n.node.id));
+    if (items.length > 0) groups.set(heading, items);
+    for (const n of items) ex.add(n.node.id);
+  }
   for (const rel of ORDER) {
     for (const dir of ["out", "in"] as const) {
       const items = neighbors.filter((n) => n.rel === rel && n.direction === dir && !ex.has(n.node.id));
@@ -42,7 +45,7 @@ export function NeighborList({ neighbors, exclude = [] }: { neighbors: Neighbor[
         // Hub pages have sixty neighbours under one heading. Ten stay in view;
         // the rest are one click away rather than silently dropped, which is
         // what the cut used to do to 837 links across 80 pages.
-        const shown = heading === "Comparisons" ? items : items.slice(0, SHOWN);
+        const shown = heading === "Comparisons" || heading === "Setup guides" ? items : items.slice(0, SHOWN);
         const more = items.slice(shown.length);
         return (
           <div key={heading}>

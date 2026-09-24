@@ -13,6 +13,7 @@ import type {
   Relation,
   Stack,
   RoadmapNode,
+  SetupNode,
   SystemDesignNode,
 } from "./types";
 
@@ -211,6 +212,44 @@ function loadComparisons(): ComparisonNode[] {
   });
 }
 
+const ENVIRONMENTS = ["local", "vm", "managed", "kubernetes", "serverless"];
+
+function loadSetups(): SetupNode[] {
+  return listFiles("setups", ".md").map((file) => {
+    const rel = path.relative(CONTENT_ROOT, file);
+    const { data, content } = matter(fs.readFileSync(file, "utf8"));
+    requireFields(data, ["id", "name", "tagline", "environment", "components"], rel);
+    if (path.basename(file, ".md") !== data.id) throw new Error(`${rel}: filename must match id '${data.id}'`);
+    if (!ENVIRONMENTS.includes(String(data.environment))) throw new Error(`${rel}: environment must be one of ${ENVIRONMENTS.join(", ")}`);
+    const components = (Array.isArray(data.components) ? data.components : []).map((c: Record<string, unknown>) => {
+      if (!c.ref || !c.version || !c.role) throw new Error(`${rel}: every component needs ref, version and role`);
+      // An unquoted comma inside a YAML flow mapping starts a new key, so a
+      // role like "Terminates TLS, serves static files" loses everything after
+      // the comma without an error. Any key beyond these three is that.
+      const extra = Object.keys(c).filter((k) => !["ref", "version", "role"].includes(k));
+      if (extra.length) throw new Error(`${rel}: component '${c.ref}' has stray key(s) ${extra.map((k) => `'${k}'`).join(", ")} — quote the role if it contains a comma`);
+      return { ref: String(c.ref), version: String(c.version), role: String(c.role) };
+    });
+    if (components.length < 2) throw new Error(`${rel}: a setup combines at least two components`);
+    const { sections, order } = splitSections(content);
+    return {
+      id: String(data.id),
+      type: "setup",
+      name: String(data.name),
+      tagline: String(data.tagline),
+      category: String(data.environment),
+      tags: asStringArray(data.tags),
+      difficulty: Number(data.difficulty ?? 3),
+      meta: asMeta(data.meta),
+      environment: data.environment as SetupNode["environment"],
+      components,
+      sections,
+      sectionOrder: order,
+      related: asRelated(data.related, rel),
+    };
+  });
+}
+
 function loadRoadmaps(): RoadmapNode[] {
   return listFiles("roadmaps", ".json").map((file) => {
     const rel = path.relative(CONTENT_ROOT, file);
@@ -346,6 +385,7 @@ export function loadAllContent(): RawContent {
     ...loadComparisons(),
     ...loadRoadmaps(),
     ...loadSystemDesigns(),
+    ...loadSetups(),
   ];
   const seen = new Set<string>();
   for (const n of nodes) {

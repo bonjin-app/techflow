@@ -22,6 +22,7 @@ const columns = [
       { href: "/architecture", label: "Architectures" },
       { href: "/system-design", label: "System design" },
       { href: "/compare", label: "Comparisons" },
+      { href: "/setup", label: "Setup guides" },
       { href: "/roadmap", label: "Roadmaps" },
     ],
   },

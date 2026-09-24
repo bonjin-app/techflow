@@ -3,7 +3,7 @@ import Link from "next/link";
 import { dailyPick, getArchitectures, getBuilds, getChallenges, getConcepts, getGraph, getNode, getPatterns, getTechnologies, getUniverse, summarize } from "@/lib/content/graph";
 import { buildRefMap } from "@/lib/content/refs";
 import { ChallengeCard } from "@/components/home/ChallengeCard";
-import { hrefFor, TYPE_LABEL, type NodeType } from "@/lib/content/types";
+import { hrefFor, TYPE_LABEL, TYPE_ROUTE, type NodeType } from "@/lib/content/types";
 import { FIRST_JOURNEY, site } from "@/lib/site";
 import { todayKey } from "@/lib/local";
 import { HomeSearch } from "@/components/home/HomeSearch";
@@ -26,6 +26,7 @@ const ENTRY_TYPES: { type: NodeType; blurb: string }[] = [
   { type: "architecture", blurb: "Chat, E-commerce, RAG…" },
   { type: "comparison", blurb: "Redis vs Memcached…" },
   { type: "system-design", blurb: "URL shortener, step by step" },
+  { type: "setup", blurb: "Redis + PostgreSQL on Compose…" },
   { type: "roadmap", blurb: "Backend, Frontend" },
 ];
 
@@ -95,7 +96,7 @@ export default function Home() {
             {ENTRY_TYPES.map((t) => (
               <Link
                 key={t.type}
-                href={t.type === "comparison" ? "/compare" : t.type === "system-design" ? "/system-design" : `/${t.type}`}
+                href={t.type === "comparison" ? "/compare" : TYPE_ROUTE[t.type]}
                 data-type={t.type}
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
               >

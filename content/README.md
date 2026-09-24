@@ -11,6 +11,7 @@ content/
 ├── patterns/       *.md   Cache Aside, Outbox, Circuit Breaker …
 ├── architectures/  *.json Chat system, E-commerce … (interactive diagrams)
 ├── comparisons/    *.md   Redis vs Memcached, WebSocket vs SSE …
+├── setups/         *.md   Redis + PostgreSQL on Compose, Nginx + Node.js on a VM …
 ├── roadmaps/       *.json Backend, Frontend …
 ├── stacks/         *.json Real-world stack archetypes
 ├── challenges/     *.json Design challenge questions
@@ -199,6 +200,31 @@ Internal links: `[Cache Aside](/pattern/cache-aside)` — they are validated.
 Frontmatter: `id, name, tagline, subjects: [redis, memcached], tags, difficulty, related`.
 Body sections: `## TL;DR`, `## Comparison` (a `compare` fence), `## Decision` (a `decision`
 fence), `## When X`, `## When Y`, `## Deep Dive`.
+
+## Setup guides (`setups/*.md`)
+
+How to run a specific combination in a specific environment — practical, not a lesson;
+the concept pages explain, this builds.
+
+Frontmatter: `id, name, tagline, environment, components, tags, difficulty, related, meta`.
+
+- `environment`: `local` (Docker Compose), `vm`, `managed`, `kubernetes` or `serverless`.
+- `components`: at least two, each `{ ref, version, role }`. `version` is the one the guide
+  was written against and must contain a number. **Quote `role` if it contains a comma** —
+  in a YAML flow mapping an unquoted comma starts a new key, and the loader refuses the file
+  rather than silently dropping the rest of the sentence.
+
+Body sections, all required: `## TL;DR`, `## Why this pairing` (what fits and where it
+rubs), `## Set it up` (a `steps` fence plus the actual files and commands to copy),
+`## Verify` (commands whose output shows it works), `## Going to production`,
+`## When not to`, `## References`.
+
+`## References` must link each project's own documentation — at least one `https://` link
+per component. Check every command and setting against those sources; a guide that does not
+run when followed is worse than none. Components get `USED_IN` edges to the guide and
+`USED_WITH` edges to each other, and each component's page lists the guide under
+"Set it up with". Keep step labels as actions ("Compose file", "systemd unit") without
+`[ref]` — a `steps` ref replaces the label with the node's name.
 
 ## Roadmaps (`roadmaps/*.json`)
 

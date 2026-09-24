@@ -15,6 +15,7 @@ import {
   type Relation,
   type RoadmapNode,
   type Stack,
+  type SetupNode,
   type SystemDesignNode,
 } from "./types";
 
@@ -124,6 +125,18 @@ export function buildGraph(): KnowledgeGraph {
             if (nodes.has(n.subjects[i]) && nodes.has(n.subjects[j]))
               add({ from: n.subjects[i], to: n.subjects[j], rel: "ALTERNATIVE_TO", derived: true });
       }
+    }
+    if (n.type === "setup") {
+      // Each component is used in the guide, and the components are used with
+      // one another — which is the pairing the guide exists to describe.
+      for (const c of n.components) {
+        if (!nodes.has(c.ref)) problems.push(`${n.id}: component '${c.ref}' unknown`);
+        else add({ from: c.ref, to: n.id, rel: "USED_IN", derived: true });
+      }
+      for (let i = 0; i < n.components.length; i++)
+        for (let j = i + 1; j < n.components.length; j++)
+          if (nodes.has(n.components[i].ref) && nodes.has(n.components[j].ref))
+            add({ from: n.components[i].ref, to: n.components[j].ref, rel: "USED_WITH", derived: true });
     }
     if (n.type === "roadmap") {
       for (const s of n.steps) {
@@ -258,6 +271,7 @@ export const getArchitectures = () => getNodesByType("architecture") as Architec
 export const getComparisons = () => getNodesByType("comparison") as ComparisonNode[];
 export const getRoadmaps = () => getNodesByType("roadmap") as RoadmapNode[];
 export const getSystemDesigns = () => getNodesByType("system-design") as SystemDesignNode[];
+export const getSetups = () => getNodesByType("setup") as SetupNode[];
 export const getBuilds = () => getGraph().builds;
 export const getRadar = () => getGraph().radar;
 export const getChallenges = () => getGraph().challenges;

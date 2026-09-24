@@ -13,6 +13,7 @@ const TYPE_ORDER: NodeType[] = [
   "architecture",
   "comparison",
   "system-design",
+  "setup",
   "roadmap",
 ];
 

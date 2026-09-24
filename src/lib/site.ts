@@ -34,6 +34,7 @@ export const nav = [
   { href: "/architecture", label: "Architecture", key: "a" },
   { href: "/system-design", label: "Design", key: "s" },
   { href: "/compare", label: "Compare", key: "v" },
+  { href: "/setup", label: "Setup", key: "u" },
   { href: "/roadmap", label: "Roadmaps", key: "r" },
   { href: "/map", label: "Mind Map", key: "m" },
   { href: "/stack", label: "Stacks", key: "k" },

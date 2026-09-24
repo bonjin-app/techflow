@@ -1,4 +1,4 @@
-import { devices, expect, test } from "@playwright/test";
+import { devices, expect, test, type Page } from "@playwright/test";
 import { allPages, at } from "./pages";
 
 /**
@@ -10,13 +10,28 @@ import { allPages, at } from "./pages";
  */
 test.use({ ...devices["Pixel 7"] });
 
+/**
+ * A page as a reader who scrolls it sees it. The relationship graph loads when
+ * it nears the viewport, and on a phone pages with a "Set it up with" list put
+ * it below that line — so waiting for the network alone measured nginx, nodejs
+ * and linux without the widest thing on them.
+ */
+async function loadWhole(page: Page, route: string) {
+  await page.goto(at(route), { waitUntil: "networkidle" });
+  const graph = page.locator("#graph");
+  if (await graph.count()) {
+    await graph.scrollIntoViewIfNeeded();
+    await expect(page.locator("svg[data-tick]")).toHaveCount(1);
+  }
+}
+
 for (const route of allPages()) {
   test(`${route} does not scroll sideways, or shrink a diagram past reading, on a phone`, async ({ page }) => {
     // `networkidle`, not `domcontentloaded`: the graphs render after hydration
     // and they are the widest things on the site — a node page was measured at
     // 629 of its 837 elements, /explore at 203 of 1,918, so the sweep was
     // looking for a wide element with the wide elements still missing.
-    await page.goto(at(route), { waitUntil: "networkidle" });
+    await loadWhole(page, route);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${route} overflows by ${overflow}px`).toBeLessThanOrEqual(0);
 
@@ -62,6 +77,9 @@ test("the relationship graph keeps every node and label on a phone's canvas", as
   // reach them. These are the first journey's pages plus the densest hub.
   for (const route of ["/technology/redis", "/concept/cache", "/pattern/cache-aside", "/technology/postgresql", "/concept/backend"]) {
     await page.goto(at(route), { waitUntil: "networkidle" });
+    // The graph loads when it nears the viewport; on a phone, pages with a
+    // "Set it up with" list put it below that line.
+    await page.locator("#graph").scrollIntoViewIfNeeded();
     const svg = page.locator("svg[data-tick]");
     await expect(svg).toHaveCount(1);
     await expect(async () => {
@@ -171,7 +189,8 @@ test("the overflow sweep measures pages with their widest parts present", async 
   // the widest elements here are the graphs — which arrive after hydration. If
   // this ever measures an unrendered page again, the 293 tests above keep
   // passing while looking at two thirds of each one.
-  await page.goto(at("/concept/sharding"), { waitUntil: "networkidle" });
+  // /technology/nginx is a page whose graph starts below a phone's first screen.
+  await loadWhole(page, "/technology/nginx");
   await expect(page.locator("svg[data-tick]")).toHaveCount(1);
 
   await page.goto(at("/explore"), { waitUntil: "networkidle" });

@@ -107,6 +107,9 @@ function main() {
       case "system-design":
         extra = { summary: n.summary, requirements: n.requirements, steps: n.steps.map((s) => ({ title: s.title, scale: s.scale ?? null })) };
         break;
+      case "setup":
+        extra = { environment: n.environment, components: n.components, sections: n.sectionOrder };
+        break;
     }
     nodeBytes += writeJson(path.join("nodes", `${n.id}.json`), { ...base, ...extra });
   }
