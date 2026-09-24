@@ -102,7 +102,7 @@ export class PgStockRepository implements StockRepository { /* SQL here */ }
 Compared with [Clean Architecture](/pattern/clean-architecture), Hexagonal does not
 prescribe rings inside the core — it only fixes the boundary and the direction
 of dependencies. Many teams use Hexagonal for the outer boundary and Clean's
-use-case/entity split inside.
+use-case/entity split inside — [all three compared](/compare/layered-vs-hexagonal-vs-clean-architecture).
 
 ## Advantages
 

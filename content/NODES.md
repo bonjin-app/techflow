@@ -245,12 +245,19 @@ on both pages where the question comes up.
 
 ## comparisons/
 tcp-vs-udp · saga-vs-two-phase-commit · blue-green-vs-canary ·
-cache-aside-vs-write-through-vs-write-behind · outbox-vs-change-data-capture
+cache-aside-vs-write-through-vs-write-behind · outbox-vs-change-data-capture ·
+layered-vs-hexagonal-vs-clean-architecture · postgresql-vs-clickhouse
 
 The last two came from the prose rather than the graph: the three caching write
 strategies mention each other seventeen times between them, and the outbox and
 CDC pages ten, each time sending the reader to the other page for half of an
 answer. The caching one is the site's first three-way comparison.
+
+Of the pairs still uncovered, the two most connected in the graph that are real
+forks came next. The three application architectures form one line, not three
+rivals — the pages each explained themselves against the other two — and
+PostgreSQL vs ClickHouse is the question every growing product's reporting
+eventually asks: not which database, but when the reports need their own.
 
 The rest of the 44 stay unwritten deliberately. "Java vs Python" is a taste
 argument, not a decision with conditions; "PostgreSQL vs SQLite" is already

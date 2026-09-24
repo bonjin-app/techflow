@@ -138,4 +138,4 @@ PostgreSQL and the real gateway in production. It is closely related to
 [Hexagonal Architecture](/pattern/hexagonal-architecture) — both invert
 dependencies; Clean adds explicit use-case and entity rings — and it pairs
 naturally with a [Modular Monolith](/pattern/modular-monolith), where each module
-has its own rings.
+has its own rings. [All three compared](/compare/layered-vs-hexagonal-vs-clean-architecture).

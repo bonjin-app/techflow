@@ -187,6 +187,7 @@ for when you wrote the schema.
 - Sub-millisecond, high-QPS key/value access — use [Redis](/technology/redis) or
   [Memcached](/technology/memcached) in front
 - Relevance-ranked full-text search over large corpora — [Elasticsearch](/technology/elasticsearch)
+- Aggregations over hundreds of millions of appended events that are slowing the product — a columnar read side such as [ClickHouse](/technology/clickhouse); [the two compared](/compare/postgresql-vs-clickhouse)
 - Deeply nested, per-record-varying documents where you never join — [MongoDB](/technology/mongodb) may fit better
 - A durable, replayable event log for many consumers — [Kafka](/technology/kafka)
 

@@ -180,7 +180,7 @@ correctness, another for read speed.
 
 ## When not to use
 
-- Don't use ClickHouse as your primary transactional database — use [PostgreSQL](/technology/postgresql) or [MySQL](/technology/mysql)
+- Don't use ClickHouse as your primary transactional database — use [PostgreSQL](/technology/postgresql) or [MySQL](/technology/mysql); [the two compared](/compare/postgresql-vs-clickhouse)
 - For workloads dominated by single-row reads and writes by primary key; use [Redis](/technology/redis) or a key-value store
 - When data mutates frequently and every read must see the latest version
 - For full-text relevance ranking and fuzzy search — [Elasticsearch](/technology/elasticsearch) is built for that

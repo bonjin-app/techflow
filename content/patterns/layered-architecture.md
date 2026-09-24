@@ -122,7 +122,7 @@ class OrderService {
 Dependencies still point **downward** toward the database: the service imports the
 repository, and the repository is typically an ORM concern. That is the key
 difference from [Hexagonal](/pattern/hexagonal-architecture) and
-[Clean Architecture](/pattern/clean-architecture), which invert that arrow.
+[Clean Architecture](/pattern/clean-architecture), which invert that arrow — [all three compared](/compare/layered-vs-hexagonal-vs-clean-architecture).
 
 ## Advantages
 

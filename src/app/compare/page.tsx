@@ -24,14 +24,14 @@ export default function Page() {
           &ldquo;X is better&rdquo;.
         </p>
       </header>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
         {comps.map((c) => {
           const subjects = c.subjects.map((s) => getNode(s)).filter(Boolean);
           return (
             <Link key={c.id} href={`/compare/${c.id}`} className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
-              <div className="flex items-center gap-3 text-lg font-semibold">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-lg font-semibold">
                 {subjects.map((s, i) => (
-                  <span key={s!.id} className="flex items-center gap-3">
+                  <span key={s!.id} className="flex items-baseline gap-3">
                     {i > 0 && <span className="font-mono text-sm text-fg-faint">vs</span>}
                     <span data-type={s!.type} className="group-hover:underline">
                       {s!.name}
