@@ -19,6 +19,13 @@ const HEADINGS: Record<Relation, { out: string; in: string }> = {
 export function NeighborList({ neighbors, exclude = [] }: { neighbors: Neighbor[]; exclude?: string[] }) {
   const ex = new Set(exclude);
   const groups = new Map<string, Neighbor[]>();
+  // A comparison is the page that answers "this or that", so it gets its own
+  // group ahead of the relations. Filed under Related it competed on degree with
+  // every other neighbour and fell past the cut: /concept/rest is the subject of
+  // three comparisons and linked to none of them.
+  const comparisons = neighbors.filter((n) => n.node.type === "comparison" && !ex.has(n.node.id));
+  if (comparisons.length > 0) groups.set("Comparisons", comparisons);
+  for (const n of comparisons) ex.add(n.node.id);
   for (const rel of ORDER) {
     for (const dir of ["out", "in"] as const) {
       const items = neighbors.filter((n) => n.rel === rel && n.direction === dir && !ex.has(n.node.id));
@@ -31,27 +38,46 @@ export function NeighborList({ neighbors, exclude = [] }: { neighbors: Neighbor[
   if (groups.size === 0) return null;
   return (
     <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-      {[...groups.entries()].map(([heading, items]) => (
-        <div key={heading}>
-          <div className="mb-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint">{heading}</div>
-          <ul className="space-y-1">
-            {items.slice(0, 10).map((n) => (
-              <li key={n.node.id}>
-                <Link
-                  href={n.node.href}
-                  data-type={n.node.type}
-                  className="group flex items-baseline gap-2 rounded-md py-0.5 text-sm"
-                  title={RELATION_LABEL[n.rel]}
-                >
-                  <span className="size-1.5 shrink-0 translate-y-[-1px] rounded-full" style={{ background: "var(--type)" }} aria-hidden />
-                  <span className="font-medium text-fg group-hover:underline">{n.node.name}</span>
-                  <span className="truncate text-xs text-fg-faint">{TYPE_LABEL[n.node.type]}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {[...groups.entries()].map(([heading, items]) => {
+        // Hub pages have sixty neighbours under one heading. Ten stay in view;
+        // the rest are one click away rather than silently dropped, which is
+        // what the cut used to do to 837 links across 80 pages.
+        const shown = heading === "Comparisons" ? items : items.slice(0, SHOWN);
+        const more = items.slice(shown.length);
+        return (
+          <div key={heading}>
+            <div className="mb-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint">{heading}</div>
+            <ul className="space-y-1">{shown.map(item)}</ul>
+            {more.length > 0 && (
+              <details className="mt-1">
+                <summary className="cursor-pointer py-1 text-xs text-fg-muted hover:text-fg">
+                  Show {more.length} more
+                </summary>
+                <ul className="mt-1 space-y-1">{more.map(item)}</ul>
+              </details>
+            )}
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+const SHOWN = 10;
+
+function item(n: Neighbor) {
+  return (
+    <li key={n.node.id}>
+      <Link
+        href={n.node.href}
+        data-type={n.node.type}
+        className="group flex items-baseline gap-2 rounded-md py-0.5 text-sm"
+        title={RELATION_LABEL[n.rel]}
+      >
+        <span className="size-1.5 shrink-0 translate-y-[-1px] rounded-full" style={{ background: "var(--type)" }} aria-hidden />
+        <span className="font-medium text-fg group-hover:underline">{n.node.name}</span>
+        <span className="truncate text-xs text-fg-faint">{TYPE_LABEL[n.node.type]}</span>
+      </Link>
+    </li>
   );
 }

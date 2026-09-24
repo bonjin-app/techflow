@@ -218,6 +218,27 @@ function auditFragments(pages: string[]): string[] {
 }
 
 /**
+ * The API says who a page's neighbours are; the page should link to every one.
+ * The neighbour list used to stop at ten per heading, which quietly dropped 837
+ * links across 80 pages — among them every comparison of /concept/rest, the
+ * subject of three. Checked against the published graph, so the page and the
+ * API cannot disagree about what is connected.
+ */
+function auditNeighbourReach(): string[] {
+  const problems: string[] = [];
+  const dir = path.join(OUT, "api", "nodes");
+  for (const f of fs.readdirSync(dir)) {
+    const node = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) as { href: string; neighbours: { href: string }[] };
+    const html = fs.readFileSync(path.join(OUT, `${node.href}.html`), "utf8");
+    const missing = node.neighbours.filter((n) => !html.includes(`${n.href}"`));
+    if (missing.length) {
+      problems.push(`${node.href.slice(1)}.html: ${missing.length} neighbour(s) never linked — ${missing.slice(0, 3).map((n) => n.href).join(", ")}`);
+    }
+  }
+  return problems;
+}
+
+/**
  * A box that scrolls must be reachable by keyboard — either it takes focus, or
  * it holds something that does. axe only reports this once the content actually
  * overflows, which depends on the viewport and on the font metrics of whatever
@@ -283,6 +304,7 @@ function main() {
 
   problems.push(...auditAnchors(pages));
   problems.push(...auditFragments(pages));
+  problems.push(...auditNeighbourReach());
   problems.push(...auditScrollRegions(pages));
 
   const js = walk(path.join(OUT, "_next"), (f) => f.endsWith(".js"));
