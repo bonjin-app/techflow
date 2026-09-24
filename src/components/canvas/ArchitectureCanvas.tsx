@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePhone } from "@/lib/usePhone";
 import type { ArchDecision, ArchEdge, ArchFlow, ArchNode, ArchNodeKind, ArchVersion } from "@/lib/content/types";
 import type { RefMap } from "@/components/md/refs";
 
@@ -10,8 +11,8 @@ const CELL_H = 104;
 const NODE_W = 150;
 const NODE_H = 48;
 const PAD = 40;
-/** The smallest scale at which a node's name (12.5px) still reads on a phone. */
-const NARROW_K = 0.7;
+/** The smallest scale at which a node's role line (9.5px) still renders at 8px on a phone. */
+const NARROW_K = 0.85;
 
 const KIND_ICON: Record<ArchNodeKind, string> = {
   client: "◐",
@@ -59,20 +60,6 @@ interface Pt {
 
 function center(n: ArchNode): Pt {
   return { x: PAD + n.x * CELL_W + NODE_W / 2, y: PAD + n.y * CELL_H + NODE_H / 2 };
-}
-
-const PHONE = "(max-width: 639px)";
-/** Below Tailwind's sm breakpoint — the same line the canvas height is drawn at in CSS. */
-function usePhone() {
-  return useSyncExternalStore(
-    (cb) => {
-      const m = window.matchMedia(PHONE);
-      m.addEventListener("change", cb);
-      return () => m.removeEventListener("change", cb);
-    },
-    () => window.matchMedia(PHONE).matches,
-    () => false,
-  );
 }
 
 /** Anchor points on node borders so edges don't start at the centre. */
@@ -137,7 +124,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
   // thirds empty. Below the sm breakpoint it opens at a scale that can be read,
   // on the flow's first component, in a canvas only as tall as the diagram;
   // "Fit" still shows the whole thing, and the mini-map shows where you are.
-  const narrow = usePhone() && !compact;
+  const narrow = usePhone();
   const vhNarrow = Math.min(vh, Math.round(worldH * NARROW_K + 24));
   const viewH = fullscreen && typeof window !== "undefined" ? window.innerHeight : narrow ? vhNarrow : vh;
   const whole = useMemo(() => {
@@ -448,7 +435,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
             {
               height: fullscreen ? "100vh" : undefined,
               "--arch-h": `${vh}px`,
-              "--arch-h-sm": `${compact ? vh : vhNarrow}px`,
+              "--arch-h-sm": `${vhNarrow}px`,
               cursor: panning ? "grabbing" : "grab",
             } as React.CSSProperties
           }
@@ -580,7 +567,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
           )}
 
           {/* Mini-map */}
-          {!compact && (
+          {(!compact || narrow) && (
             <svg
               className="pointer-events-none absolute right-3 top-3 rounded border border-border bg-surface/80"
               width={110}

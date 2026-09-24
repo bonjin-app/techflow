@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { usePhone } from "@/lib/usePhone";
 import type { NodeType, RadarQuadrant, RadarRing } from "@/lib/content/types";
 import { TYPE_LABEL } from "@/lib/content/types";
 
@@ -93,17 +94,27 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
    * to the whole chart rather than per quadrant keeps it from looking half-labelled.
    */
   const dense = items.length > 40;
+  // Drawn 720 units wide, the radar is scaled by half on a phone: ring names
+  // rendered at 5px and the quadrant names — the way to focus a quadrant — at
+  // 6px. Larger type on a phone puts the labels it keeps at 8px or more.
+  const phone = usePhone();
+  const fs = (px: number) => (phone ? px * 1.7 : px);
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="relative">
+        {/* The outer rings are too narrow to name inside at a legible size on a
+            phone, so there the names are a line of their own. */}
+        <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-fg-faint sm:hidden">
+          Centre outwards: {RINGS.map((r) => RING_LABEL[r]).join(" → ")}
+        </p>
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full max-w-[720px]" role="group" aria-label="Technology radar: four rings (adopt, trial, assess, caution) across four quadrants. A list version follows.">
           {RING_R.map((r, i) => (
             <circle key={i} cx={C} cy={C} r={r} fill={i === 0 ? "var(--accent-soft)" : "none"} stroke="var(--border-strong)" strokeOpacity={0.8} strokeDasharray={i === 3 ? "4 4" : undefined} />
           ))}
           <line x1={C} y1={20} x2={C} y2={SIZE - 20} stroke="var(--border)" />
           <line x1={20} y1={C} x2={SIZE - 20} y2={C} stroke="var(--border)" />
-          {RINGS.map((r, i) => (
+          {!phone && RINGS.map((r, i) => (
             <text key={r} x={C + (i === 0 ? 0 : RING_R[i - 1]) + (RING_R[i] - (i === 0 ? 0 : RING_R[i - 1])) / 2} y={C - 6} textAnchor="middle" className="font-mono" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }} fill="var(--fg-faint)">
               {RING_LABEL[r]}
             </text>
@@ -115,7 +126,7 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
             const x = C + Math.cos(a) * r;
             const y = C + Math.sin(a) * r;
             return (
-              <text key={q} x={x} y={y} textAnchor={x < C ? "start" : "end"} dominantBaseline={y < C ? "hanging" : "auto"} style={{ fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: quad && quad !== q ? 0.35 : 1 }} fill="var(--fg-muted)" onClick={() => setQuad(quad === q ? null : q)}>
+              <text key={q} x={x} y={y} textAnchor={x < C ? "start" : "end"} dominantBaseline={y < C ? "hanging" : "auto"} style={{ fontSize: fs(12), fontWeight: 600, cursor: "pointer", opacity: quad && quad !== q ? 0.35 : 1 }} fill="var(--fg-muted)" onClick={() => setQuad(quad === q ? null : q)}>
                 {QUADRANT_LABEL[q]}
               </text>
             );
@@ -141,7 +152,7 @@ export function RadarChart({ items }: { items: RadarItem[] }) {
                   <text
                     y={p.below ? 17 : -11}
                     textAnchor="middle"
-                    style={{ fontSize: active ? 11.5 : 9.5, fontWeight: active ? 600 : 500, pointerEvents: "none" }}
+                    style={{ fontSize: fs(active ? 11.5 : 9.5), fontWeight: active ? 600 : 500, pointerEvents: "none" }}
                     fill={active ? "var(--fg)" : "var(--fg-muted)"}
                     stroke="var(--bg)"
                     strokeWidth={3.5}

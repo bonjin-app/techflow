@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePhone } from "@/lib/usePhone";
 
 import { choose, type Algo } from "@/lib/balance";
 
@@ -18,6 +19,34 @@ interface Packet {
   server: number;
   t0: number;
   client: number;
+}
+
+/**
+ * Where everything sits. The desktop drawing is 720 units wide with the
+ * servers in one row; scaled to a phone that put their figures at 4px. On a
+ * phone the drawing is 400 wide, servers wrap three to a row, and the text is
+ * set larger, so every label renders at 8px or more.
+ */
+function layout(n: number, phone: boolean) {
+  const W = phone ? 400 : 720;
+  const perRow = phone ? 3 : 6;
+  const rows = Math.ceil(n / perRow);
+  const gap = phone ? 104 : 0;
+  const server = (i: number) => {
+    const row = Math.floor(i / perRow);
+    const inRow = Math.min(perRow, n - row * perRow);
+    const col = i - row * perRow;
+    const spacing = phone ? (W - 20) / perRow : (W - 120) / Math.max(3, inRow);
+    return { x: W / 2 + (col - (inRow - 1) / 2) * spacing, y: 270 + row * gap };
+  };
+  return {
+    W,
+    H: 360 + (rows - 1) * gap,
+    client: (i: number) => W / 12 + i * (W / 6),
+    server,
+    box: phone ? 112 : 92,
+    fs: (px: number) => (phone ? px * 1.2 : px),
+  };
 }
 
 function makeServers(n: number): Server[] {
@@ -76,6 +105,8 @@ export function LoadBalancerSimulator() {
   }, [running, rate, send]);
 
   const total = servers.reduce((a, s) => a + s.total, 0) || 1;
+  const phone = usePhone();
+  const L = layout(servers.length, phone);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -121,38 +152,38 @@ export function LoadBalancerSimulator() {
       </aside>
 
       <div className="rounded-lg border border-border bg-surface p-4">
-        <svg viewBox="0 0 720 360" className="w-full" role="group" aria-label="Requests flowing from clients through a load balancer to servers">
+        <svg viewBox={`0 0 ${L.W} ${L.H}`} className="w-full" role="group" aria-label="Requests flowing from clients through a load balancer to servers">
           {/* clients */}
           {Array.from({ length: 6 }, (_, i) => (
-            <g key={i} transform={`translate(${60 + i * 120} 30)`}>
+            <g key={i} transform={`translate(${L.client(i)} 30)`}>
               <circle r={10} fill="var(--surface-2)" stroke="var(--border-strong)" />
-              <text y={26} textAnchor="middle" style={{ fontSize: 10 }} fill="var(--fg-faint)" className="font-mono">
+              <text y={26} textAnchor="middle" style={{ fontSize: L.fs(10) }} fill="var(--fg-faint)" className="font-mono">
                 client {i}
               </text>
             </g>
           ))}
           {/* LB */}
-          <g transform="translate(360 130)">
+          <g transform={`translate(${L.W / 2} 130)`}>
             <rect x={-70} y={-20} width={140} height={40} rx={8} fill="var(--surface-2)" stroke="var(--c-system-design)" strokeWidth={1.5} />
-            <text textAnchor="middle" y={-2} style={{ fontSize: 12, fontWeight: 600 }} fill="var(--fg)">
+            <text textAnchor="middle" y={-2} style={{ fontSize: L.fs(12), fontWeight: 600 }} fill="var(--fg)">
               Load Balancer
             </text>
-            <text textAnchor="middle" y={12} style={{ fontSize: 9 }} fill="var(--fg-faint)" className="font-mono">
+            <text textAnchor="middle" y={12} style={{ fontSize: L.fs(9) }} fill="var(--fg-faint)" className="font-mono">
               {algo}
             </text>
           </g>
           {Array.from({ length: 6 }, (_, i) => (
-            <line key={i} x1={60 + i * 120} y1={42} x2={360} y2={110} stroke="var(--border)" />
+            <line key={i} x1={L.client(i)} y1={42} x2={L.W / 2} y2={110} stroke="var(--border)" />
           ))}
           {/* servers */}
           {servers.map((s, i) => {
-            const n = servers.length;
-            const x = 360 + (i - (n - 1) / 2) * (600 / Math.max(3, n));
+            const { x, y } = L.server(i);
+            const bw = L.box;
             const share = (s.total / total) * 100;
             return (
               <g
                 key={s.id}
-                transform={`translate(${x} 270)`}
+                transform={`translate(${x} ${y})`}
                 onClick={() => toggleHealth(s.id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -166,20 +197,20 @@ export function LoadBalancerSimulator() {
                 aria-pressed={!s.healthy}
                 aria-label={`Server ${s.id + 1}, currently ${s.healthy ? "healthy" : "down"}. Activate to toggle.`}
               >
-                <line x1={360 - x} y1={-120} x2={0} y2={-32} stroke={s.healthy ? "var(--border-strong)" : "var(--danger)"} strokeDasharray={s.healthy ? undefined : "4 4"} />
-                <rect x={-46} y={-30} width={92} height={60} rx={8} fill={s.healthy ? "var(--surface-2)" : "var(--danger)"} fillOpacity={s.healthy ? 1 : 0.12} stroke={s.healthy ? "var(--c-technology)" : "var(--danger)"} strokeWidth={1.5} />
-                <text textAnchor="middle" y={-12} style={{ fontSize: 11, fontWeight: 600 }} fill="var(--fg)">
+                <line x1={L.W / 2 - x} y1={150 - y} x2={0} y2={-32} stroke={s.healthy ? "var(--border-strong)" : "var(--danger)"} strokeDasharray={s.healthy ? undefined : "4 4"} />
+                <rect x={-bw / 2} y={-30} width={bw} height={60} rx={8} fill={s.healthy ? "var(--surface-2)" : "var(--danger)"} fillOpacity={s.healthy ? 1 : 0.12} stroke={s.healthy ? "var(--c-technology)" : "var(--danger)"} strokeWidth={1.5} />
+                <text textAnchor="middle" y={-12} style={{ fontSize: L.fs(11), fontWeight: 600 }} fill="var(--fg)">
                   API {s.id + 1}
                 </text>
-                <text textAnchor="middle" y={3} style={{ fontSize: 9 }} fill="var(--fg-faint)" className="font-mono">
+                <text textAnchor="middle" y={3} style={{ fontSize: L.fs(9) }} fill="var(--fg-faint)" className="font-mono">
                   {s.healthy ? `${s.speed} ms · w${s.weight}` : "DOWN"}
                 </text>
-                <text textAnchor="middle" y={18} style={{ fontSize: 10 }} fill="var(--fg-muted)" className="font-mono">
+                <text textAnchor="middle" y={18} style={{ fontSize: L.fs(10) }} fill="var(--fg-muted)" className="font-mono">
                   {s.active} active · {share.toFixed(0)}%
                 </text>
                 {/* share bar */}
-                <rect x={-46} y={38} width={92} height={6} rx={3} fill="var(--border)" />
-                <rect x={-46} y={38} width={(92 * share) / 100} height={6} rx={3} fill="var(--c-technology)" />
+                <rect x={-bw / 2} y={38} width={bw} height={6} rx={3} fill="var(--border)" />
+                <rect x={-bw / 2} y={38} width={(bw * share) / 100} height={6} rx={3} fill="var(--c-technology)" />
               </g>
             );
           })}
@@ -187,9 +218,8 @@ export function LoadBalancerSimulator() {
           {packets.map((p) => {
             const s = servers.find((x) => x.id === p.server);
             if (!s) return null;
-            const n = servers.length;
-            const sx = 360 + (servers.indexOf(s) - (n - 1) / 2) * (600 / Math.max(3, n));
-            return <Packet key={p.id} from={{ x: 60 + p.client * 120, y: 42 }} via={{ x: 360, y: 130 }} to={{ x: sx, y: 240 }} duration={s.speed} />;
+            const at = L.server(servers.indexOf(s));
+            return <Packet key={p.id} from={{ x: L.client(p.client), y: 42 }} via={{ x: L.W / 2, y: 130 }} to={{ x: at.x, y: at.y - 30 }} duration={s.speed} />;
           })}
         </svg>
       </div>

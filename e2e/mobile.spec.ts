@@ -11,7 +11,7 @@ import { allPages, at } from "./pages";
 test.use({ ...devices["Pixel 7"] });
 
 for (const route of allPages()) {
-  test(`${route} does not scroll sideways on a phone`, async ({ page }) => {
+  test(`${route} does not scroll sideways, or shrink a diagram past reading, on a phone`, async ({ page }) => {
     // `networkidle`, not `domcontentloaded`: the graphs render after hydration
     // and they are the widest things on the site — a node page was measured at
     // 629 of its 837 elements, /explore at 203 of 1,918, so the sweep was
@@ -19,6 +19,20 @@ for (const route of allPages()) {
     await page.goto(at(route), { waitUntil: "networkidle" });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${route} overflows by ${overflow}px`).toBeLessThanOrEqual(0);
+
+    // A diagram drawn wide and scaled to fit a phone scales its words with
+    // it. The first measurement found 40 diagrams with text under 8px —
+    // architecture names at 3.5px, the load balancer's figures at 4px.
+    const tiny = await page.evaluate(() =>
+      [...document.querySelectorAll("svg text")]
+        .filter((t) => (t.textContent ?? "").trim() && t.getBoundingClientRect().height > 0)
+        .map((t) => {
+          const m = (t as SVGGraphicsElement).getScreenCTM();
+          return { text: (t.textContent ?? "").trim().slice(0, 30), px: parseFloat(getComputedStyle(t).fontSize) * (m ? Math.hypot(m.a, m.b) : 1) };
+        })
+        .filter((t) => t.px < 8),
+    );
+    expect(tiny.map((t) => `"${t.text}" at ${t.px.toFixed(1)}px`), `${route} draws text too small to read`).toEqual([]);
   });
 }
 

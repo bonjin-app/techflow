@@ -239,8 +239,11 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
                 ))}
                 {/* hub label */}
                 <g transform={`translate(${b.hub.x} ${b.hub.y})`}>
-                  <rect x={-44} y={-11} width={88} height={22} rx={11} fill="var(--surface-2)" stroke="var(--border-strong)" />
-                  <text textAnchor="middle" y={4} className="font-mono" style={{ fontSize: 10, letterSpacing: 0.3 }} fill="var(--fg-muted)">
+                  {/* The map is drawn 1040 wide and never narrower than 760px, so on
+                      a phone it is scaled to 0.73: 11 is the smallest size that
+                      still renders at 8px there. */}
+                  <rect x={-52} y={-12} width={104} height={24} rx={12} fill="var(--surface-2)" stroke="var(--border-strong)" />
+                  <text textAnchor="middle" y={4} className="font-mono" style={{ fontSize: 11, letterSpacing: 0.3 }} fill="var(--fg-muted)">
                     {b.label}
                   </text>
                 </g>
@@ -298,7 +301,7 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
                     style={{ cursor: "pointer" }}
                   >
                     <rect x={-26} y={-9} width={52} height={18} rx={9} fill="var(--surface)" stroke="var(--border-strong)" strokeDasharray="3 3" />
-                    <text textAnchor="middle" y={4} style={{ fontSize: 10 }} fill="var(--fg-faint)">
+                    <text textAnchor="middle" y={4} style={{ fontSize: 11 }} fill="var(--fg-faint)">
                       +{b.hidden}
                     </text>
                   </g>
@@ -314,7 +317,7 @@ export function MindMap({ trail, onFocus, onBack }: MindMapProps) {
             <text textAnchor="middle" y={-2} style={{ fontSize: 13, fontWeight: 650 }} fill="var(--fg)">
               {centre.name.length > 16 ? `${centre.name.slice(0, 15)}…` : centre.name}
             </text>
-            <text textAnchor="middle" y={13} className="font-mono" style={{ fontSize: 8.5 }} fill="var(--fg-faint)">
+            <text textAnchor="middle" y={15} className="font-mono" style={{ fontSize: 11 }} fill="var(--fg-faint)">
               {TYPE_LABEL[centre.type].toUpperCase()}
             </text>
           </g>
