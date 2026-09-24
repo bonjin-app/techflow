@@ -119,6 +119,20 @@ test("a challenge marks the right answer wherever it is shown, and remembers it"
   await expect(page.locator("#lost-update").getByRole("button", { name: /A race condition/ })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("an answered challenge counts on /you and is marked in the contents", async ({ page }) => {
+  // Answering challenges and nothing else used to leave /you saying nothing
+  // was recorded, and the count did not say whether any answer was right.
+  await page.goto(at("/challenge"));
+  const card = page.locator("#lost-update");
+  await card.getByRole("button", { name: /A cache invalidation bug/ }).click();
+  await expect(card.getByText("Not quite — see why above.")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "All challenges" }).getByRole("link", { name: /answered wrongly: Two withdrawals/ })).toBeVisible();
+
+  await page.goto(at("/you"));
+  await expect(page.getByText("Nothing recorded in this browser yet.")).toHaveCount(0);
+  await expect(page.getByText(/^of \d+ · 0 right$/)).toBeVisible();
+});
+
 test("the cache simulator responds to a smaller capacity", async ({ page }) => {
   await page.goto(at("/playground/cache"));
   const capacity = page.getByRole("slider").first();

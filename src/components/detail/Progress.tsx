@@ -43,7 +43,7 @@ function Row({ node, onKnown, note }: { node: ApiNode; onKnown?: () => void; not
  * reader cannot: which pages are now readable because their prerequisites are
  * ticked, and which single page is standing in front of several others.
  */
-export function Progress() {
+export function Progress({ challenges }: { challenges: { id: string; right: number[] }[] }) {
   const { graph, loading, failed, retry } = useGraphApi();
   const goals = useBuildGoals();
   const knownRaw = useLocalRaw(KEYS.known);
@@ -62,7 +62,12 @@ export function Progress() {
   if (loading || !graph) return <div className="rounded-xl border border-border bg-surface p-8 text-sm text-fg-faint">loading the graph…</div>;const total = cover.reduce((a, c) => a + c.total, 0);
   const totalKnown = cover.reduce((a, c) => a + c.known, 0);
 
-  if (totalKnown === 0 && recent.length === 0) {
+  // Only answers to challenges that still exist count, and a right answer is
+  // one whose option is marked correct — not merely one that was given.
+  const answered = challenges.filter((c) => c.id in answers);
+  const right = answered.filter((c) => c.right.includes(answers[c.id])).length;
+
+  if (totalKnown === 0 && recent.length === 0 && answered.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-surface p-6 text-sm text-fg-muted">
         <p className="text-fg">Nothing recorded in this browser yet.</p>
@@ -84,7 +89,7 @@ export function Progress() {
         {[
           { label: "Pages ticked", value: `${totalKnown}`, sub: `of ${total}` },
           { label: "Day streak", value: `${streak.current}`, sub: streak.current === 1 ? "day" : "days" },
-          { label: "Challenges answered", value: `${Object.keys(answers).length}`, sub: "design questions" },
+          { label: "Challenges answered", value: `${answered.length}`, sub: `of ${challenges.length} · ${right} right` },
         ].map((s) => (
           <div key={s.label} className="rounded-lg border border-border bg-surface p-4">
             <div className="font-mono text-[10px] uppercase tracking-wider text-fg-faint">{s.label}</div>

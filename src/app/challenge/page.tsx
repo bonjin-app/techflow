@@ -4,6 +4,7 @@ import { buildRefMap } from "@/lib/content/refs";
 import { pageMetadata } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/detail/PageHeader";
 import { ChallengeCard } from "@/components/home/ChallengeCard";
+import { ChallengeMark } from "@/components/home/ChallengeMark";
 
 export const metadata: Metadata = pageMetadata({
   title: "Design Challenges",
@@ -46,7 +47,8 @@ export default function Page() {
                   .filter((c) => c.difficulty === l)
                   .map((c) => (
                     <li key={c.id} className="break-inside-avoid">
-                      <a href={`#${c.id}`} className="block py-0.5 text-fg-muted hover:text-fg hover:underline">
+                      <a href={`#${c.id}`} className="flex gap-1.5 py-0.5 text-fg-muted hover:text-fg hover:underline">
+                        <ChallengeMark id={c.id} right={c.options.flatMap((o, i) => (o.correct ? [i] : []))} />
                         {c.title}
                       </a>
                     </li>
