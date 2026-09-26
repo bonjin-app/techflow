@@ -80,6 +80,7 @@ export function nodeTitle(n: AnyNode): string {
   if (n.type === "architecture") return fit(`${n.name} Architecture: how it works`, `${n.name} Architecture`);
   if (n.type === "comparison") return fit(`${n.name}: which one should you use?`, n.name);
   if (n.type === "roadmap") return `${n.name} Roadmap`;
+  if (n.type === "setup") return fit(`${n.name}: setup guide`, n.name);
   return fit(`Design a ${n.name}: step-by-step system design`, `Design a ${n.name}`);
 }
 
