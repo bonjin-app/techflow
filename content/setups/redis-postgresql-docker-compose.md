@@ -198,8 +198,8 @@ curl -s localhost:3000/products/42   # {"source":"cache", ...}
 ```
 
 ```sh check hidden
-curl -s localhost:3000/products/42 | tee /dev/stderr | grep -q '"source":"database"'
-curl -s localhost:3000/products/42 | tee /dev/stderr | grep -q '"source":"cache"'
+out=$(curl -s localhost:3000/products/42); echo "$out"; echo "$out" | grep -q '"source":"database"'
+out=$(curl -s localhost:3000/products/42); echo "$out"; echo "$out" | grep -q '"source":"cache"'
 ```
 
 Redis counts its own hits and misses, which is the number to watch once real traffic arrives:
@@ -225,7 +225,7 @@ docker compose exec redis redis-cli ttl product:42               # close to 60: 
 ```
 
 ```sh check hidden
-curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup" | tee /dev/stderr | grep -q '"source":"database".*"Lungo cup"'
+out=$(curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup"); echo "$out"; echo "$out" | grep -q '"source":"database".*"Lungo cup"'
 ttl=$(docker compose exec -T redis redis-cli ttl product:42 | tr -d '\r')
 echo "ttl=$ttl"; [ "$ttl" -ge 50 ] && [ "$ttl" -le 60 ]
 curl -s localhost:3000/products/42 | grep -q '"source":"cache".*"Lungo cup"'

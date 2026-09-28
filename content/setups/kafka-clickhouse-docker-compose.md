@@ -214,8 +214,10 @@ docker compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
 ```
 
 ```sh check hidden
-docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh \
-  --bootstrap-server localhost:9092 --describe --group clickhouse-events | tee /dev/stderr | grep -q events
+out=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh \
+  --bootstrap-server localhost:9092 --describe --group clickhouse-events)
+echo "$out"
+echo "$out" | grep -q events
 ```
 
 And from ClickHouse's side, including the last exception if a message failed to parse:
