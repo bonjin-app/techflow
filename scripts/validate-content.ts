@@ -5,6 +5,7 @@
  *   pnpm validate
  */
 import fs from "node:fs";
+import { parseBlocks } from "./run-setup";
 import path from "node:path";
 import { buildGraph, getNeighbors } from "../src/lib/content/graph";
 import { hrefFor, type DocNode } from "../src/lib/content/types";
@@ -69,8 +70,20 @@ function main() {
     if (n.type === "setup") {
       for (const s of SETUP_SECTIONS) if (!n.sections[s]) problems.push(`${n.id}: missing required section '## ${s}'`);
       if (!/^```steps\s*$/m.test(n.sections["Set it up"] ?? "")) problems.push(`${n.id}: '## Set it up' needs a \`steps\` fence`);
-      if (!/^```(yaml|ini|conf|nginx|toml|json|sh|bash|dockerfile|sql|ts|js|py|properties|xml)\s*$/m.test(n.sections["Set it up"] ?? "")) {
+      if (!/^```(yaml|ini|conf|nginx|toml|json|sh|bash|dockerfile|sql|ts|tsx|js|py|hcl|properties|xml)(\s[^\n]*)?$/m.test(n.sections["Set it up"] ?? "")) {
         problems.push(`${n.id}: '## Set it up' has no configuration or command block to copy`);
+      }
+      // The markers CI builds and runs the guide from (scripts/run-setup.ts).
+      // A typo there does not fail loudly — the block is simply never run.
+      for (const block of parseBlocks(Object.values(n.sections).join("\n"))) {
+        if ((block.run || block.check) && !["sh", "bash"].includes(block.lang)) {
+          problems.push(`${n.id}: a \`${block.lang}\` block is marked run/check — only sh blocks are executed`);
+        }
+        if (block.hidden && !block.run && !block.check) problems.push(`${n.id}: a hidden block that is neither run nor check does nothing`);
+      }
+      for (const m of Object.values(n.sections).join("\n").matchAll(/^```[\w-]+[ \t]+([^\n]+)$/gm)) {
+        const unknown = m[1].trim().split(/\s+/).filter((t) => !/^(run|check|hidden|file=\S+)$/.test(t));
+        if (unknown.length) problems.push(`${n.id}: unknown code-block marker(s) ${unknown.map((t) => `'${t}'`).join(", ")}`);
       }
       const primary = [...(n.sections["References"] ?? "").matchAll(/\]\((https:\/\/[^)\s]+)\)/g)];
       if (primary.length < n.components.length) {

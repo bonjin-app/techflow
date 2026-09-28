@@ -63,7 +63,7 @@ Invalidate on write | Update the row, then delete the key
 **1. `compose.yaml`** — Redis is started as a cache, not a store: a memory limit, LRU
 eviction, and persistence turned off.
 
-```yaml
+```yaml file=compose.yaml
 services:
   postgres:
     image: postgres:17
@@ -105,7 +105,7 @@ volumes:
 **2. `init.sql`** — scripts in `/docker-entrypoint-initdb.d` run once, when the data volume
 is empty.
 
-```sql
+```sql file=init.sql
 CREATE TABLE products (
   id         bigint PRIMARY KEY,
   name       text NOT NULL,
@@ -118,7 +118,7 @@ INSERT INTO products (id, name, price) VALUES (42, 'Espresso cup', 12.00);
 **3. `server.js`** — the read path is Cache Aside; the write path invalidates after the
 database commits.
 
-```js
+```js file=server.js
 import http from "node:http";
 import pg from "pg";
 import { createClient } from "redis";
@@ -160,11 +160,11 @@ http
 
 **4. `package.json` and `Dockerfile`**
 
-```json
+```json file=package.json
 { "type": "module", "dependencies": { "pg": "^8", "redis": "^5" } }
 ```
 
-```dockerfile
+```dockerfile file=Dockerfile
 FROM node:22-alpine
 WORKDIR /app
 COPY package.json .
@@ -175,8 +175,15 @@ CMD ["node", "server.js"]
 
 Then:
 
-```sh
-docker compose up --build
+```sh run
+docker compose up -d --build
+```
+
+```sh run hidden
+# wait for the app's port without sending a request that would touch the cache
+for i in $(seq 90); do (exec 3<>/dev/tcp/127.0.0.1/3000) 2>/dev/null && break; sleep 2; done
+(exec 3<>/dev/tcp/127.0.0.1/3000)
+docker compose exec -T redis redis-cli config resetstat
 ```
 
 ## Verify
@@ -189,6 +196,11 @@ curl -s localhost:3000/products/42   # {"source":"database", ...}
 curl -s localhost:3000/products/42   # {"source":"cache", ...}
 ```
 
+```sh check hidden
+curl -s localhost:3000/products/42 | tee /dev/stderr | grep -q '"source":"database"'
+curl -s localhost:3000/products/42 | tee /dev/stderr | grep -q '"source":"cache"'
+```
+
 Redis counts its own hits and misses, which is the number to watch once real traffic arrives:
 
 ```sh
@@ -197,11 +209,25 @@ docker compose exec redis redis-cli info stats | grep keyspace
 # keyspace_misses:1
 ```
 
+```sh check hidden
+stats=$(docker compose exec -T redis redis-cli info stats | tr -d '\r')
+echo "$stats" | grep keyspace
+echo "$stats" | grep -qx 'keyspace_hits:1'
+echo "$stats" | grep -qx 'keyspace_misses:1'
+```
+
 Check that a write invalidates, rather than waiting out the TTL:
 
 ```sh
 curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup"   # {"source":"database", ... "Lungo cup"}
 docker compose exec redis redis-cli ttl product:42               # close to 60: freshly refilled
+```
+
+```sh check hidden
+curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup" | tee /dev/stderr | grep -q '"source":"database".*"Lungo cup"'
+ttl=$(docker compose exec -T redis redis-cli ttl product:42 | tr -d '\r')
+echo "ttl=$ttl"; [ "$ttl" -ge 50 ] && [ "$ttl" -le 60 ]
+curl -s localhost:3000/products/42 | grep -q '"source":"cache".*"Lungo cup"'
 ```
 
 ## Going to production

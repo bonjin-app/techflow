@@ -1,0 +1,69 @@
+# Every setup guide that marks its blocks is built from those blocks and run
+# here: its files written out, its commands executed, its checks asserted
+# (scripts/run-setup.ts). A guide that has not been run is a guide that has
+# been read, and reading is how the first ones shipped with an API a library
+# no longer has.
+#
+# Weekly as well as on change, because guides break without anyone editing
+# them: an image tag moves, a package is renamed, a default changes.
+name: Setup guides
+
+on:
+  push:
+    branches: [main, setup-checks]
+    paths:
+      - "content/setups/**"
+      - "scripts/run-setup.ts"
+      - ".github/workflows/setups.yml"
+  pull_request:
+    paths:
+      - "content/setups/**"
+      - "scripts/run-setup.ts"
+      - ".github/workflows/setups.yml"
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: setups-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      guides: ${{ steps.list.outputs.guides }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: list
+        run: echo "guides=$(pnpm -s tsx scripts/run-setup.ts --list)" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: list
+    if: needs.list.outputs.guides != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        guide: ${{ fromJSON(needs.list.outputs.guides) }}
+    name: ${{ matrix.guide }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build and run the guide
+        run: pnpm -s tsx scripts/run-setup.ts ${{ matrix.guide }}
