@@ -149,6 +149,7 @@ async function renameProduct(id, name) {
 http
   .createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
+    if (url.pathname === "/healthz") return res.end("ok"); // for health checks; touches neither store
     const id = Number(url.pathname.split("/")[2]);
     if (req.method === "POST") await renameProduct(id, url.searchParams.get("name") ?? "");
     const result = await getProduct(id);
@@ -180,9 +181,9 @@ docker compose up -d --build
 ```
 
 ```sh run hidden
-# wait for the app's port without sending a request that would touch the cache
-for i in $(seq 90); do (exec 3<>/dev/tcp/127.0.0.1/3000) 2>/dev/null && break; sleep 2; done
-(exec 3<>/dev/tcp/127.0.0.1/3000)
+# wait for the app itself — Docker's port proxy accepts connections before the app listens
+for i in $(seq 60); do curl -sf localhost:3000/healthz > /dev/null && break; sleep 2; done
+curl -sf localhost:3000/healthz
 docker compose exec -T redis redis-cli config resetstat
 ```
 
