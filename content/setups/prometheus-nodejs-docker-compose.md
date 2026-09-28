@@ -216,17 +216,19 @@ docker compose exec -T prometheus promtool check rules /etc/prometheus/rules.yml
 ```
 
 Generate some traffic, then ask the three questions in the Prometheus UI at
-`localhost:9090`:
+`localhost:9090`. Spread the traffic over half a minute: a series that first appears in one
+burst has a single value per scrape and no earlier sample to rise from, so `rate()` reports
+zero until it has been scraped rising at least twice.
 
 ```sh
-for i in $(seq 500); do curl -s localhost:3000/orders/$i > /dev/null; done
+for i in $(seq 150); do curl -s localhost:3000/orders/$i > /dev/null; sleep 0.2; done
 # request rate:  sum(rate(http_request_duration_seconds_count[1m]))
 # error ratio:   sum(rate(http_request_duration_seconds_count{status="5xx"}[5m])) / sum(rate(http_request_duration_seconds_count[5m]))
 # p95 latency:   histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
 ```
 
 ```sh check hidden
-for i in $(seq 500); do curl -s localhost:3000/orders/$i > /dev/null; done
+for i in $(seq 150); do curl -s localhost:3000/orders/$i > /dev/null; sleep 0.2; done
 q() { curl -s --data-urlencode "query=$1" localhost:9090/api/v1/query | jq -r '.data.result[0].value[1] // "none"'; }
 # rate() needs two scrapes after the traffic: 15s apart
 for i in $(seq 30); do
