@@ -66,7 +66,7 @@ Worker | Limited prefetch, acknowledge on success, reject to retry
 **1. `compose.yaml`** — the `guest` account only accepts connections from localhost, so the
 broker gets its own user.
 
-```yaml
+```yaml file=compose.yaml
 services:
   rabbitmq:
     image: rabbitmq:4.3-management
@@ -78,15 +78,25 @@ services:
       - "15672:15672"
     volumes:
       - rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      retries: 20
 
 volumes:
   rabbitdata:
 ```
 
-**2. `topology.js`** — declared by both producer and worker; declarations are idempotent as
+**2. `package.json`** — the scripts below use ES module `import`, so the package says so.
+
+```json file=package.json
+{ "type": "module", "dependencies": { "amqplib": "^2" } }
+```
+
+**3. `topology.js`** — declared by both producer and worker; declarations are idempotent as
 long as the arguments match.
 
-```js
+```js file=topology.js
 import amqp from "amqplib";
 
 export async function open() {
@@ -114,10 +124,10 @@ export async function open() {
 }
 ```
 
-**3. `produce.js`** — `persistent` writes the message to disk; waiting for confirms means
+**4. `produce.js`** — `persistent` writes the message to disk; waiting for confirms means
 the broker has it before the producer moves on.
 
-```js
+```js file=produce.js
 import crypto from "node:crypto";
 import { open } from "./topology.js";
 
@@ -134,10 +144,10 @@ await ch.waitForConfirms();
 await conn.close();
 ```
 
-**4. `worker.js`** — `reject(msg, true)` returns the job for a delayed retry and counts
+**5. `worker.js`** — `reject(msg, true)` returns the job for a delayed retry and counts
 towards the limit; after five failed deliveries it moves to `jobs.dead`.
 
-```js
+```js file=worker.js
 import { open } from "./topology.js";
 
 const { ch } = await open();
@@ -160,9 +170,11 @@ async function sendEmail(job) {
 }
 ```
 
-```sh
-docker compose up -d
-npm install amqplib
+`--wait` returns once the health check passes, so the scripts never race the broker's start.
+
+```sh run
+docker compose up -d --wait
+npm install
 node worker.js &
 node produce.js
 ```
@@ -176,6 +188,18 @@ in the dead-letter queue after five attempts:
 docker compose exec rabbitmq rabbitmqctl list_queues name type messages
 # jobs       quorum  0
 # jobs.dead  quorum  1
+```
+
+```sh check hidden
+# five attempts with 1–4 s between them: allow a minute for the job to reach the dead-letter queue
+for i in $(seq 30); do
+  q=$(docker compose exec -T rabbitmq rabbitmqctl -q list_queues name type messages | tr -s ' \t' ' ')
+  echo "$q" | grep -qx 'jobs.dead quorum 1' && echo "$q" | grep -qx 'jobs quorum 0' && break
+  sleep 2
+done
+echo "$q"
+echo "$q" | grep -qx 'jobs.dead quorum 1'
+echo "$q" | grep -qx 'jobs quorum 0'
 ```
 
 The worker's log shows the attempts spreading out — about one, two, three and four seconds
