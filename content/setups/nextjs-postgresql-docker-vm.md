@@ -15,7 +15,7 @@ related:
   - { to: nodejs, rel: RELATED_TO }
   - { to: schema-migration, rel: RELATED_TO }
   - { to: ci-cd, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-10-06, confidence: high }
 ---
 
 ## TL;DR
@@ -65,11 +65,13 @@ Image and Compose | Multi-stage Dockerfile, PostgreSQL with a health check, the 
 ```
 
 **0. Start from a generated app.** The framework's own scaffold is the one place that is
-always current, so the guide does not repeat its configuration files — it changes four of
-them and adds the rest:
+always current, so the guide does not repeat its configuration files: it replaces two of the
+generated files and adds the ones it needs. The major version is pinned to the one this guide
+was written against, so a new release means updating the guide on purpose rather than finding
+it quietly wrong.
 
 ```sh run
-npx --yes create-next-app@latest . --yes --ts --app --no-tailwind --eslint --use-npm --no-src-dir --import-alias "@/*"
+npx --yes create-next-app@16 . --yes --ts --app --no-tailwind --eslint --use-npm --no-src-dir --import-alias "@/*"
 npm install pg
 npm install --save-dev @types/pg
 ```
@@ -203,8 +205,8 @@ volumes:
   pgdata:
 ```
 
-`create-next-app` also writes a `.dockerignore`-less project, so keep `node_modules` and
-`.next` out of the build context — they would otherwise be copied into every build:
+The scaffold has no `.dockerignore`, so add one to keep `node_modules` and `.next` out of the
+build context — they would otherwise be copied into every build:
 
 ```text file=.dockerignore
 node_modules
