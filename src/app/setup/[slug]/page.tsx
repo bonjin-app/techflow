@@ -70,9 +70,9 @@ export default async function Page({ params }: PageProps<"/setup/[slug]">) {
             <a
               href={SETUP_RUNS}
               className="rounded-md border border-border bg-surface px-2 py-0.5 font-medium text-fg-muted hover:underline"
-              title="Real tools check its configuration in CI on every change and every week, but the system is not brought up"
+              title="Real tools check this part in CI on every change and every week. The system is not brought up, and the rest of the guide is checked against its references only."
             >
-              ✓ Configuration validated in CI — not deployed
+              ✓ {node.validates} validated in CI — not deployed
             </a>
           ) : (
             <span className="rounded-md border border-border px-2 py-0.5 text-fg-muted" title="Checked against its references, not yet executed in CI">

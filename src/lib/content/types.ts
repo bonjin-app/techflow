@@ -197,6 +197,8 @@ export interface SetupNode extends BaseNode {
    *  - "none":   nothing; it has been read against its references, no more
    */
   verification: "run" | "static" | "none";
+  /** For "static": what exactly is checked, in a few words — shown on the badge so it cannot overclaim. */
+  validates?: string;
   sections: Record<string, string>;
   sectionOrder: string[];
   related: { to: string; rel: Relation }[];

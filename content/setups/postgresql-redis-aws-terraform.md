@@ -5,6 +5,7 @@ tagline: Amazon RDS for PostgreSQL and ElastiCache (Valkey) in private subnets, 
 environment: managed
 difficulty: 4
 verification: static
+validates: Terraform plan
 tags: [AWS, Managed Services, Infrastructure as Code, Database, Cache]
 components:
   - { ref: terraform, version: "1.9+ with AWS provider 6.x", role: "Declares both services, their network access and their secrets" }
