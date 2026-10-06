@@ -239,6 +239,20 @@ p a[href] {
 }
 .prose pre:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .prose pre code { color: var(--fg); }
+/* A setup guide's file block: the file name as a tab joined to the code. */
+.prose .code-file { margin: 1rem 0; }
+.prose .code-file-name {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 0.2rem 0.6rem;
+}
+.prose .code-file pre { margin-top: 0; border-top-left-radius: 0; }
 .prose blockquote {
   border-left: 2px solid var(--border-strong);
   padding-left: 1rem;

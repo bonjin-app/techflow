@@ -15,7 +15,7 @@ related:
   - { to: ttl, rel: RELATED_TO }
   - { to: cache-invalidation, rel: RELATED_TO }
   - { to: e-commerce, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-24, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR
@@ -63,7 +63,7 @@ Invalidate on write | Update the row, then delete the key
 **1. `compose.yaml`** — Redis is started as a cache, not a store: a memory limit, LRU
 eviction, and persistence turned off.
 
-```yaml
+```yaml file=compose.yaml
 services:
   postgres:
     image: postgres:17
@@ -105,7 +105,7 @@ volumes:
 **2. `init.sql`** — scripts in `/docker-entrypoint-initdb.d` run once, when the data volume
 is empty.
 
-```sql
+```sql file=init.sql
 CREATE TABLE products (
   id         bigint PRIMARY KEY,
   name       text NOT NULL,
@@ -118,7 +118,7 @@ INSERT INTO products (id, name, price) VALUES (42, 'Espresso cup', 12.00);
 **3. `server.js`** — the read path is Cache Aside; the write path invalidates after the
 database commits.
 
-```js
+```js file=server.js
 import http from "node:http";
 import pg from "pg";
 import { createClient } from "redis";
@@ -149,6 +149,7 @@ async function renameProduct(id, name) {
 http
   .createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
+    if (url.pathname === "/healthz") return res.end("ok"); // for health checks; touches neither store
     const id = Number(url.pathname.split("/")[2]);
     if (req.method === "POST") await renameProduct(id, url.searchParams.get("name") ?? "");
     const result = await getProduct(id);
@@ -160,11 +161,11 @@ http
 
 **4. `package.json` and `Dockerfile`**
 
-```json
+```json file=package.json
 { "type": "module", "dependencies": { "pg": "^8", "redis": "^5" } }
 ```
 
-```dockerfile
+```dockerfile file=Dockerfile
 FROM node:22-alpine
 WORKDIR /app
 COPY package.json .
@@ -175,8 +176,15 @@ CMD ["node", "server.js"]
 
 Then:
 
-```sh
-docker compose up --build
+```sh run
+docker compose up -d --build
+```
+
+```sh run hidden
+# wait for the app itself — Docker's port proxy accepts connections before the app listens
+for i in $(seq 60); do curl -sf localhost:3000/healthz > /dev/null && break; sleep 2; done
+curl -sf localhost:3000/healthz
+docker compose exec -T redis redis-cli config resetstat
 ```
 
 ## Verify
@@ -189,6 +197,11 @@ curl -s localhost:3000/products/42   # {"source":"database", ...}
 curl -s localhost:3000/products/42   # {"source":"cache", ...}
 ```
 
+```sh check hidden
+out=$(curl -s localhost:3000/products/42); echo "$out"; echo "$out" | grep -q '"source":"database"'
+out=$(curl -s localhost:3000/products/42); echo "$out"; echo "$out" | grep -q '"source":"cache"'
+```
+
 Redis counts its own hits and misses, which is the number to watch once real traffic arrives:
 
 ```sh
@@ -197,11 +210,25 @@ docker compose exec redis redis-cli info stats | grep keyspace
 # keyspace_misses:1
 ```
 
+```sh check hidden
+stats=$(docker compose exec -T redis redis-cli info stats | tr -d '\r')
+echo "$stats" | grep keyspace
+echo "$stats" | grep -qx 'keyspace_hits:1'
+echo "$stats" | grep -qx 'keyspace_misses:1'
+```
+
 Check that a write invalidates, rather than waiting out the TTL:
 
 ```sh
 curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup"   # {"source":"database", ... "Lungo cup"}
 docker compose exec redis redis-cli ttl product:42               # close to 60: freshly refilled
+```
+
+```sh check hidden
+out=$(curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup"); echo "$out"; echo "$out" | grep -q '"source":"database".*"Lungo cup"'
+ttl=$(docker compose exec -T redis redis-cli ttl product:42 | tr -d '\r')
+echo "ttl=$ttl"; [ "$ttl" -ge 50 ] && [ "$ttl" -le 60 ]
+curl -s localhost:3000/products/42 | grep -q '"source":"cache".*"Lungo cup"'
 ```
 
 ## Going to production

@@ -13,7 +13,7 @@ related:
   - { to: observability, rel: RELATED_TO }
   - { to: slo, rel: RELATED_TO }
   - { to: opentelemetry, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR
@@ -63,7 +63,7 @@ Run | Compose starts both; Prometheus's own UI shows targets, queries and alerts
 
 **1. `server.js`** — label by route pattern and status class, not raw values.
 
-```js
+```js file=server.js
 import http from "node:http";
 import client from "@prometheus-io/client";
 
@@ -98,7 +98,7 @@ http
 
 **2. `prometheus.yml`**
 
-```yaml
+```yaml file=prometheus.yml
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -115,7 +115,7 @@ scrape_configs:
 **3. `rules.yml`** — the ratio of failed to all requests over five minutes, and a `for`
 clause so a single bad scrape does not page anyone.
 
-```yaml
+```yaml file=rules.yml
 groups:
   - name: app
     rules:
@@ -132,7 +132,7 @@ groups:
 
 **4. `compose.yaml`**
 
-```yaml
+```yaml file=compose.yaml
 services:
   app:
     build: .
@@ -154,11 +154,29 @@ volumes:
   promdata:
 ```
 
-The service's `Dockerfile` is the same three-line Node.js image as in the other guides, with
-`npm install @prometheus-io/client`.
+**5. `package.json` and `Dockerfile`** for the service:
 
-```sh
+```json file=package.json
+{ "type": "module", "dependencies": { "@prometheus-io/client": "^0.16" } }
+```
+
+```dockerfile file=Dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install --omit=dev
+COPY server.js .
+CMD ["node", "server.js"]
+```
+
+```sh run
 docker compose up -d --build
+```
+
+```sh run hidden
+for i in $(seq 60); do curl -sf localhost:3000/metrics > /dev/null && curl -sf localhost:9090/-/ready > /dev/null && break; sleep 2; done
+curl -sf localhost:3000/metrics > /dev/null
+curl -sf localhost:9090/-/ready
 ```
 
 ## Verify
@@ -170,6 +188,14 @@ curl -s localhost:3000/ > /dev/null
 curl -s localhost:3000/metrics | grep -E "^http_request_duration_seconds_count|^nodejs_eventloop_lag_seconds "
 ```
 
+```sh check hidden
+curl -s localhost:3000/ > /dev/null
+out=$(curl -s localhost:3000/metrics)
+echo "$out" | grep -E "^http_request_duration_seconds_count|^nodejs_eventloop_lag_seconds "
+echo "$out" | grep -q '^http_request_duration_seconds_count{'
+echo "$out" | grep -q '^nodejs_eventloop_lag_seconds '
+```
+
 Prometheus should show the target as up, and the configuration should validate:
 
 ```sh
@@ -177,14 +203,45 @@ curl -s localhost:9090/api/v1/targets | grep -o '"health":"[a-z]*"'      # "heal
 docker compose exec prometheus promtool check config /etc/prometheus/prometheus.yml
 ```
 
+```sh check hidden
+for i in $(seq 30); do
+  h=$(curl -s localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | select(.labels.job == "app") | .health')
+  [ "$h" = "up" ] && break
+  sleep 2
+done
+echo "app target: $h"; [ "$h" = "up" ]
+docker compose exec -T prometheus promtool check config /etc/prometheus/prometheus.yml
+docker compose exec -T prometheus promtool check rules /etc/prometheus/rules.yml
+[ "$(curl -s localhost:9090/api/v1/rules | jq -r '.data.groups[].rules[].name')" = "HighErrorRate" ]
+```
+
 Generate some traffic, then ask the three questions in the Prometheus UI at
-`localhost:9090`:
+`localhost:9090`. Spread the traffic over half a minute: a series that first appears in one
+burst has a single value per scrape and no earlier sample to rise from, so `rate()` reports
+zero until it has been scraped rising at least twice.
 
 ```sh
-for i in $(seq 500); do curl -s localhost:3000/orders/$i > /dev/null; done
+for i in $(seq 150); do curl -s localhost:3000/orders/$i > /dev/null; sleep 0.2; done
 # request rate:  sum(rate(http_request_duration_seconds_count[1m]))
 # error ratio:   sum(rate(http_request_duration_seconds_count{status="5xx"}[5m])) / sum(rate(http_request_duration_seconds_count[5m]))
 # p95 latency:   histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
+```
+
+```sh check hidden
+for i in $(seq 150); do curl -s localhost:3000/orders/$i > /dev/null; sleep 0.2; done
+q() { curl -s --data-urlencode "query=$1" localhost:9090/api/v1/query | jq -r '.data.result[0].value[1] // "none"'; }
+# rate() needs two scrapes after the traffic: 15s apart
+for i in $(seq 30); do
+  rate=$(q 'sum(rate(http_request_duration_seconds_count[1m]))')
+  [ "$rate" != "none" ] && [ "$rate" != "0" ] && break
+  sleep 3
+done
+echo "request rate: $rate"
+awk -v r="$rate" 'BEGIN { exit !(r > 0) }'
+p95=$(q 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))')
+echo "p95: $p95"; [ "$p95" != "none" ]
+# a series per route pattern, not per order id
+[ "$(q 'count(count by (route) (http_request_duration_seconds_count))')" -le 3 ]
 ```
 
 Raise the simulated failure rate above 5% and the alert moves from inactive to pending, then

@@ -14,6 +14,9 @@ import { JsonLd } from "@/components/ui/JsonLd";
 
 export const dynamicParams = false;
 
+/** Where the runs are: every change and every week, one job per guide. */
+const SETUP_RUNS = "https://github.com/bonjin-app/techflow/actions/workflows/setups.yml";
+
 export function generateStaticParams() {
   return getSetups().map((n) => ({ slug: n.id }));
 }
@@ -55,6 +58,19 @@ export default async function Page({ params }: PageProps<"/setup/[slug]">) {
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <span className="font-mono text-[11px] uppercase tracking-wider text-fg-faint">Runs on</span>
           <span className="rounded-md border border-border bg-surface px-2 py-0.5 font-medium">{ENVIRONMENT_LABEL[node.environment]}</span>
+          {node.tested ? (
+            <a
+              href={SETUP_RUNS}
+              className="rounded-md border border-ok/40 bg-ok/10 px-2 py-0.5 font-medium text-ok hover:underline"
+              title="Its files are written out and its commands run and checked in CI on every change and every week"
+            >
+              ✓ Built and run in CI
+            </a>
+          ) : (
+            <span className="rounded-md border border-border px-2 py-0.5 text-fg-muted" title="Checked against its references, not yet executed in CI">
+              Checked against the docs, not yet run in CI
+            </span>
+          )}
         </div>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {node.components.map((c) => {

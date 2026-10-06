@@ -15,7 +15,7 @@ related:
   - { to: rag, rel: RELATED_TO }
   - { to: semantic-vs-keyword-search, rel: RELATED_TO }
   - { to: indexing, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR
@@ -65,7 +65,7 @@ Query | Embed the question, filter with SQL, order by distance
 **1. `compose.yaml` and `init.sql`** — the `pgvector/pgvector` image is PostgreSQL with the
 extension built in. The dimension, 384, is the output size of the model used below.
 
-```yaml
+```yaml file=compose.yaml
 services:
   db:
     image: pgvector/pgvector:pg17
@@ -78,12 +78,16 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d search"]
+      interval: 5s
+      retries: 10
 
 volumes:
   pgdata:
 ```
 
-```sql
+```sql file=init.sql
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE documents (
@@ -98,7 +102,7 @@ CREATE TABLE documents (
 **2. `ingest.py`** — `register_vector` must run after the extension exists, so that psycopg
 knows the type.
 
-```py
+```py file=ingest.py
 import psycopg
 from pgvector.psycopg import register_vector
 from sentence_transformers import SentenceTransformer
@@ -122,22 +126,29 @@ with psycopg.connect("postgresql://app:app@localhost:5432/search") as conn:
             )
 ```
 
-```sh
-docker compose up -d
+Install the Python packages in a virtual environment — current Linux distributions refuse
+`pip install` into the system Python (PEP 668). Installing PyTorch from its CPU index first
+avoids downloading several gigabytes of GPU libraries a CPU-only machine never uses.
+
+```sh run
+docker compose up -d --wait
+python3 -m venv .venv && . .venv/bin/activate
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install "psycopg[binary]" pgvector sentence-transformers
 python ingest.py
 ```
 
 **3. The index** — build it after the initial load; building during inserts is slower.
 
-```sql
-CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops);
+```sh run
+docker compose exec db psql -U app -d search -c \
+  "CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops)"
 ```
 
 **4. `search.py`** — `<=>` is cosine distance, so smaller is closer and `1 - distance` is the
 similarity. The owner filter is plain SQL.
 
-```py
+```py file=search.py
 import sys
 import psycopg
 from pgvector.psycopg import register_vector
@@ -170,6 +181,14 @@ A question that shares no keywords with the answer should still find it:
 python search.py "how do I get my money back"
 ```
 
+```sh check hidden
+out=$(.venv/bin/python search.py "how do I get my money back")
+echo "$out"
+echo "$out" | head -1 | grep -q "Refunds are issued"
+echo "$out" | sed -n 2p | grep -q "Orders can be cancelled"
+! echo "$out" | grep -q "public holidays"
+```
+
 The refund policy should rank first, with the clearly higher similarity, and the
 cancellation policy below it. The exact scores depend on the model version; the order is the
 check.
@@ -180,6 +199,12 @@ large enough for the planner to prefer it:
 ```sh
 docker compose exec db psql -U app -d search -c "SELECT extversion FROM pg_extension WHERE extname = 'vector'"
 docker compose exec db psql -U app -d search -c "EXPLAIN SELECT id FROM documents ORDER BY embedding <=> (SELECT embedding FROM documents LIMIT 1) LIMIT 3"
+```
+
+```sh check hidden
+v=$(docker compose exec -T db psql -U app -d search -tAc "SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+echo "pgvector $v"; case "$v" in 0.8.*) ;; *) exit 1 ;; esac
+docker compose exec -T db psql -U app -d search -tAc "SELECT indexdef FROM pg_indexes WHERE tablename = 'documents'" | grep -q "USING hnsw (embedding vector_cosine_ops)"
 ```
 
 With three rows the plan is a sequential scan, which is correct; insert a few thousand and

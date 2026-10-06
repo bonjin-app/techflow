@@ -41,15 +41,29 @@ export function Markdown({
         </a>
       );
     },
-    pre({ children }) {
+    pre({ node, children }) {
       // Visual fences are rendered by `code`; avoid wrapping them in <pre>.
       const child = Array.isArray(children) ? children[0] : children;
       const cls = (child as { props?: { className?: string } })?.props?.className ?? "";
       const lang = /language-(\w+)/.exec(cls)?.[1];
       if (isVisualFence(lang)) return <>{children}</>;
+      // Setup guides mark what their blocks are for after the language —
+      // `file=compose.yaml`, `run`, `check`, `hidden` — so CI can build and run
+      // them (scripts/run-setup.ts). `hidden` blocks are CI's own waits and
+      // assertions; a named file gets its name above it.
+      const meta = String((node?.children?.[0] as { data?: { meta?: string } } | undefined)?.data?.meta ?? "");
+      if (/(^|\s)hidden(\s|$)/.test(meta)) return null;
+      const file = /(?:^|\s)file=(\S+)/.exec(meta)?.[1];
       // A code block that scrolls sideways is unreadable without a mouse
       // unless it can take focus and be scrolled with the arrow keys.
-      return <pre tabIndex={0}>{children}</pre>;
+      const pre = <pre tabIndex={0}>{children}</pre>;
+      if (!file) return pre;
+      return (
+        <div className="code-file">
+          <div className="code-file-name">{file}</div>
+          {pre}
+        </div>
+      );
     },
     code({ className: cls, children }) {
       const lang = /language-(\w+)/.exec(cls ?? "")?.[1];

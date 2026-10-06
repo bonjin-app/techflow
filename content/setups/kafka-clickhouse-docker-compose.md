@@ -16,7 +16,7 @@ related:
   - { to: delivery-semantics, rel: RELATED_TO }
   - { to: partitioning, rel: RELATED_TO }
   - { to: postgresql-vs-clickhouse, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR
@@ -71,7 +71,7 @@ Publish | Send JSON events to the topic and query them in ClickHouse
 example. `kafka:19092` is the listener other containers use; `localhost:9092` is for tools
 on your machine.
 
-```yaml
+```yaml file=compose.yaml
 services:
   kafka:
     image: apache/kafka:4.3.1
@@ -109,6 +109,10 @@ services:
     volumes:
       - chdata:/var/lib/clickhouse
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --user app --password app -q 'SELECT 1'"]
+      interval: 5s
+      retries: 30
     depends_on:
       kafka: { condition: service_healthy }
 
@@ -122,8 +126,8 @@ internal topics unable to be created.
 **2. Create the topic.** Partitions set the ceiling on parallel consumers, and are much
 easier to choose now than to change later — see [Partitioning](/concept/partitioning).
 
-```sh
-docker compose up -d kafka
+```sh run
+docker compose up -d --wait kafka
 docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
   --bootstrap-server localhost:9092 --create --topic events --partitions 3
 ```
@@ -131,7 +135,7 @@ docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
 **3. `init.sql`** — run by the ClickHouse image once, on an empty data volume. The Kafka
 table is the subscription, `events` is the storage, and the view moves data between them.
 
-```sql
+```sql file=init.sql
 CREATE TABLE analytics.events_queue
 (
     ts      DateTime64(3),
@@ -164,13 +168,13 @@ SELECT ts, user_id, name, page, _partition AS kafka_partition, _offset AS kafka_
 FROM analytics.events_queue;
 ```
 
-```sh
-docker compose up -d clickhouse
+```sh run
+docker compose up -d --wait clickhouse
 ```
 
 **4. Publish events.** One JSON object per line, in the shape the Kafka table declares.
 
-```sh
+```sh run
 printf '%s\n' \
   '{"ts":"2026-09-26 10:00:00.000","user_id":7,"name":"page_view","page":"/pricing"}' \
   '{"ts":"2026-09-26 10:00:01.500","user_id":7,"name":"signup","page":"/pricing"}' \
@@ -190,6 +194,18 @@ docker compose exec clickhouse clickhouse-client --user app --password app \
 # signup     1
 ```
 
+```sh check hidden
+# the engine flushes on block size or its flush interval; allow a minute
+for i in $(seq 30); do
+  n=$(docker compose exec -T clickhouse clickhouse-client --user app --password app -q "SELECT count() FROM analytics.events")
+  [ "$n" = "2" ] && break
+  sleep 2
+done
+docker compose exec -T clickhouse clickhouse-client --user app --password app -q "SELECT name, count() FROM analytics.events GROUP BY name ORDER BY name"
+[ "$n" = "2" ]
+[ "$(docker compose exec -T clickhouse clickhouse-client --user app --password app -q "SELECT groupArray(name) FROM (SELECT name FROM analytics.events ORDER BY name)")" = "['page_view','signup']" ]
+```
+
 The consumer group is visible from Kafka's side, with the lag ClickHouse still has to read:
 
 ```sh
@@ -197,11 +213,22 @@ docker compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server localhost:9092 --describe --group clickhouse-events
 ```
 
+```sh check hidden
+out=$(docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh \
+  --bootstrap-server localhost:9092 --describe --group clickhouse-events)
+echo "$out"
+echo "$out" | grep -q events
+```
+
 And from ClickHouse's side, including the last exception if a message failed to parse:
 
 ```sh
 docker compose exec clickhouse clickhouse-client --user app --password app \
   -q "SELECT database, table, num_messages_read, last_exception FROM system.kafka_consumers FORMAT Vertical"
+```
+
+```sh check hidden
+[ "$(docker compose exec -T clickhouse clickhouse-client --user app --password app -q "SELECT sum(num_messages_read) FROM system.kafka_consumers WHERE table = 'events_queue'")" = "2" ]
 ```
 
 ## Going to production

@@ -38,7 +38,10 @@ export default function Page() {
             <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
               {g.items.map((s) => (
                 <Link key={s.id} href={`/setup/${s.id}`} data-type="setup" className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
-                  <div className="text-lg font-semibold group-hover:underline">{s.name}</div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-lg font-semibold group-hover:underline">{s.name}</span>
+                    {s.tested && <span className="shrink-0 text-[11px] font-medium text-ok">✓ run in CI</span>}
+                  </div>
                   <p className="mt-1 text-sm text-fg-muted">{s.tagline}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
                     {s.components.map((c) => (
