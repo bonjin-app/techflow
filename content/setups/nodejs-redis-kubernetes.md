@@ -59,16 +59,49 @@ needs to know where it runs.
 
 ```steps
 title: From a container image to a rollout that drops nothing
+Image | A small Node.js image for the service, pushed to a registry the cluster can pull from
 Application endpoints | /ready reports whether this pod can serve; /healthz only whether the process is alive
 Redis | A Deployment and Service, capped memory, least-recently-used eviction
 API Deployment | Three replicas, probes, resource requests, a drain on termination
 Rollout | Add one new pod before removing an old one; watch it complete
 ```
 
+**0. A cluster, and an image it can pull.** Any cluster on Kubernetes 1.30 or later works; to
+follow along on one machine, [kind](https://kind.sigs.k8s.io/) runs one in Docker.
+
+```sh run hidden
+kind create cluster --wait 180s
+kubectl version
+[ "$(kubectl version -o json | jq -r '.serverVersion.minor' | tr -dc 0-9)" -ge 30 ]
+```
+
+The Deployment below names `registry.example.com/api:1.0.0`. Build that image from the
+service in step 1 and push it to your own registry; with kind, load it into the cluster
+instead of pushing:
+
+```text file=Dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install --omit=dev
+COPY server.js .
+USER node
+CMD ["node", "server.js"]
+```
+
+```json file=package.json
+{ "type": "module", "dependencies": { "redis": "^5" } }
+```
+
+```sh run
+docker build -t registry.example.com/api:1.0.0 .
+kind load docker-image registry.example.com/api:1.0.0   # a real cluster: docker push, instead
+```
+
 **1. The service's side of the contract.** Readiness goes false as soon as shutdown
 starts, so the pod leaves the Service before the server stops accepting.
 
-```js
+```js file=server.js
 import http from "node:http";
 import { createClient } from "redis";
 
@@ -102,7 +135,7 @@ process.on("SIGTERM", () => {
 **2. `redis.yaml`** — one replica is enough for a cache; memory is capped both in Redis and
 in the container, with Redis's limit below the container's so it evicts before it is killed.
 
-```yaml
+```yaml file=redis.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -143,7 +176,7 @@ spec:
 one is ready; the `preStop` sleep gives the Service a few seconds to stop routing to the pod
 before SIGTERM arrives.
 
-```yaml
+```yaml file=api.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -194,9 +227,10 @@ spec:
       targetPort: 3000
 ```
 
-```sh
+```sh run
 kubectl apply -f redis.yaml -f api.yaml
-kubectl rollout status deployment/api
+kubectl rollout status deployment/redis --timeout=120s
+kubectl rollout status deployment/api --timeout=180s
 ```
 
 ## Verify
@@ -206,6 +240,11 @@ All three replicas should be ready and listed behind the Service:
 ```sh
 kubectl get pods -l app=api            # 3/3 Running, READY 1/1
 kubectl get endpointslices -l kubernetes.io/service-name=api
+```
+
+```sh check hidden
+[ "$(kubectl get pods -l app=api -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' | grep -c true)" = "3" ]
+[ "$(kubectl get endpointslices -l kubernetes.io/service-name=api -o jsonpath='{range .items[*].endpoints[*]}{.conditions.ready}{"\n"}{end}' | grep -c true)" = "3" ]
 ```
 
 The real test is a rollout under load. In one terminal, send a steady stream of requests
@@ -221,6 +260,28 @@ kubectl rollout status deployment/api
 
 The `pod` field in the responses changes as new pods take over, and no `FAILED` lines
 appear. Remove `preStop` or set `maxUnavailable: 1` and repeat to see what they prevent.
+
+```sh check hidden
+# A zero-failure result means nothing unless requests were really flowing, and really crossing
+# the old pods to the new ones. Count both, not just the failures.
+before=$(kubectl get pods -l app=api -o name | sort)
+kubectl run load --image=busybox:1.37 --restart=Never -- \
+  sh -c 'while true; do wget -q -T 2 -O- http://api/ || echo FAILED; sleep 0.05; done'
+kubectl wait --for=condition=Ready pod/load --timeout=120s
+sleep 5
+kubectl rollout restart deployment/api
+kubectl rollout status deployment/api --timeout=180s
+sleep 5
+kubectl logs load > load.log
+kubectl delete pod load --now
+total=$(grep -c '"pod"' load.log || true)
+failed=$(grep -c FAILED load.log || true)
+pods=$(grep -o '"pod":"[^"]*"' load.log | sort -u | wc -l | tr -d ' ')
+echo "requests=$total failed=$failed distinct pods=$pods"
+[ "$total" -ge 100 ]
+[ "$pods" -ge 6 ]
+[ "$failed" = "0" ]
+```
 
 ## Going to production
 
