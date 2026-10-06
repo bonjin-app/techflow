@@ -16,7 +16,7 @@ related:
   - { to: delivery-semantics, rel: RELATED_TO }
   - { to: backpressure, rel: RELATED_TO }
   - { to: kafka-vs-rabbitmq, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-27, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR

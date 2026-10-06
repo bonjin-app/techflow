@@ -15,7 +15,7 @@ related:
   - { to: ttl, rel: RELATED_TO }
   - { to: cache-invalidation, rel: RELATED_TO }
   - { to: e-commerce, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-24, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR

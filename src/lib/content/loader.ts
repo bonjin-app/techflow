@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { parseBlocks, runnable } from "../setup-blocks";
 import type {
   AnyNode,
   ArchitectureNode,
@@ -243,6 +244,7 @@ function loadSetups(): SetupNode[] {
       meta: asMeta(data.meta),
       environment: data.environment as SetupNode["environment"],
       components,
+      tested: runnable(parseBlocks(content)),
       sections,
       sectionOrder: order,
       related: asRelated(data.related, rel),

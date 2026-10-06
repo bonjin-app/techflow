@@ -16,7 +16,7 @@ related:
   - { to: delivery-semantics, rel: RELATED_TO }
   - { to: partitioning, rel: RELATED_TO }
   - { to: postgresql-vs-clickhouse, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR

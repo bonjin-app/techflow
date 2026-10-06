@@ -189,6 +189,8 @@ export interface SetupNode extends BaseNode {
   environment: SetupEnvironment;
   /** The technologies being combined, each with the version the guide is written against. */
   components: { ref: string; version: string; role: string }[];
+  /** True when its code blocks are marked to be built and run in CI (scripts/run-setup.ts). */
+  tested: boolean;
   sections: Record<string, string>;
   sectionOrder: string[];
   related: { to: string; rel: Relation }[];

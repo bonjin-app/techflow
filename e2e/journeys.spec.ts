@@ -246,6 +246,12 @@ test("a technology page leads to a guide for running it, with versions and sourc
   await expect(components.getByRole("link", { name: /PostgreSQL\s*17/ })).toBeVisible();
   await expect(components.getByRole("link", { name: /Redis\s*8/ })).toBeVisible();
 
+  // CI builds and runs this guide from its own code blocks; what CI alone needs
+  // — waits and assertions — is not shown, and each file says what it is called.
+  await expect(page.getByRole("link", { name: /Built and run in CI/ })).toBeVisible();
+  await expect(page.locator(".code-file-name")).toContainText(["compose.yaml", "init.sql", "server.js", "package.json", "Dockerfile"]);
+  await expect(page.locator("pre").filter({ hasText: "config resetstat" })).toHaveCount(0);
+
   // The configuration is on the page to copy, and the claims can be checked.
   await expect(page.locator("pre code").filter({ hasText: "maxmemory-policy" })).toBeVisible();
   const sources = page.getByRole("heading", { name: "References" }).locator("xpath=ancestor::section[1]").locator('a[href^="https://"]');

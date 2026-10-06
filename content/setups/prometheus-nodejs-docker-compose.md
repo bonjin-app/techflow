@@ -13,7 +13,7 @@ related:
   - { to: observability, rel: RELATED_TO }
   - { to: slo, rel: RELATED_TO }
   - { to: opentelemetry, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR

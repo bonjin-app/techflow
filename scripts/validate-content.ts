@@ -5,7 +5,7 @@
  *   pnpm validate
  */
 import fs from "node:fs";
-import { parseBlocks } from "./run-setup";
+import { parseBlocks } from "../src/lib/setup-blocks";
 import path from "node:path";
 import { buildGraph, getNeighbors } from "../src/lib/content/graph";
 import { hrefFor, type DocNode } from "../src/lib/content/types";
@@ -88,6 +88,11 @@ function main() {
       const primary = [...(n.sections["References"] ?? "").matchAll(/\]\((https:\/\/[^)\s]+)\)/g)];
       if (primary.length < n.components.length) {
         problems.push(`${n.id}: ${primary.length} reference link(s) for ${n.components.length} components — cite each project's own documentation`);
+      }
+      // "high" is a claim a reader will act on; for a setup guide it means the
+      // guide is built and run in CI, not that it reads well.
+      if (n.meta?.confidence === "high" && !n.tested) {
+        problems.push(`${n.id}: confidence is high but no block is marked run/check — only a guide CI executes may claim it`);
       }
       for (const c of n.components) {
         if (!/\d/.test(c.version)) problems.push(`${n.id}: component '${c.ref}' has version '${c.version}' — name the version it was written against`);

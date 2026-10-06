@@ -22,38 +22,12 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import matter from "gray-matter";
+import { parseBlocks, runnable } from "../src/lib/setup-blocks";
+
+export { parseBlocks, runnable };
 
 const DIR = path.join(process.cwd(), "content", "setups");
 const STEP_TIMEOUT_MS = 15 * 60 * 1000;
-
-export interface Block {
-  lang: string;
-  file?: string;
-  run: boolean;
-  check: boolean;
-  hidden: boolean;
-  body: string;
-}
-
-export function parseBlocks(markdown: string): Block[] {
-  const blocks: Block[] = [];
-  for (const m of markdown.matchAll(/^```([\w-]+)([^\n]*)\n([\s\S]*?)^```[ \t]*$/gm)) {
-    const meta = m[2].trim().split(/\s+/).filter(Boolean);
-    blocks.push({
-      lang: m[1],
-      file: meta.find((t) => t.startsWith("file="))?.slice(5),
-      run: meta.includes("run"),
-      check: meta.includes("check"),
-      hidden: meta.includes("hidden"),
-      body: m[3],
-    });
-  }
-  return blocks;
-}
-
-export function runnable(blocks: Block[]) {
-  return blocks.some((b) => b.run) && blocks.some((b) => b.check);
-}
 
 function guides() {
   return fs

@@ -15,7 +15,7 @@ related:
   - { to: rag, rel: RELATED_TO }
   - { to: semantic-vs-keyword-search, rel: RELATED_TO }
   - { to: indexing, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-09-28, confidence: high }
 ---
 
 ## TL;DR
