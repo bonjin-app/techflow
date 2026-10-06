@@ -56,16 +56,27 @@ becomes HTML in one step.
 ## Set it up
 
 ```steps
-title: From a Next.js app to a running server
+title: From create-next-app to a running server
+Scaffold | create-next-app writes the project; the guide changes only what it needs
 Standalone build | Tell Next.js to trace and copy only what the server needs
 Database module | One pg pool per process, reused across hot reloads in development
 Page and form | Query in a Server Component, insert in a Server Function
 Image and Compose | Multi-stage Dockerfile, PostgreSQL with a health check, the app after it
 ```
 
-**1. `next.config.ts`**
+**0. Start from a generated app.** The framework's own scaffold is the one place that is
+always current, so the guide does not repeat its configuration files — it changes four of
+them and adds the rest:
 
-```ts
+```sh run
+npx --yes create-next-app@latest . --yes --ts --app --no-tailwind --eslint --use-npm --no-src-dir --import-alias "@/*"
+npm install pg
+npm install --save-dev @types/pg
+```
+
+**1. `next.config.ts`** — replaces the generated one.
+
+```ts file=next.config.ts
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -78,7 +89,7 @@ export default nextConfig;
 **2. `lib/db.ts`** — the pool is kept on `globalThis` so that development reloads reuse it
 instead of opening another.
 
-```ts
+```ts file=lib/db.ts
 import pg from "pg";
 
 const g = globalThis as unknown as { pool?: pg.Pool };
@@ -87,9 +98,9 @@ if (process.env.NODE_ENV !== "production") g.pool = pool;
 ```
 
 **3. `app/page.tsx`** — `connection()` stops prerendering, so the query runs per request and
-never at build time.
+never at build time. It replaces the generated page.
 
-```tsx
+```tsx file=app/page.tsx
 import { connection } from "next/server";
 import { revalidatePath } from "next/cache";
 import { pool } from "@/lib/db";
@@ -123,7 +134,7 @@ export default async function Page() {
 **4. `init.sql`** — run once by the PostgreSQL image on an empty volume. A real project
 applies versioned migrations instead; see Going to production.
 
-```sql
+```sql file=init.sql
 CREATE TABLE notes (
   id         bigserial PRIMARY KEY,
   body       text NOT NULL,
@@ -134,11 +145,11 @@ CREATE TABLE notes (
 **5. `Dockerfile`** — condensed from the Next.js `with-docker` example: dependencies,
 build, then a runtime stage with only the standalone server and its static files.
 
-```dockerfile
+```dockerfile file=Dockerfile
 FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 FROM node:24-slim AS build
 WORKDIR /app
@@ -161,7 +172,7 @@ CMD ["node", "server.js"]
 **6. `compose.yaml`** — the app is published only on the server's loopback interface, for a
 reverse proxy in front of it.
 
-```yaml
+```yaml file=compose.yaml
 services:
   db:
     image: postgres:17
@@ -192,9 +203,19 @@ volumes:
   pgdata:
 ```
 
-```sh
+`create-next-app` also writes a `.dockerignore`-less project, so keep `node_modules` and
+`.next` out of the build context — they would otherwise be copied into every build:
+
+```text file=.dockerignore
+node_modules
+.next
+.git
+.env
+```
+
+```sh run
 echo "DB_PASSWORD=$(openssl rand -hex 16)" > .env
-docker compose up -d --build
+docker compose up -d --build --wait
 ```
 
 ## Verify
@@ -205,6 +226,16 @@ curl -s localhost:3000 | grep -o "<form"            # the page renders on the se
 docker compose logs web | tail -5                   # "Ready" from the standalone server
 ```
 
+```sh check hidden
+for i in $(seq 30); do curl -sf localhost:3000 > /dev/null && break; sleep 2; done
+page=$(curl -sf localhost:3000)
+echo "$page" | grep -o "<form" | head -1
+echo "$page" | grep -q "<form"
+# the page is rendered per request, from the database: a row inserted behind the app's back shows up at once
+docker compose exec -T db psql -U app -d app -c "INSERT INTO notes (body) VALUES ('from-psql')"
+curl -sf localhost:3000 | grep -q "from-psql"
+```
+
 Add a note through the form in a browser, then confirm it reached the database rather than a
 cache:
 
@@ -212,11 +243,37 @@ cache:
 docker compose exec db psql -U app -d app -c "SELECT id, body FROM notes ORDER BY id DESC LIMIT 3"
 ```
 
+```sh check hidden
+# submit the page's own form the way a browser does, then read the row back from PostgreSQL
+npx --yes playwright@1 install --with-deps chromium > /dev/null
+cat > submit.mjs <<'JS'
+import { chromium } from "playwright";
+const b = await chromium.launch();
+const p = await b.newPage();
+await p.goto("http://localhost:3000");
+await p.fill("input[name=body]", "added through the form");
+await p.click("button[type=submit]");
+await p.waitForFunction(() => document.body.innerText.includes("added through the form"), null, { timeout: 15000 });
+await b.close();
+JS
+npm install --no-save playwright@1 > /dev/null
+node submit.mjs
+docker compose exec -T db psql -U app -d app -tAc "SELECT count(*) FROM notes WHERE body = 'added through the form'" | grep -qx 1
+```
+
 Finally, check the build never needs the database: stop it and rebuild the image. The build
 should succeed, because no page queries PostgreSQL while prerendering.
 
 ```sh
 docker compose stop db && docker compose build web && docker compose start db
+```
+
+```sh check hidden
+docker compose stop db
+docker compose build --no-cache web
+docker compose start db
+docker compose up -d --wait
+curl -sf localhost:3000 | grep -q "<form"
 ```
 
 ## Going to production
