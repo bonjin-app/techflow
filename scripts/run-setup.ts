@@ -47,7 +47,10 @@ function guides() {
 
 function sh(script: string, cwd: string, label: string): boolean {
   console.log(`\n::group::${label}\n${script.trim()}`);
-  const r = spawnSync("bash", ["-euo", "pipefail", "-c", script], {
+  // `set -e` ends a block silently on the first failing command, and the log then
+  // shows only what ran before it. Say which line it was, and what it was.
+  const traced = `trap 'echo "✖ line $LINENO exited $?: $BASH_COMMAND" >&2' ERR\nset -E\n${script}`;
+  const r = spawnSync("bash", ["-euo", "pipefail", "-c", traced], {
     cwd,
     stdio: "inherit",
     timeout: STEP_TIMEOUT_MS,
