@@ -7,7 +7,11 @@
  * carry what to do with them, after the language:
  *
  *   ```yaml file=compose.yaml   written to that path in a scratch directory
- *   ```sh run                   executed, in order, to stand the guide up
+ *   ```sh run                   executed, to stand the guide up
+ *
+ * Files and run blocks are applied in the order the guide shows them; checks
+ * run last, in order.
+ *
  *   ```sh check                 executed after, and must exit 0
  *   ```sh check hidden          the same, but not shown to readers — waits and
  *                                assertions that would clutter the page
@@ -20,6 +24,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import matter from "gray-matter";
 import { parseBlocks, runnable } from "../src/lib/setup-blocks";
@@ -57,18 +62,30 @@ function main() {
   if (!guide) throw new Error(`no setup guide '${arg}'`);
   if (!runnable(guide.blocks)) throw new Error(`${arg} has no run and check blocks`);
 
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), `setup-${arg}-`));
-  for (const b of guide.blocks.filter((x) => x.file)) {
-    const target = path.join(work, b.file!);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, b.body);
-    console.log(`wrote ${b.file}`);
-  }
+  // Lower case throughout: `create-next-app .` names the package after the
+  // directory, and npm refuses capital letters — which mkdtemp's suffix has.
+  const work = path.join(os.tmpdir(), `setup-${arg}-${randomBytes(4).toString("hex")}`);
+  fs.mkdirSync(work, { recursive: true });
 
+  // In the order a reader meets them. A guide that starts from a generator
+  // (`create-next-app .`) needs its own files written after the generator has
+  // run, not before — and writing them all first would make it refuse a
+  // directory that is not empty.
   let ok = true;
   const run = guide.blocks.filter((b) => b.run);
   const check = guide.blocks.filter((b) => b.check);
-  for (const [i, b] of run.entries()) if (ok) ok = sh(b.body, work, `run ${i + 1}/${run.length}`);
+  let ran = 0;
+  for (const b of guide.blocks) {
+    if (!ok) break;
+    if (b.file) {
+      const target = path.join(work, b.file);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, b.body);
+      console.log(`wrote ${b.file}`);
+    } else if (b.run) {
+      ok = sh(b.body, work, `run ${++ran}/${run.length}`);
+    }
+  }
   for (const [i, b] of check.entries()) if (ok) ok = sh(b.body, work, `check ${i + 1}/${check.length}${b.hidden ? " (hidden)" : ""}`);
 
   if (!ok && fs.existsSync(path.join(work, "compose.yaml"))) sh("docker compose logs --tail 80 || true", work, "compose logs");
