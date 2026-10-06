@@ -59,43 +59,20 @@ needs to know where it runs.
 
 ```steps
 title: From a container image to a rollout that drops nothing
-Image | A small Node.js image for the service, pushed to a registry the cluster can pull from
 Application endpoints | /ready reports whether this pod can serve; /healthz only whether the process is alive
+Image | A small Node.js image for the service, pushed to a registry the cluster can pull from
 Redis | A Deployment and Service, capped memory, least-recently-used eviction
 API Deployment | Three replicas, probes, resource requests, a drain on termination
 Rollout | Add one new pod before removing an old one; watch it complete
 ```
 
-**0. A cluster, and an image it can pull.** Any cluster on Kubernetes 1.30 or later works; to
+**0. A cluster.** Any cluster on Kubernetes 1.30 or later works; to
 follow along on one machine, [kind](https://kind.sigs.k8s.io/) runs one in Docker.
 
 ```sh run hidden
 kind create cluster --wait 180s
 kubectl version
 [ "$(kubectl version -o json | jq -r '.serverVersion.minor' | tr -dc 0-9)" -ge 30 ]
-```
-
-The Deployment below names `registry.example.com/api:1.0.0`. Build that image from the
-service in step 1 and push it to your own registry; with kind, load it into the cluster
-instead of pushing:
-
-```text file=Dockerfile
-FROM node:22-alpine
-WORKDIR /app
-COPY package.json .
-RUN npm install --omit=dev
-COPY server.js .
-USER node
-CMD ["node", "server.js"]
-```
-
-```json file=package.json
-{ "type": "module", "dependencies": { "redis": "^5" } }
-```
-
-```sh run
-docker build -t registry.example.com/api:1.0.0 .
-kind load docker-image registry.example.com/api:1.0.0   # a real cluster: docker push, instead
 ```
 
 **1. The service's side of the contract.** Readiness goes false as soon as shutdown
@@ -132,7 +109,30 @@ process.on("SIGTERM", () => {
 });
 ```
 
-**2. `redis.yaml`** — one replica is enough for a cache; memory is capped both in Redis and
+**2. The image.** The Deployment below names `registry.example.com/api:1.0.0`. Build that image from the
+service above and push it to your own registry; with kind, load it into the cluster instead
+of pushing:
+
+```text file=Dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install --omit=dev
+COPY server.js .
+USER node
+CMD ["node", "server.js"]
+```
+
+```json file=package.json
+{ "type": "module", "dependencies": { "redis": "^5" } }
+```
+
+```sh run
+docker build -t registry.example.com/api:1.0.0 .
+kind load docker-image registry.example.com/api:1.0.0   # a real cluster: docker push, instead
+```
+
+**3. `redis.yaml`** — one replica is enough for a cache; memory is capped both in Redis and
 in the container, with Redis's limit below the container's so it evicts before it is killed.
 
 ```yaml file=redis.yaml
@@ -172,7 +172,7 @@ spec:
     - port: 6379
 ```
 
-**3. `api.yaml`** — `maxUnavailable: 0` means a rollout only removes an old pod once a new
+**4. `api.yaml`** — `maxUnavailable: 0` means a rollout only removes an old pod once a new
 one is ready; the `preStop` sleep gives the Service a few seconds to stop routing to the pod
 before SIGTERM arrives.
 
