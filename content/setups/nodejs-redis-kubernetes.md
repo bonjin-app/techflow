@@ -265,6 +265,9 @@ appear. Remove `preStop` or set `maxUnavailable: 1` and repeat to see what they 
 # A zero-failure result means nothing unless requests were really flowing, and really crossing
 # the old pods to the new ones. Count both, not just the failures.
 before=$(kubectl get pods -l app=api -o name | sort)
+echo "--- does -q swallow the body?"
+kubectl run q1 --rm -i --restart=Never --image=busybox:1.37 -- sh -c 'wget -q -O- http://api/; echo " exit=$?"' 2>&1 | tail -3 || true
+kubectl run q2 --rm -i --restart=Never --image=busybox:1.37 -- sh -c 'wget -q -O- http://api/ || echo FAILED; echo; echo done' 2>&1 | tail -3 || true
 echo "--- one request, from inside the cluster"
 kubectl run probe --rm -i --restart=Never --image=busybox:1.37 -- sh -c 'wget -T 3 -O- http://api/; echo "exit=$?"' || true
 kubectl run load --image=busybox:1.37 --restart=Never -- \
