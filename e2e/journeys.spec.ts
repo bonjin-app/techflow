@@ -133,6 +133,20 @@ test("an answered challenge counts on /you and is marked in the contents", async
   await expect(page.getByText(/^of \d+ · 0 right$/)).toBeVisible();
 });
 
+test("a setup guide says how much of it CI actually checked, and no more", async ({ page }) => {
+  // Three honest answers, never one flattering one: brought up and checked; one part checked
+  // with real tools but nothing deployed; or only read against its references.
+  const badge = async (id: string) => {
+    await page.goto(at(`/setup/${id}`));
+    return page.locator('section[aria-label="Components"] > div').first();
+  };
+  await expect(await badge("redis-postgresql-docker-compose")).toContainText("Built and run in CI");
+  const nginx = await badge("nginx-nodejs-single-vm");
+  await expect(nginx).toContainText("Nginx proxy configuration validated in CI — not deployed");
+  await expect(nginx).not.toContainText("Built and run");
+  await expect(await badge("s3-presigned-uploads-nodejs")).toContainText("not yet run in CI");
+});
+
 test("the cache simulator responds to a smaller capacity", async ({ page }) => {
   await page.goto(at("/playground/cache"));
   const capacity = page.getByRole("slider").first();
