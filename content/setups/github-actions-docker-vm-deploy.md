@@ -154,7 +154,10 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          ssh deploy@"$HOST" "cd /srv/app && export IMAGE_TAG=$TAG && docker compose pull && docker compose up -d"
+          # The tag is expanded here and quoted for the remote shell, so it arrives as one word
+          # whatever it contains — shellcheck's note (SC2029) is about exactly this, and it is intended.
+          # shellcheck disable=SC2029
+          ssh deploy@"$HOST" "cd /srv/app && export IMAGE_TAG=$(printf '%q' "$TAG") && docker compose pull && docker compose up -d"
           ssh deploy@"$HOST" "curl -fsS --retry 10 --retry-delay 2 --retry-all-errors http://127.0.0.1:3000/healthz"
 ```
 
