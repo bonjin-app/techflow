@@ -255,7 +255,8 @@ terraform init -input=false
 
 ```sh check hidden
 # The guide's own claims, read from what Terraform would create: no AWS account needed.
-terraform version | head -1 | grep -q "v1.9"
+version=$(terraform version)          # captured, not piped: a reader that exits early would SIGPIPE docker
+echo "$version" | grep -q "^Terraform v1\.9\."
 terraform validate
 terraform plan -input=false -out=plan.tfplan \
   -var vpc_id=vpc-0123 -var 'private_subnet_ids=["subnet-a","subnet-b"]' -var app_security_group_id=sg-app > /dev/null

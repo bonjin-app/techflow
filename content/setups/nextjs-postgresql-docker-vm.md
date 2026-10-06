@@ -235,7 +235,8 @@ echo "$page" | grep -o "<form" | head -1
 echo "$page" | grep -q "<form"
 # the page is rendered per request, from the database: a row inserted behind the app's back shows up at once
 docker compose exec -T db psql -U app -d app -c "INSERT INTO notes (body) VALUES ('from-psql')"
-curl -sf localhost:3000 | grep -q "from-psql"
+page=$(curl -sf localhost:3000)
+echo "$page" | grep -q "from-psql"
 ```
 
 Add a note through the form in a browser, then confirm it reached the database rather than a
@@ -260,7 +261,8 @@ await b.close();
 JS
 npm install --no-save playwright@1 > /dev/null
 node submit.mjs
-docker compose exec -T db psql -U app -d app -tAc "SELECT count(*) FROM notes WHERE body = 'added through the form'" | grep -qx 1
+rows=$(docker compose exec -T db psql -U app -d app -tAc "SELECT count(*) FROM notes WHERE body = 'added through the form'")
+[ "$rows" = "1" ]
 ```
 
 Finally, check the build never needs the database: stop it and rebuild the image. The build
@@ -275,7 +277,8 @@ docker compose stop db
 docker compose build --no-cache web
 docker compose start db
 docker compose up -d --wait
-curl -sf localhost:3000 | grep -q "<form"
+page=$(curl -sf localhost:3000)
+echo "$page" | grep -q "<form"
 ```
 
 ## Going to production

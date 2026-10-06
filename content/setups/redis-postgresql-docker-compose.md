@@ -228,7 +228,8 @@ docker compose exec redis redis-cli ttl product:42               # close to 60: 
 out=$(curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup"); echo "$out"; echo "$out" | grep -q '"source":"database".*"Lungo cup"'
 ttl=$(docker compose exec -T redis redis-cli ttl product:42 | tr -d '\r')
 echo "ttl=$ttl"; [ "$ttl" -ge 50 ] && [ "$ttl" -le 60 ]
-curl -s localhost:3000/products/42 | grep -q '"source":"cache".*"Lungo cup"'
+out=$(curl -s localhost:3000/products/42)
+echo "$out" | grep -q '"source":"cache".*"Lungo cup"'
 ```
 
 ## Going to production
