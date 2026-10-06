@@ -26,9 +26,9 @@
     "d3-force": "^3.0.0",
     "geist": "^1.7.2",
     "gray-matter": "^4.0.3",
-    "next": "16.3.4",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },
@@ -42,11 +42,11 @@
     "@types/react-dom": "^19",
     "axe-core": "^4.13.0",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "^5",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.2"
   },
   "packageManager": "pnpm@11.10.0"
 }
