@@ -58,13 +58,21 @@ export default async function Page({ params }: PageProps<"/setup/[slug]">) {
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <span className="font-mono text-[11px] uppercase tracking-wider text-fg-faint">Runs on</span>
           <span className="rounded-md border border-border bg-surface px-2 py-0.5 font-medium">{ENVIRONMENT_LABEL[node.environment]}</span>
-          {node.tested ? (
+          {node.verification === "run" ? (
             <a
               href={SETUP_RUNS}
               className="rounded-md border border-ok/40 bg-ok/10 px-2 py-0.5 font-medium text-ok hover:underline"
               title="Its files are written out and its commands run and checked in CI on every change and every week"
             >
               ✓ Built and run in CI
+            </a>
+          ) : node.verification === "static" ? (
+            <a
+              href={SETUP_RUNS}
+              className="rounded-md border border-border bg-surface px-2 py-0.5 font-medium text-fg-muted hover:underline"
+              title="Real tools check this part in CI on every change and every week. The system is not brought up, and the rest of the guide is checked against its references only."
+            >
+              ✓ {node.validates} validated in CI — not deployed
             </a>
           ) : (
             <span className="rounded-md border border-border px-2 py-0.5 text-fg-muted" title="Checked against its references, not yet executed in CI">

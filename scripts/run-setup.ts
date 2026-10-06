@@ -16,6 +16,10 @@
  *   ```sh check hidden          the same, but not shown to readers — waits and
  *                                assertions that would clutter the page
  *
+ * A file under bin/ is written executable and put first on PATH, so a guide can
+ * pin the version of a tool (`bin/terraform` running a specific container image)
+ * and still show the reader the plain command.
+ *
  * Blocks without a marker are prose for the reader and are never executed.
  *
  *   pnpm tsx scripts/run-setup.ts <guide-id>     run one guide (needs Docker)
@@ -43,7 +47,16 @@ function guides() {
 
 function sh(script: string, cwd: string, label: string): boolean {
   console.log(`\n::group::${label}\n${script.trim()}`);
-  const r = spawnSync("bash", ["-euo", "pipefail", "-c", script], { cwd, stdio: "inherit", timeout: STEP_TIMEOUT_MS });
+  // `set -e` ends a block silently on the first failing command, and the log then
+  // shows only what ran before it. Say which line it was, and what it was.
+  const traced = `trap 'echo "✖ line $LINENO exited $?: $BASH_COMMAND" >&2' ERR\nset -E\n${script}`;
+  const r = spawnSync("bash", ["-euo", "pipefail", "-c", traced], {
+    cwd,
+    stdio: "inherit",
+    timeout: STEP_TIMEOUT_MS,
+    // A guide may ship its own commands in bin/: `terraform` as a pinned container, say.
+    env: { ...process.env, PATH: `${path.join(cwd, "bin")}${path.delimiter}${process.env.PATH}` },
+  });
   console.log("::endgroup::");
   if (r.status !== 0) {
     console.error(`✖ ${label} failed${r.signal ? ` (${r.signal})` : ` with exit code ${r.status}`}`);
@@ -80,7 +93,8 @@ function main() {
     if (b.file) {
       const target = path.join(work, b.file);
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, b.body);
+      // Under bin/ means a command: executable, and found before the system's own.
+      fs.writeFileSync(target, b.body, { mode: b.file.startsWith("bin/") ? 0o755 : 0o644 });
       console.log(`wrote ${b.file}`);
     } else if (b.run) {
       ok = sh(b.body, work, `run ${++ran}/${run.length}`);
@@ -89,6 +103,10 @@ function main() {
   for (const [i, b] of check.entries()) if (ok) ok = sh(b.body, work, `check ${i + 1}/${check.length}${b.hidden ? " (hidden)" : ""}`);
 
   if (!ok && fs.existsSync(path.join(work, "compose.yaml"))) sh("docker compose logs --tail 80 || true", work, "compose logs");
+  // A guide that starts containers by hand has no compose file; show what they said.
+  if (!ok && !fs.existsSync(path.join(work, "compose.yaml"))) {
+    sh("for c in $(docker ps -aq); do echo \"--- $(docker inspect -f '{{.Name}} {{.Config.Image}}' $c)\"; docker logs --tail 40 $c 2>&1 || true; done", work, "container logs");
+  }
   // A guide on a cluster has no compose file; what failed is in the pods.
   if (!ok && fs.existsSync(path.join(work, "api.yaml")) && !fs.existsSync(path.join(work, "compose.yaml"))) {
     sh(

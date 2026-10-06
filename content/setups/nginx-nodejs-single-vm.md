@@ -4,6 +4,8 @@ name: Nginx + Node.js on a single VM
 tagline: One Ubuntu server — Nginx terminating TLS in front of a Node.js service run by systemd
 environment: vm
 difficulty: 2
+verification: static
+validates: Nginx proxy configuration
 tags: [Deployment, Reverse Proxy, TLS, Linux]
 components:
   - { ref: nginx, version: "1.24+ (Ubuntu package)", role: "Terminates TLS, serves static files, proxies to the app — WebSockets included" }
@@ -111,7 +113,7 @@ sudo systemctl enable --now app
 **3. `/etc/nginx/sites-available/app`** — the `map` turns the WebSocket upgrade on only
 when the client asks for it, as the Nginx documentation recommends.
 
-```nginx
+```nginx file=conf.d/app.conf
 map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
@@ -159,6 +161,28 @@ sudo ufw allow "Nginx Full"
 sudo ufw enable
 ```
 
+```js file=backend.js hidden
+// A stand-in for the app: says what Nginx sent it, and accepts a WebSocket upgrade.
+import http from "node:http";
+const server = http.createServer((req, res) => {
+  res.setHeader("content-type", "application/json");
+  res.end(JSON.stringify({ headers: req.headers }));
+});
+server.on("upgrade", (req, socket) => {
+  socket.end("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n");
+});
+server.listen(3000, "127.0.0.1");
+```
+
+```sh run hidden
+# nginx 1.24 is the oldest version the guide claims. The official image reads conf.d/*.conf inside http{},
+# the same context Debian's sites-enabled is included from, so the guide's file drops in unchanged.
+docker run -d --name proxy -p 8080:80 -v "$PWD/conf.d/app.conf":/etc/nginx/conf.d/app.conf:ro nginx:1.24
+# Node on 127.0.0.1:3000 inside Nginx's own network namespace, which is what the guide's proxy_pass reaches
+docker run -d --name backend --network container:proxy -v "$PWD/backend.js":/backend.js:ro node:22-alpine node /backend.js
+for i in $(seq 30); do curl -s -o /dev/null -H "Host: example.com" localhost:8080/ && break; sleep 1; done
+```
+
 ## Verify
 
 ```sh
@@ -172,6 +196,28 @@ sudo systemctl restart app && journalctl -u app -n 5 --no-pager   # stopped clea
 If the app logs client addresses, they should be the real ones, not `127.0.0.1` — which is
 the check that `X-Forwarded-For` is being read. In Express that is `app.set("trust proxy",
 "loopback")`.
+
+```sh check hidden
+nginx_version=$(docker exec proxy nginx -v 2>&1)
+echo "$nginx_version"
+echo "$nginx_version" | grep -q "nginx/1\.24\."
+docker exec proxy nginx -t
+
+# an ordinary request: the app sees the original host and the client address, and is told it came over http
+plain=$(curl -s -H "Host: example.com" localhost:8080/)
+echo "$plain" | jq -c '.headers | {host, "x-real-ip": .["x-real-ip"], "x-forwarded-for": .["x-forwarded-for"], "x-forwarded-proto": .["x-forwarded-proto"], connection}'
+[ "$(echo "$plain" | jq -r '.headers.host')" = "example.com" ]
+[ -n "$(echo "$plain" | jq -r '.headers["x-real-ip"] // empty')" ]
+[ -n "$(echo "$plain" | jq -r '.headers["x-forwarded-for"] // empty')" ]
+[ "$(echo "$plain" | jq -r '.headers["x-forwarded-proto"]')" = "http" ]
+# without an upgrade request the connection is not left upgradable: the map sends "close"
+[ "$(echo "$plain" | jq -r '.headers.connection')" = "close" ]
+
+# a WebSocket handshake gets through: the upgrade is passed on, and the app answers 101
+ws=$(curl -s -i --max-time 5 -H "Host: example.com" -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" localhost:8080/ || true)
+echo "$ws" | head -3
+echo "$ws" | grep -q "^HTTP/1.1 101"
+```
 
 ## Going to production
 

@@ -47,10 +47,18 @@ export function ShortcutHelp() {
     if (!open) return;
     requestAnimationFrame(() => panel.current?.focus());
     document.body.style.overflow = "hidden";
+    // On the document, not on the panel: the panel only takes focus a frame after it opens, and
+    // an Escape that arrives sooner — a quick keyboard user, a busy machine — lands on whatever
+    // had focus before and closed nothing.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, close]);
 
   if (!open) return null;
 
@@ -70,9 +78,8 @@ export function ShortcutHelp() {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           // Nothing else in here takes focus, so Tab has nowhere to go and the
-          // visible `esc` is the way out.
+          // visible `esc` is the way out. (Escape itself is handled on the document.)
           if (e.key === "Tab") e.preventDefault();
-          if (e.key === "Escape") close();
         }}
       >
         <div className="flex items-baseline justify-between border-b border-border px-4 py-3">

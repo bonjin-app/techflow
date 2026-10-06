@@ -64,6 +64,37 @@ for (const { where, url, box } of [
   });
 }
 
+test("Escape closes the shortcut help even before focus has moved into it", async ({ page }) => {
+  // The panel takes focus one animation frame after it opens. An Escape that arrives in the same
+  // task — a quick keyboard user, or a loaded machine — used to land on the button that opened it
+  // and close nothing. Dispatching both in one task reproduces that exactly, with no timing luck.
+  await page.goto(at("/concept/sharding"));
+  const panel = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+  const hint = page.getByRole("button", { name: /for shortcuts/i });
+  await expect(async () => {
+    await hint.evaluate((el) => {
+      (el as HTMLElement).focus();
+      (el as HTMLElement).click();
+      el.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    await expect(panel).toHaveCount(0, { timeout: 1500 });
+  }).toPass({ timeout: 8000 });
+});
+
+test("Escape closes the search palette even before focus has reached its input", async ({ page }) => {
+  // Same race as the shortcut help: the input takes focus a frame after the palette opens, and
+  // the palette only listened for Escape on the input.
+  await page.goto(at("/concept/sharding"));
+  const input = page.getByRole("combobox", { name: "Search the knowledge graph" });
+  await expect(async () => {
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent("tf:palette"));
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    await expect(input).toHaveCount(0, { timeout: 1500 });
+  }).toPass({ timeout: 8000 });
+});
+
 test("the shortcuts are discoverable at all", async ({ page }) => {
   await page.goto(at("/concept/sharding"));
   const panel = page.getByRole("dialog", { name: "Keyboard shortcuts" });
