@@ -252,7 +252,7 @@ through the Service; in another, roll the Deployment:
 
 ```sh
 kubectl run load --rm -it --image=busybox:1.37 --restart=Never -- \
-  sh -c 'while true; do wget -q -O- http://api/ || echo FAILED; sleep 0.1; done'
+  sh -c 'while true; do wget -T 2 -O- http://api/ 2>/dev/null || echo FAILED; echo; sleep 0.1; done'
 
 kubectl rollout restart deployment/api
 kubectl rollout status deployment/api
@@ -261,31 +261,26 @@ kubectl rollout status deployment/api
 The `pod` field in the responses changes as new pods take over, and no `FAILED` lines
 appear. Remove `preStop` or set `maxUnavailable: 1` and repeat to see what they prevent.
 
+Do not add `-q` to that `wget`: in the BusyBox image it also suppresses the response body, so
+the loop prints nothing at all — and a stream with no `FAILED` lines is then
+indistinguishable from one that never reached the service.
+
 ```sh check hidden
 # A zero-failure result means nothing unless requests were really flowing, and really crossing
 # the old pods to the new ones. Count both, not just the failures.
 before=$(kubectl get pods -l app=api -o name | sort)
-echo "--- does -q swallow the body?"
-kubectl run q1 --rm -i --restart=Never --image=busybox:1.37 -- sh -c 'wget -q -O- http://api/; echo " exit=$?"' 2>&1 | tail -3 || true
-kubectl run q2 --rm -i --restart=Never --image=busybox:1.37 -- sh -c 'wget -q -O- http://api/ || echo FAILED; echo; echo done' 2>&1 | tail -3 || true
-echo "--- one request, from inside the cluster"
-kubectl run probe --rm -i --restart=Never --image=busybox:1.37 -- sh -c 'wget -T 3 -O- http://api/; echo "exit=$?"' || true
 kubectl run load --image=busybox:1.37 --restart=Never -- \
-  sh -c 'while true; do wget -q -T 2 -O- http://api/ || echo FAILED; sleep 0.05; done'
+  sh -c 'while true; do wget -T 2 -O- http://api/ 2>/dev/null || echo FAILED; echo; sleep 0.05; done'
 kubectl wait --for=condition=Ready pod/load --timeout=120s
 sleep 5
 kubectl rollout restart deployment/api
 kubectl rollout status deployment/api --timeout=180s
 sleep 5
-kubectl logs load > load.log || true
-echo "load.log: $(wc -c < load.log) bytes"; head -c 400 load.log; echo
-kubectl describe pod load | tail -15 || true
+kubectl logs load > load.log
 kubectl delete pod load --now
-# wget prints no newline after a body, so many responses share one line: count matches, not lines
 total=$(grep -o '"pod":"[^"]*"' load.log | wc -l | tr -d ' ')
 failed=$(grep -o FAILED load.log | wc -l | tr -d ' ')
 pods=$(grep -o '"pod":"[^"]*"' load.log | sort -u | wc -l | tr -d ' ')
-head -c 600 load.log; echo
 echo "requests=$total failed=$failed distinct pods=$pods"
 [ "$total" -ge 100 ]
 [ "$pods" -ge 6 ]
