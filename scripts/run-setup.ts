@@ -89,6 +89,15 @@ function main() {
   for (const [i, b] of check.entries()) if (ok) ok = sh(b.body, work, `check ${i + 1}/${check.length}${b.hidden ? " (hidden)" : ""}`);
 
   if (!ok && fs.existsSync(path.join(work, "compose.yaml"))) sh("docker compose logs --tail 80 || true", work, "compose logs");
+  // A guide on a cluster has no compose file; what failed is in the pods.
+  if (!ok && fs.existsSync(path.join(work, "api.yaml")) && !fs.existsSync(path.join(work, "compose.yaml"))) {
+    sh(
+      "kubectl get pods,svc,endpointslices -o wide || true; kubectl describe pods || true; " +
+        "for p in $(kubectl get pods -o name); do echo \"--- $p\"; kubectl logs $p --tail=40 || true; done",
+      work,
+      "cluster state",
+    );
+  }
   if (fs.existsSync(path.join(work, "compose.yaml"))) sh("docker compose down -v --remove-orphans || true", work, "tear down");
 
   if (!ok) process.exit(1);
