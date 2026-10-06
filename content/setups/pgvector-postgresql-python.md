@@ -204,7 +204,8 @@ docker compose exec db psql -U app -d search -c "EXPLAIN SELECT id FROM document
 ```sh check hidden
 v=$(docker compose exec -T db psql -U app -d search -tAc "SELECT extversion FROM pg_extension WHERE extname = 'vector'")
 echo "pgvector $v"; case "$v" in 0.8.*) ;; *) exit 1 ;; esac
-docker compose exec -T db psql -U app -d search -tAc "SELECT indexdef FROM pg_indexes WHERE tablename = 'documents'" | grep -q "USING hnsw (embedding vector_cosine_ops)"
+indexes=$(docker compose exec -T db psql -U app -d search -tAc "SELECT indexdef FROM pg_indexes WHERE tablename = 'documents'")
+echo "$indexes" | grep -q "USING hnsw (embedding vector_cosine_ops)"
 ```
 
 With three rows the plan is a sequential scan, which is correct; insert a few thousand and

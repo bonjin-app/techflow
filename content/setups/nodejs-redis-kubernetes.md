@@ -6,7 +6,7 @@ environment: kubernetes
 difficulty: 3
 tags: [Kubernetes, Deployment, Cache, Zero Downtime]
 components:
-  - { ref: kubernetes, version: "1.30+", role: "Deployments, Services and probes; the native sleep hook needs 1.30 or later" }
+  - { ref: kubernetes, version: "1.30+", role: "Deployments, Services and probes; the native sleep hook needs 1.30 or later — CI runs it on a kind cluster" }
   - { ref: nodejs, version: "22 LTS", role: "Stateless API with separate readiness and liveness endpoints, draining on SIGTERM" }
   - { ref: redis, version: "8", role: "In-cluster cache behind a Service, configured to evict rather than grow" }
 related:
@@ -15,7 +15,7 @@ related:
   - { to: autoscaling, rel: RELATED_TO }
   - { to: cache-aside, rel: RELATED_TO }
   - { to: load-balancing, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-10-06, confidence: high }
 ---
 
 ## TL;DR
@@ -60,15 +60,30 @@ needs to know where it runs.
 ```steps
 title: From a container image to a rollout that drops nothing
 Application endpoints | /ready reports whether this pod can serve; /healthz only whether the process is alive
+Image | A small Node.js image for the service, pushed to a registry the cluster can pull from
 Redis | A Deployment and Service, capped memory, least-recently-used eviction
 API Deployment | Three replicas, probes, resource requests, a drain on termination
 Rollout | Add one new pod before removing an old one; watch it complete
 ```
 
+**0. A cluster.** Any cluster on Kubernetes 1.30 or later works — 1.30 is where the `preStop`
+`sleep` handler became available by default. To follow along on one machine,
+[kind](https://kind.sigs.k8s.io/) runs one in Docker; the image pins the oldest version this
+guide claims, so what you build is what CI checked:
+
+```sh run
+kind create cluster --image kindest/node:v1.30.8 --wait 180s
+```
+
+```sh run hidden
+kubectl version
+[ "$(kubectl version -o json | jq -r '.serverVersion.minor' | tr -dc 0-9)" = "30" ]
+```
+
 **1. The service's side of the contract.** Readiness goes false as soon as shutdown
 starts, so the pod leaves the Service before the server stops accepting.
 
-```js
+```js file=server.js
 import http from "node:http";
 import { createClient } from "redis";
 
@@ -99,10 +114,33 @@ process.on("SIGTERM", () => {
 });
 ```
 
-**2. `redis.yaml`** — one replica is enough for a cache; memory is capped both in Redis and
+**2. The image.** The Deployment below names `registry.example.com/api:1.0.0`. Build that image from the
+service above and push it to your own registry; with kind, load it into the cluster instead
+of pushing:
+
+```text file=Dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install --omit=dev
+COPY server.js .
+USER node
+CMD ["node", "server.js"]
+```
+
+```json file=package.json
+{ "type": "module", "dependencies": { "redis": "^5" } }
+```
+
+```sh run
+docker build -t registry.example.com/api:1.0.0 .
+kind load docker-image registry.example.com/api:1.0.0   # a real cluster: docker push, instead
+```
+
+**3. `redis.yaml`** — one replica is enough for a cache; memory is capped both in Redis and
 in the container, with Redis's limit below the container's so it evicts before it is killed.
 
-```yaml
+```yaml file=redis.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -139,11 +177,11 @@ spec:
     - port: 6379
 ```
 
-**3. `api.yaml`** — `maxUnavailable: 0` means a rollout only removes an old pod once a new
+**4. `api.yaml`** — `maxUnavailable: 0` means a rollout only removes an old pod once a new
 one is ready; the `preStop` sleep gives the Service a few seconds to stop routing to the pod
 before SIGTERM arrives.
 
-```yaml
+```yaml file=api.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -194,9 +232,10 @@ spec:
       targetPort: 3000
 ```
 
-```sh
+```sh run
 kubectl apply -f redis.yaml -f api.yaml
-kubectl rollout status deployment/api
+kubectl rollout status deployment/redis --timeout=120s
+kubectl rollout status deployment/api --timeout=180s
 ```
 
 ## Verify
@@ -208,19 +247,56 @@ kubectl get pods -l app=api            # 3/3 Running, READY 1/1
 kubectl get endpointslices -l kubernetes.io/service-name=api
 ```
 
+```sh check hidden
+[ "$(kubectl get pods -l app=api -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' | grep -c true)" = "3" ]
+[ "$(kubectl get endpointslices -l kubernetes.io/service-name=api -o jsonpath='{range .items[*].endpoints[*]}{.conditions.ready}{"\n"}{end}' | grep -c true)" = "3" ]
+```
+
 The real test is a rollout under load. In one terminal, send a steady stream of requests
 through the Service; in another, roll the Deployment:
 
 ```sh
 kubectl run load --rm -it --image=busybox:1.37 --restart=Never -- \
-  sh -c 'while true; do wget -q -O- http://api/ || echo FAILED; sleep 0.1; done'
+  sh -c 'while true; do wget -T 2 -O- http://api/ 2>/dev/null || echo FAILED; echo; sleep 0.1; done'
 
 kubectl rollout restart deployment/api
 kubectl rollout status deployment/api
 ```
 
 The `pod` field in the responses changes as new pods take over, and no `FAILED` lines
-appear. Remove `preStop` or set `maxUnavailable: 1` and repeat to see what they prevent.
+appear. Remove `preStop` or set `maxUnavailable: 1` and repeat to see what they prevent. This
+is not only a claim: CI runs exactly this check on every change, and the same rollout with the
+two safeguards removed loses requests — several dozen out of a few hundred on a CI runner —
+where this configuration loses none.
+
+Do not add `-q` to that `wget`: in the BusyBox image it also suppresses the response body, so
+the loop prints nothing at all — and a stream with no `FAILED` lines is then
+indistinguishable from one that never reached the service.
+
+```sh check hidden
+# A zero-failure result means nothing unless requests were really flowing, and really crossing
+# the old pods to the new ones. Count both, not just the failures.
+before=$(kubectl get pods -l app=api -o name | sort)
+kubectl run load --image=busybox:1.37 --restart=Never -- \
+  sh -c 'while true; do wget -T 2 -O- http://api/ 2>/dev/null || echo FAILED; echo; sleep 0.05; done'
+kubectl wait --for=condition=Ready pod/load --timeout=120s
+sleep 5
+kubectl rollout restart deployment/api
+kubectl rollout status deployment/api --timeout=180s
+sleep 5
+kubectl logs load > load.log
+kubectl delete pod load --now
+# grep exits 1 on no match, which pipefail turns into the script's own failure: count with awk
+count() { awk -v pat="$1" '{ n += gsub(pat, "&") } END { print n + 0 }' load.log; }
+total=$(count '"pod":"[^"]*"')
+failed=$(count 'FAILED')
+pods=$(grep -o '"pod":"[^"]*"' load.log | sort -u | wc -l | tr -d ' ' || true)
+echo "load.log: $(wc -c < load.log) bytes"
+echo "requests=$total failed=$failed distinct pods=$pods"
+[ "$total" -ge 100 ] || { echo "too few requests reached the service ($total)"; head -c 500 load.log; exit 1; }
+[ "$pods" -ge 6 ]   || { echo "the rollout did not replace all three pods ($pods distinct)"; exit 1; }
+[ "$failed" = "0" ] || { echo "$failed requests failed during the rollout"; exit 1; }
+```
 
 ## Going to production
 

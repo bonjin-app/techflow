@@ -4,6 +4,8 @@ name: GitHub Actions → Docker image → VM deploy
 tagline: Build an image on each push to main, publish it to GHCR, roll it out to a server over SSH
 environment: vm
 difficulty: 3
+verification: static
+validates: workflow and Compose file
 tags: [CI/CD, Deployment, Docker, GitHub]
 components:
   - { ref: github-actions, version: "checkout v7, Docker actions v4–v7", role: "Builds, tags and pushes the image, then deploys it — behind an environment that can require approval" }
@@ -72,7 +74,7 @@ sudo mkdir -p /srv/app && sudo chown deploy:deploy /srv/app
 # for a private package, once: docker login ghcr.io -u <user> with a read:packages token
 ```
 
-```yaml
+```yaml file=server/compose.yaml
 # /srv/app/compose.yaml
 services:
   app:
@@ -94,7 +96,7 @@ ssh-keyscan -t ed25519 server.example.com          # DEPLOY_KNOWN_HOSTS = this o
 
 **3. `.github/workflows/deploy.yml`**
 
-```yaml
+```yaml file=.github/workflows/deploy.yml
 name: deploy
 
 on:
@@ -152,12 +154,23 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          ssh deploy@"$HOST" "cd /srv/app && export IMAGE_TAG=$TAG && docker compose pull && docker compose up -d"
+          # The tag is expanded here and quoted for the remote shell, so it arrives as one word
+          # whatever it contains — shellcheck's note (SC2029) is about exactly this, and it is intended.
+          # shellcheck disable=SC2029
+          ssh deploy@"$HOST" "cd /srv/app && export IMAGE_TAG=$(printf '%q' "$TAG") && docker compose pull && docker compose up -d"
           ssh deploy@"$HOST" "curl -fsS --retry 10 --retry-delay 2 --retry-all-errors http://127.0.0.1:3000/healthz"
 ```
 
 `metadata-action` lower-cases the image name, which GHCR requires, and `type=sha,format=long`
 produces the `sha-<commit>` tag the deploy job asks for.
+
+```text file=server/.env hidden
+NODE_ENV=production
+```
+
+```sh run hidden
+docker pull rhysd/actionlint:1.7.12
+```
 
 ## Verify
 
@@ -175,6 +188,29 @@ Roll back by deploying an earlier tag — the image is still in the registry:
 
 ```sh
 ssh deploy@server.example.com "cd /srv/app && export IMAGE_TAG=sha-<previous commit> && docker compose pull && docker compose up -d"
+```
+
+```sh check hidden
+# 1. The workflow is valid: syntax, expression contexts, action inputs, and shellcheck over every run: script
+docker run --rm -v "$PWD":/repo --workdir /repo rhysd/actionlint:1.7.12 -color .github/workflows/deploy.yml
+
+# 2. Every action it names, at the version it names, exists — a v7 that was never released fails here, not on a push
+refs=$(grep -oE 'uses: [A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+' .github/workflows/deploy.yml | sed 's/uses: //' | sort -u)
+echo "$refs"
+for ref in $refs; do
+  repo=${ref%@*}; tag=${ref#*@}
+  found=$(git ls-remote "https://github.com/$repo" "refs/tags/$tag" "refs/heads/$tag")
+  [ -n "$found" ] || { echo "no such version: $ref"; exit 1; }
+done
+
+# 3. The server's Compose file resolves, and the tag the workflow sends is the tag that gets pulled
+cd server
+resolved=$(IMAGE_TAG=sha-0123abc docker compose config --format json)
+echo "$resolved" | jq -r '.services.app.image'
+[ "$(echo "$resolved" | jq -r '.services.app.image')" = "ghcr.io/example/app:sha-0123abc" ]
+[ "$(echo "$(docker compose config --format json)" | jq -r '.services.app.image')" = "ghcr.io/example/app:latest" ]
+# published on the loopback interface only, for a reverse proxy to reach
+[ "$(echo "$resolved" | jq -r '.services.app.ports[0].host_ip')" = "127.0.0.1" ]
 ```
 
 ## Going to production

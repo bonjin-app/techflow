@@ -232,6 +232,13 @@ function loadSetups(): SetupNode[] {
       return { ref: String(c.ref), version: String(c.version), role: String(c.role) };
     });
     if (components.length < 2) throw new Error(`${rel}: a setup combines at least two components`);
+    if (data.verification !== undefined && data.verification !== "static") {
+      throw new Error(`${rel}: verification can only be 'static' — a guide that is run says nothing`);
+    }
+    if (data.verification === "static" && !data.validates) {
+      throw new Error(`${rel}: a static guide must say what it validates ('validates: the Nginx proxy configuration')`);
+    }
+    if (data.validates && data.verification !== "static") throw new Error(`${rel}: 'validates' belongs to verification: static`);
     const { sections, order } = splitSections(content);
     return {
       id: String(data.id),
@@ -244,7 +251,8 @@ function loadSetups(): SetupNode[] {
       meta: asMeta(data.meta),
       environment: data.environment as SetupNode["environment"],
       components,
-      tested: runnable(parseBlocks(content)),
+      verification: !runnable(parseBlocks(content)) ? "none" : data.verification === "static" ? "static" : "run",
+      validates: data.validates ? String(data.validates) : undefined,
       sections,
       sectionOrder: order,
       related: asRelated(data.related, rel),

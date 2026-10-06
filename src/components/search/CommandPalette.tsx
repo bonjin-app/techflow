@@ -81,6 +81,21 @@ export function CommandPalette() {
     returnTo.current?.focus();
   }, []);
 
+  // On the document, not on the input: the input takes focus a frame after the palette opens, and
+  // an Escape that arrives sooner — a quick keyboard user, a busy machine — lands on whatever had
+  // focus before and closed nothing.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, close]);
+
   const random = useCallback(() => {
     const pool = index.filter((n) => ["technology", "concept", "pattern"].includes(n.type));
     const pick = pool[Math.floor(Math.random() * pool.length)];
@@ -153,10 +168,8 @@ export function CommandPalette() {
       // the results answer to the arrow keys — so Tab has nowhere to go, and
       // the visible `esc` hint is the way out.
       e.preventDefault();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      close();
     }
+    // Escape is handled on the document, above.
   };
 
   if (!open) return null;
