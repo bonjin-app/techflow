@@ -24,6 +24,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import matter from "gray-matter";
 import { parseBlocks, runnable } from "../src/lib/setup-blocks";
@@ -61,7 +62,10 @@ function main() {
   if (!guide) throw new Error(`no setup guide '${arg}'`);
   if (!runnable(guide.blocks)) throw new Error(`${arg} has no run and check blocks`);
 
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), `setup-${arg}-`));
+  // Lower case throughout: `create-next-app .` names the package after the
+  // directory, and npm refuses capital letters — which mkdtemp's suffix has.
+  const work = path.join(os.tmpdir(), `setup-${arg}-${randomBytes(4).toString("hex")}`);
+  fs.mkdirSync(work, { recursive: true });
 
   // In the order a reader meets them. A guide that starts from a generator
   // (`create-next-app .`) needs its own files written after the generator has
