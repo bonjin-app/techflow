@@ -278,13 +278,16 @@ kubectl rollout status deployment/api --timeout=180s
 sleep 5
 kubectl logs load > load.log
 kubectl delete pod load --now
-total=$(grep -o '"pod":"[^"]*"' load.log | wc -l | tr -d ' ')
-failed=$(grep -o FAILED load.log | wc -l | tr -d ' ')
-pods=$(grep -o '"pod":"[^"]*"' load.log | sort -u | wc -l | tr -d ' ')
+# grep exits 1 on no match, which pipefail turns into the script's own failure: count with awk
+count() { awk -v pat="$1" '{ n += gsub(pat, "&") } END { print n + 0 }' load.log; }
+total=$(count '"pod":"[^"]*"')
+failed=$(count 'FAILED')
+pods=$(grep -o '"pod":"[^"]*"' load.log | sort -u | wc -l | tr -d ' ' || true)
+echo "load.log: $(wc -c < load.log) bytes"
 echo "requests=$total failed=$failed distinct pods=$pods"
-[ "$total" -ge 100 ]
-[ "$pods" -ge 6 ]
-[ "$failed" = "0" ]
+[ "$total" -ge 100 ] || { echo "too few requests reached the service ($total)"; head -c 500 load.log; exit 1; }
+[ "$pods" -ge 6 ]   || { echo "the rollout did not replace all three pods ($pods distinct)"; exit 1; }
+[ "$failed" = "0" ] || { echo "$failed requests failed during the rollout"; exit 1; }
 ```
 
 ## Going to production
