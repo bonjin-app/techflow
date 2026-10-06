@@ -274,9 +274,11 @@ kubectl rollout status deployment/api --timeout=180s
 sleep 5
 kubectl logs load > load.log
 kubectl delete pod load --now
-total=$(grep -c '"pod"' load.log || true)
-failed=$(grep -c FAILED load.log || true)
+# wget prints no newline after a body, so many responses share one line: count matches, not lines
+total=$(grep -o '"pod":"[^"]*"' load.log | wc -l | tr -d ' ')
+failed=$(grep -o FAILED load.log | wc -l | tr -d ' ')
 pods=$(grep -o '"pod":"[^"]*"' load.log | sort -u | wc -l | tr -d ' ')
+head -c 600 load.log; echo
 echo "requests=$total failed=$failed distinct pods=$pods"
 [ "$total" -ge 100 ]
 [ "$pods" -ge 6 ]
