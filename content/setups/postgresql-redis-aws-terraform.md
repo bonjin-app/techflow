@@ -4,6 +4,7 @@ name: PostgreSQL + Redis (Valkey) on AWS with Terraform
 tagline: Amazon RDS for PostgreSQL and ElastiCache (Valkey) in private subnets, encrypted, as code
 environment: managed
 difficulty: 4
+verification: static
 tags: [AWS, Managed Services, Infrastructure as Code, Database, Cache]
 components:
   - { ref: terraform, version: "1.9+ with AWS provider 6.x", role: "Declares both services, their network access and their secrets" }
@@ -66,9 +67,9 @@ Cache on ElastiCache | Valkey with a replica, automatic failover, TLS and encryp
 Connect | Read the secret at start-up; verify the database certificate
 ```
 
-**1. `variables.tf` and the provider**
+**1. `versions.tf` and the variables**
 
-```hcl
+```hcl file=versions.tf
 terraform {
   required_version = ">= 1.9"
   required_providers {
@@ -84,7 +85,7 @@ variable "app_security_group_id" { type = string }
 **2. `network.tf`** — each service accepts connections from the application's security
 group and nothing else.
 
-```hcl
+```hcl file=network.tf
 resource "aws_security_group" "db" {
   name   = "app-db"
   vpc_id = var.vpc_id
@@ -120,7 +121,7 @@ resource "aws_elasticache_subnet_group" "cache" {
 
 **3. `database.tf`**
 
-```hcl
+```hcl file=database.tf
 resource "aws_db_instance" "main" {
   identifier                  = "app"
   engine                      = "postgres"
@@ -147,7 +148,7 @@ resource "aws_db_instance" "main" {
 
 **4. `cache.tf`**
 
-```hcl
+```hcl file=cache.tf
 resource "aws_elasticache_replication_group" "cache" {
   replication_group_id = "app-cache"
   description          = "Application cache"
@@ -207,6 +208,28 @@ export const cache = await createClient({ url: `rediss://${process.env.CACHE_ADD
 curl -fsSLo global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 ```
 
+```text file=bin/terraform hidden
+#!/bin/sh
+# The Terraform this guide says it needs — 1.9, its stated lower bound — run as a container,
+# with the working directory mounted and no cloud credentials beyond placeholders.
+exec docker run --rm -v "$PWD":/work -w /work \
+  -e AWS_ACCESS_KEY_ID=placeholder -e AWS_SECRET_ACCESS_KEY=placeholder -e AWS_REGION=eu-west-1 \
+  hashicorp/terraform:1.9 "$@"
+```
+
+```hcl file=ci_provider.tf hidden
+# Lets `terraform plan` run with no AWS account: nothing here is contacted.
+provider "aws" {
+  region                      = "eu-west-1"
+  access_key                  = "placeholder"
+  secret_key                  = "placeholder"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+}
+```
+
 ## Verify
 
 From a machine inside the VPC — a bastion, or a task in the application's security group —
@@ -224,6 +247,44 @@ redis-cli --tls -h "$(terraform output -raw cache_address)" -p 6379 PING      # 
 
 The same commands from outside the VPC should time out: that is the security groups and
 `publicly_accessible = false` doing their job.
+
+```sh run hidden
+terraform version
+terraform init -input=false
+```
+
+```sh check hidden
+# The guide's own claims, read from what Terraform would create: no AWS account needed.
+terraform version | head -1 | grep -q "v1.9"
+terraform validate
+terraform plan -input=false -out=plan.tfplan \
+  -var vpc_id=vpc-0123 -var 'private_subnet_ids=["subnet-a","subnet-b"]' -var app_security_group_id=sg-app > /dev/null
+terraform show -json plan.tfplan > plan.json
+
+planned() { jq -r --arg a "$1" '.planned_values.root_module.resources[] | select(.address == $a) | '"$2"'' plan.json; }
+
+# Private, encrypted, highly available, backed up, password never in the code
+[ "$(planned aws_db_instance.main .values.publicly_accessible)" = "false" ]
+[ "$(planned aws_db_instance.main .values.storage_encrypted)" = "true" ]
+[ "$(planned aws_db_instance.main .values.multi_az)" = "true" ]
+[ "$(planned aws_db_instance.main .values.manage_master_user_password)" = "true" ]
+[ "$(planned aws_db_instance.main .values.deletion_protection)" = "true" ]
+[ "$(planned aws_db_instance.main .values.backup_retention_period)" = "7" ]
+! jq -e '.planned_values.root_module.resources[] | select(.address == "aws_db_instance.main") | .values.password' plan.json > /dev/null
+
+# The cache: replicated, failing over, encrypted on the wire and at rest
+[ "$(planned aws_elasticache_replication_group.cache .values.transit_encryption_enabled)" = "true" ]
+[ "$(planned aws_elasticache_replication_group.cache .values.at_rest_encryption_enabled)" = "true" ]
+[ "$(planned aws_elasticache_replication_group.cache .values.automatic_failover_enabled)" = "true" ]
+[ "$(planned aws_elasticache_replication_group.cache .values.num_cache_clusters)" = "2" ]
+
+# Both services accept connections from the application's security group and from nothing else
+for sg in db cache; do
+  [ "$(planned aws_security_group.$sg '.values.ingress | length')" = "1" ]
+  [ "$(planned aws_security_group.$sg '.values.ingress[0].security_groups | join(",")')" = "sg-app" ]
+  [ "$(planned aws_security_group.$sg '.values.ingress[0].cidr_blocks | length')" = "0" ]
+done
+```
 
 ## Going to production
 

@@ -189,8 +189,14 @@ export interface SetupNode extends BaseNode {
   environment: SetupEnvironment;
   /** The technologies being combined, each with the version the guide is written against. */
   components: { ref: string; version: string; role: string }[];
-  /** True when its code blocks are marked to be built and run in CI (scripts/run-setup.ts). */
-  tested: boolean;
+  /**
+   * What CI does with it (scripts/run-setup.ts):
+   *  - "run":    brings the guide up and checks that it behaves as described
+   *  - "static": runs real tools over its configuration — `terraform plan`, a workflow
+   *              linter, `nginx -t` — without standing the system up
+   *  - "none":   nothing; it has been read against its references, no more
+   */
+  verification: "run" | "static" | "none";
   sections: Record<string, string>;
   sectionOrder: string[];
   related: { to: string; rel: Relation }[];

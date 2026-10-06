@@ -108,7 +108,7 @@ function main() {
         extra = { summary: n.summary, requirements: n.requirements, steps: n.steps.map((s) => ({ title: s.title, scale: s.scale ?? null })) };
         break;
       case "setup":
-        extra = { environment: n.environment, components: n.components, tested: n.tested, sections: n.sectionOrder };
+        extra = { environment: n.environment, components: n.components, verification: n.verification, sections: n.sectionOrder };
         break;
     }
     nodeBytes += writeJson(path.join("nodes", `${n.id}.json`), { ...base, ...extra });

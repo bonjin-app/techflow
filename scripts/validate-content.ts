@@ -79,7 +79,7 @@ function main() {
         if ((block.run || block.check) && !["sh", "bash"].includes(block.lang)) {
           problems.push(`${n.id}: a \`${block.lang}\` block is marked run/check — only sh blocks are executed`);
         }
-        if (block.hidden && !block.run && !block.check) problems.push(`${n.id}: a hidden block that is neither run nor check does nothing`);
+        if (block.hidden && !block.run && !block.check && !block.file) problems.push(`${n.id}: a hidden block that is neither run, check nor a file does nothing`);
       }
       for (const m of Object.values(n.sections).join("\n").matchAll(/^```[\w-]+[ \t]+([^\n]+)$/gm)) {
         const unknown = m[1].trim().split(/\s+/).filter((t) => !/^(run|check|hidden|file=\S+)$/.test(t));
@@ -91,8 +91,8 @@ function main() {
       }
       // "high" is a claim a reader will act on; for a setup guide it means the
       // guide is built and run in CI, not that it reads well.
-      if (n.meta?.confidence === "high" && !n.tested) {
-        problems.push(`${n.id}: confidence is high but no block is marked run/check — only a guide CI executes may claim it`);
+      if (n.meta?.confidence === "high" && n.verification !== "run") {
+        problems.push(`${n.id}: confidence is high, but CI ${n.verification === "static" ? "only validates its configuration" : "does not run it"} — only a guide CI brings up and checks may claim it`);
       }
       for (const c of n.components) {
         if (!/\d/.test(c.version)) problems.push(`${n.id}: component '${c.ref}' has version '${c.version}' — name the version it was written against`);

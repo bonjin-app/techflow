@@ -40,7 +40,8 @@ export default function Page() {
                 <Link key={s.id} href={`/setup/${s.id}`} data-type="setup" className="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-lg font-semibold group-hover:underline">{s.name}</span>
-                    {s.tested && <span className="shrink-0 text-[11px] font-medium text-ok">✓ run in CI</span>}
+                    {s.verification === "run" && <span className="shrink-0 text-[11px] font-medium text-ok">✓ run in CI</span>}
+                    {s.verification === "static" && <span className="shrink-0 text-[11px] font-medium text-fg-muted">✓ validated in CI</span>}
                   </div>
                   <p className="mt-1 text-sm text-fg-muted">{s.tagline}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">

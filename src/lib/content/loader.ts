@@ -232,6 +232,9 @@ function loadSetups(): SetupNode[] {
       return { ref: String(c.ref), version: String(c.version), role: String(c.role) };
     });
     if (components.length < 2) throw new Error(`${rel}: a setup combines at least two components`);
+    if (data.verification !== undefined && data.verification !== "static") {
+      throw new Error(`${rel}: verification can only be 'static' — a guide that is run says nothing`);
+    }
     const { sections, order } = splitSections(content);
     return {
       id: String(data.id),
@@ -244,7 +247,7 @@ function loadSetups(): SetupNode[] {
       meta: asMeta(data.meta),
       environment: data.environment as SetupNode["environment"],
       components,
-      tested: runnable(parseBlocks(content)),
+      verification: !runnable(parseBlocks(content)) ? "none" : data.verification === "static" ? "static" : "run",
       sections,
       sectionOrder: order,
       related: asRelated(data.related, rel),
