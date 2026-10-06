@@ -6,7 +6,7 @@ environment: kubernetes
 difficulty: 3
 tags: [Kubernetes, Deployment, Cache, Zero Downtime]
 components:
-  - { ref: kubernetes, version: "1.30+", role: "Deployments, Services and probes; the native sleep hook needs 1.30 or later" }
+  - { ref: kubernetes, version: "1.30+", role: "Deployments, Services and probes; the native sleep hook needs 1.30 or later — CI runs it on a kind cluster" }
   - { ref: nodejs, version: "22 LTS", role: "Stateless API with separate readiness and liveness endpoints, draining on SIGTERM" }
   - { ref: redis, version: "8", role: "In-cluster cache behind a Service, configured to evict rather than grow" }
 related:
@@ -15,7 +15,7 @@ related:
   - { to: autoscaling, rel: RELATED_TO }
   - { to: cache-aside, rel: RELATED_TO }
   - { to: load-balancing, rel: RELATED_TO }
-meta: { lastReviewed: 2026-09-26, confidence: medium }
+meta: { lastReviewed: 2026-10-06, confidence: high }
 ---
 
 ## TL;DR
@@ -66,13 +66,18 @@ API Deployment | Three replicas, probes, resource requests, a drain on terminati
 Rollout | Add one new pod before removing an old one; watch it complete
 ```
 
-**0. A cluster.** Any cluster on Kubernetes 1.30 or later works; to
-follow along on one machine, [kind](https://kind.sigs.k8s.io/) runs one in Docker.
+**0. A cluster.** Any cluster on Kubernetes 1.30 or later works — 1.30 is where the `preStop`
+`sleep` handler became available by default. To follow along on one machine,
+[kind](https://kind.sigs.k8s.io/) runs one in Docker; the image pins the oldest version this
+guide claims, so what you build is what CI checked:
+
+```sh run
+kind create cluster --image kindest/node:v1.30.8 --wait 180s
+```
 
 ```sh run hidden
-kind create cluster --wait 180s
 kubectl version
-[ "$(kubectl version -o json | jq -r '.serverVersion.minor' | tr -dc 0-9)" -ge 30 ]
+[ "$(kubectl version -o json | jq -r '.serverVersion.minor' | tr -dc 0-9)" = "30" ]
 ```
 
 **1. The service's side of the contract.** Readiness goes false as soon as shutdown
@@ -259,7 +264,10 @@ kubectl rollout status deployment/api
 ```
 
 The `pod` field in the responses changes as new pods take over, and no `FAILED` lines
-appear. Remove `preStop` or set `maxUnavailable: 1` and repeat to see what they prevent.
+appear. Remove `preStop` or set `maxUnavailable: 1` and repeat to see what they prevent. This
+is not only a claim: CI runs exactly this check on every change, and the same rollout with the
+two safeguards removed loses requests — several dozen out of a few hundred on a CI runner —
+where this configuration loses none.
 
 Do not add `-q` to that `wget`: in the BusyBox image it also suppresses the response body, so
 the loop prints nothing at all — and a stream with no `FAILED` lines is then
