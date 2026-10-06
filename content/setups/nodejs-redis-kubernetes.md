@@ -272,7 +272,9 @@ sleep 5
 kubectl rollout restart deployment/api
 kubectl rollout status deployment/api --timeout=180s
 sleep 5
-kubectl logs load > load.log
+kubectl logs load > load.log || true
+echo "load.log: $(wc -c < load.log) bytes"; head -c 400 load.log; echo
+kubectl describe pod load | tail -15 || true
 kubectl delete pod load --now
 # wget prints no newline after a body, so many responses share one line: count matches, not lines
 total=$(grep -o '"pod":"[^"]*"' load.log | wc -l | tr -d ' ')
