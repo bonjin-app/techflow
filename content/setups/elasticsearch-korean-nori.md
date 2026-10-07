@@ -108,16 +108,18 @@ docker compose up -d --build
 
 **3. Wait for the cluster, not for an answer.** Elasticsearch answers `GET /` before its security
 index is available, and until then every authenticated request fails with `503`. Ask for a healthy
-cluster instead; the certificate comes out of the container.
+cluster instead. The certificate does not exist either until the first start has generated it, so
+the copy out of the container is part of the wait.
 
 ```sh run
 set -a; . ./.env; set +a
-docker compose cp es:/usr/share/elasticsearch/config/certs/http_ca.crt .
 for i in $(seq 90); do
+  docker compose cp es:/usr/share/elasticsearch/config/certs/http_ca.crt . 2>/dev/null &&
   curl -sf --cacert http_ca.crt -u "elastic:$ELASTIC_PASSWORD" \
     "https://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s" > /dev/null && break
   sleep 2
 done
+curl -sf --cacert http_ca.crt -u "elastic:$ELASTIC_PASSWORD" https://localhost:9200/_cluster/health > /dev/null
 ```
 
 **4. The index.** Two choices carry the whole result, and both are visible in the settings:
