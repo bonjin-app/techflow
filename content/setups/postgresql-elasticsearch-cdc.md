@@ -367,6 +367,27 @@ docker compose start connect
 until_ '[ "$(count)" = 4 ]'
 ```
 
+Last, the case the version exists for: an event that arrives *late*. Re-delivery after a crash, two
+indexer instances racing, a replayed topic — in each, an old event can land after a newer one. This
+appends a stale event for product 1 (price 129, an LSN from long ago) to the topic, waits until the
+indexer has read it, and checks that the index kept the newer price:
+
+```sh run
+set -a; . ./.env; set +a
+es() { curl -sf -u "elastic:$ELASTIC_PASSWORD" -H 'content-type: application/json' "$@"; }
+lag() {
+  docker compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:19092 \
+    --describe --group es-indexer 2>/dev/null | awk '$2 == "shop.public.products" && $6 ~ /^[0-9]+$/ { n += $6 } END { print n + 0 }'
+}
+stale='{"op":"u","source":{"lsn":1},"after":{"id":1,"name":"Mechanical keyboard","category":"peripherals","price":129}}'
+docker compose exec -T kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:19092 \
+  --topic shop.public.products --property parse.key=true --property key.separator='|' <<<"{\"id\":1}|$stale"
+for i in $(seq 60); do [ "$(lag)" = 0 ] && break; sleep 1; done
+[ "$(lag)" = 0 ]                                                  # the indexer has read the stale event
+sleep 2
+[ "$(es localhost:9200/products/_doc/1 | jq ._source.price)" = 140 ]  # and the index did not go backwards
+```
+
 ```sh check hidden
 set -a; . ./.env; set +a
 es() { curl -sf -u "elastic:$ELASTIC_PASSWORD" -H 'content-type: application/json' "$@"; }
