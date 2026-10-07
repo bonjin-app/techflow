@@ -15,7 +15,7 @@ related:
   - { to: vector-database, rel: RELATED_TO }
   - { to: search-autocomplete, rel: RELATED_TO }
   - { to: postgresql, rel: RELATED_TO }
-meta: { lastReviewed: 2026-10-07, confidence: medium }
+meta: { lastReviewed: 2026-10-07, confidence: high }
 ---
 
 ## TL;DR
