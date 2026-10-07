@@ -226,6 +226,9 @@ p a[href] {
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--fg);
+  /* A long command or query in running text breaks where it must, rather than
+     pushing the whole page sideways on a phone. */
+  overflow-wrap: anywhere;
 }
 .prose pre {
   font-size: 0.8125rem;
