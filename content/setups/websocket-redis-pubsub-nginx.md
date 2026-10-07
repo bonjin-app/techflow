@@ -202,7 +202,10 @@ docker compose run --rm --no-deps chat-a node -e '
   const alice = new WebSocket("ws://chat-a:3000");
   const bob = new WebSocket("ws://chat-b:3000");
   bob.on("message", (m) => { console.log("bob, on chat-b, received:", m.toString()); process.exit(0); });
-  alice.on("open", () => bob.on("open", () => alice.send("hello from alice")));
+  let open = 0;
+  const ready = () => { if (++open === 2) alice.send("hello from alice"); };
+  alice.on("open", ready);
+  bob.on("open", ready);
   setTimeout(() => { console.error("bob received nothing within 5s"); process.exit(1); }, 5000);
 '
 # bob, on chat-b, received: {"text":"hello from alice","via":"chat-a"}
@@ -271,7 +274,10 @@ out=$(docker compose run --rm --no-deps chat-a node -e '
   const alice = new WebSocket("ws://chat-a:3000");
   const bob = new WebSocket("ws://chat-b:3000");
   bob.on("message", (m) => { console.log("bob, on chat-b, received:", m.toString()); process.exit(0); });
-  alice.on("open", () => bob.on("open", () => alice.send("hello from alice")));
+  let open = 0;
+  const ready = () => { if (++open === 2) alice.send("hello from alice"); };
+  alice.on("open", ready);
+  bob.on("open", ready);
   setTimeout(() => { console.error("bob received nothing within 5s"); process.exit(1); }, 5000);
 ')
 echo "$out"
