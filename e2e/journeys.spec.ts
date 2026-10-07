@@ -134,8 +134,9 @@ test("an answered challenge counts on /you and is marked in the contents", async
 });
 
 test("a setup guide says how much of it CI actually checked, and no more", async ({ page }) => {
-  // Three honest answers, never one flattering one: brought up and checked; one part checked
-  // with real tools but nothing deployed; or only read against its references.
+  // Honest answers, never one flattering one: brought up and checked, or one named part checked with
+  // real tools while nothing is deployed. (A guide CI does not touch at all says so too — see
+  // tests/setup-verification.test.ts, since every guide is now covered.)
   const badge = async (id: string) => {
     await page.goto(at(`/setup/${id}`));
     return page.locator('section[aria-label="Components"] > div').first();
@@ -144,7 +145,11 @@ test("a setup guide says how much of it CI actually checked, and no more", async
   const nginx = await badge("nginx-nodejs-single-vm");
   await expect(nginx).toContainText("Nginx proxy configuration validated in CI — not deployed");
   await expect(nginx).not.toContainText("Built and run");
-  await expect(await badge("s3-presigned-uploads-nodejs")).toContainText("not yet run in CI");
+  // Static guides name the part they checked, so one that checks a signed policy cannot be read as
+  // one that brought a system up.
+  const s3 = await badge("s3-presigned-uploads-nodejs");
+  await expect(s3).toContainText("signed upload policy validated in CI — not deployed");
+  await expect(s3).not.toContainText("Built and run");
 });
 
 test("the cache simulator responds to a smaller capacity", async ({ page }) => {
