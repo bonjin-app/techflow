@@ -85,6 +85,20 @@ function main() {
         const unknown = m[1].trim().split(/\s+/).filter((t) => !/^(run|check|hidden|file=\S+)$/.test(t));
         if (unknown.length) problems.push(`${n.id}: unknown code-block marker(s) ${unknown.map((t) => `'${t}'`).join(", ")}`);
       }
+      // A check that pipes into a reader which stops early dies of SIGPIPE when the writer is
+      // still writing — exit 141, under pipefail, and only sometimes: it passed three runs and
+      // failed the fourth, and the fix that moved real processes into variables still left
+      // `echo "$out" | grep -q`, because the match can be on the first line and echo is writing.
+      // A here-string (`grep -q x <<<"$out"`) has no writer to kill.
+      for (const block of parseBlocks(Object.values(n.sections).join("\n"))) {
+        if (!block.run && !block.check) continue;
+        for (const line of block.body.split("\n")) {
+          if (/^\s*#/.test(line)) continue;
+          if (/\|\s*(grep\s+-[a-zA-Z]*[qm]|head\b|sed\s+-n\b)/.test(line)) {
+            problems.push(`${n.id}: a checked block pipes into a reader that exits early (SIGPIPE, exit 141) — use a here-string: ${line.trim().slice(0, 80)}`);
+          }
+        }
+      }
       const primary = [...(n.sections["References"] ?? "").matchAll(/\]\((https:\/\/[^)\s]+)\)/g)];
       if (primary.length < n.components.length) {
         problems.push(`${n.id}: ${primary.length} reference link(s) for ${n.components.length} components — cite each project's own documentation`);

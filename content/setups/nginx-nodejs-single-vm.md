@@ -180,7 +180,12 @@ server.listen(3000, "127.0.0.1");
 docker run -d --name proxy -p 8080:80 -v "$PWD/conf.d/app.conf":/etc/nginx/conf.d/app.conf:ro nginx:1.24
 # Node on 127.0.0.1:3000 inside Nginx's own network namespace, which is what the guide's proxy_pass reaches
 docker run -d --name backend --network container:proxy -v "$PWD/backend.js":/backend.js:ro node:22-alpine node /backend.js
-for i in $(seq 30); do curl -s -o /dev/null -H "Host: example.com" localhost:8080/ && break; sleep 1; done
+# wait for the app's answer, not just for Nginx's: before Node is listening, Nginx answers 502 — still a response
+for i in $(seq 60); do
+  curl -sf -H "Host: example.com" localhost:8080/ 2>/dev/null | jq -e '.headers' > /dev/null 2>&1 && break
+  sleep 1
+done
+curl -sf -H "Host: example.com" localhost:8080/ | jq -e '.headers' > /dev/null
 ```
 
 ## Verify
@@ -200,7 +205,7 @@ the check that `X-Forwarded-For` is being read. In Express that is `app.set("tru
 ```sh check hidden
 nginx_version=$(docker exec proxy nginx -v 2>&1)
 echo "$nginx_version"
-echo "$nginx_version" | grep -q "nginx/1\.24\."
+grep -q "nginx/1\.24\." <<<"$nginx_version"
 docker exec proxy nginx -t
 
 # an ordinary request: the app sees the original host and the client address, and is told it came over http
@@ -215,8 +220,8 @@ echo "$plain" | jq -c '.headers | {host, "x-real-ip": .["x-real-ip"], "x-forward
 
 # a WebSocket handshake gets through: the upgrade is passed on, and the app answers 101
 ws=$(curl -s -i --max-time 5 -H "Host: example.com" -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" localhost:8080/ || true)
-echo "$ws" | head -3
-echo "$ws" | grep -q "^HTTP/1.1 101"
+head -3 <<<"$ws"
+grep -q "^HTTP/1.1 101" <<<"$ws"
 ```
 
 ## Going to production

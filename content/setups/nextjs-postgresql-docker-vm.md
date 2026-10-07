@@ -231,12 +231,12 @@ docker compose logs web | tail -5                   # "Ready" from the standalon
 ```sh check hidden
 for i in $(seq 30); do curl -sf localhost:3000 > /dev/null && break; sleep 2; done
 page=$(curl -sf localhost:3000)
-echo "$page" | grep -o "<form" | head -1
-echo "$page" | grep -q "<form"
+grep -o -m1 "<form" <<<"$page"
+grep -q "<form" <<<"$page"
 # the page is rendered per request, from the database: a row inserted behind the app's back shows up at once
 docker compose exec -T db psql -U app -d app -c "INSERT INTO notes (body) VALUES ('from-psql')"
 page=$(curl -sf localhost:3000)
-echo "$page" | grep -q "from-psql"
+grep -q "from-psql" <<<"$page"
 ```
 
 Add a note through the form in a browser, then confirm it reached the database rather than a
@@ -278,7 +278,7 @@ docker compose build --no-cache web
 docker compose start db
 docker compose up -d --wait
 page=$(curl -sf localhost:3000)
-echo "$page" | grep -q "<form"
+grep -q "<form" <<<"$page"
 ```
 
 ## Going to production
