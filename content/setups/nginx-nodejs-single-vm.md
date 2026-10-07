@@ -180,7 +180,12 @@ server.listen(3000, "127.0.0.1");
 docker run -d --name proxy -p 8080:80 -v "$PWD/conf.d/app.conf":/etc/nginx/conf.d/app.conf:ro nginx:1.24
 # Node on 127.0.0.1:3000 inside Nginx's own network namespace, which is what the guide's proxy_pass reaches
 docker run -d --name backend --network container:proxy -v "$PWD/backend.js":/backend.js:ro node:22-alpine node /backend.js
-for i in $(seq 30); do curl -s -o /dev/null -H "Host: example.com" localhost:8080/ && break; sleep 1; done
+# wait for the app's answer, not just for Nginx's: before Node is listening, Nginx answers 502 — still a response
+for i in $(seq 60); do
+  curl -sf -H "Host: example.com" localhost:8080/ 2>/dev/null | jq -e '.headers' > /dev/null 2>&1 && break
+  sleep 1
+done
+curl -sf -H "Host: example.com" localhost:8080/ | jq -e '.headers' > /dev/null
 ```
 
 ## Verify
