@@ -1,0 +1,27 @@
+name: es-probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: What do the Korean analyzers emit?
+        run: |
+          mkdir work && cd work
+          cat > Dockerfile <<'DF'
+          FROM docker.elastic.co/elasticsearch/elasticsearch:9.5.5
+          RUN elasticsearch-plugin install --batch analysis-nori
+          DF
+          cat > compose.yaml <<'YML'
+          services:
+            es:
+              build: .
+              environment:
+                discovery.type: single-node
+                ELASTIC_PASSWORD: changeme-probe
+                ES_JAVA_OPTS: -Xms512m -Xmx512m
+              ports: ["9200:9200"]
+          YML
+          docker compose up -d --build
+          cp ../probe.sh . && bash probe.sh
