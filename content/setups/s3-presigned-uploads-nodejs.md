@@ -4,6 +4,8 @@ name: Direct browser uploads to S3 with presigned POST
 tagline: The API signs a short, size-limited upload; the browser sends the file straight to S3
 environment: managed
 difficulty: 3
+verification: static
+validates: signed upload policy
 tags: [AWS, Object Storage, Uploads, Security]
 components:
   - { ref: s3, version: "Amazon S3", role: "Receives the file directly, enforces the signed policy, keeps the bucket private" }
@@ -63,7 +65,7 @@ Upload | The browser posts the returned fields and the file to the returned URL
 **1. Bucket and CORS** — new buckets block public access by default; keep it that way.
 `cors.json`:
 
-```json
+```json file=cors.json
 {
   "CORSRules": [
     {
@@ -85,7 +87,7 @@ aws s3api put-bucket-cors --bucket example-uploads --cors-configuration file://c
 **2. The API's permissions** — the role the Node.js service runs as can only write under
 `uploads/`:
 
-```json
+```json file=iam-policy.json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -100,7 +102,7 @@ aws s3api put-bucket-cors --bucket example-uploads --cors-configuration file://c
 
 **3. The signing endpoint** — the server picks the key; the policy caps size and type.
 
-```js
+```js file=signer.js
 import crypto from "node:crypto";
 import { S3Client } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
@@ -129,7 +131,7 @@ export async function signUpload(userId, contentType) {
 
 **4. In the browser** — every returned field goes into the form, and the file goes last.
 
-```js
+```js file=upload.js
 async function upload(file) {
   const res = await fetch("/api/uploads", {
     method: "POST",
@@ -152,6 +154,61 @@ async function upload(file) {
 npm install @aws-sdk/client-s3 @aws-sdk/s3-presigned-post
 ```
 
+```json file=package.json hidden
+{ "type": "module", "dependencies": { "@aws-sdk/client-s3": "^3", "@aws-sdk/s3-presigned-post": "^3" } }
+```
+
+```sh run hidden
+npm install --no-audit --no-fund
+```
+
+```js file=policy-check.mjs hidden
+// Calls the guide's own signing code — offline, with placeholder credentials — and reads back what it signed.
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { signUpload } from "./signer.js";
+
+const decode = (fields) => JSON.parse(Buffer.from(fields.Policy, "base64").toString("utf8"));
+const png = await signUpload("user-7", "image/png");
+const policy = decode(png.fields);
+const has = (cond) => policy.conditions.some((c) => JSON.stringify(c) === JSON.stringify(cond));
+
+// What the guide says it signs: this bucket, a server-chosen key, 1 B to 10 MB, only the signed type
+assert(has({ bucket: "example-uploads" }), "bucket is pinned");
+assert(has({ key: png.key }), "the key is the one the server chose");
+assert(has(["content-length-range", 1, 10 * 1024 * 1024]), "size is capped at 10 MB");
+assert(has(["eq", "$Content-Type", "image/png"]), "the content type is the signed one");
+assert.match(png.key, /^uploads\/user-7\/[0-9a-f-]{36}$/, "the key sits under the user and cannot be chosen by the client");
+assert.notEqual(png.key, (await signUpload("user-7", "image/png")).key, "every upload gets a new key");
+
+// Five minutes, as the guide says
+const lifetime = (Date.parse(policy.expiration) - Date.now()) / 1000;
+assert(lifetime > 240 && lifetime <= 300, `expires in ${Math.round(lifetime)}s`);
+
+// The form the browser must submit is complete, and the signature is there to be checked
+for (const f of ["Policy", "X-Amz-Signature", "X-Amz-Credential", "X-Amz-Algorithm", "Content-Type", "key"]) assert(png.fields[f], `field ${f}`);
+assert.match(png.url, /example-uploads/, "posts to the bucket");
+
+// Anything else is refused before it is signed
+await assert.rejects(() => signUpload("user-7", "text/html"), /unsupported type/);
+await assert.rejects(() => signUpload("user-7", "application/x-sh"), /unsupported type/);
+
+// The IAM policy lets the API write exactly the prefix the signer uses, and nothing else
+const iam = JSON.parse(fs.readFileSync("iam-policy.json", "utf8"));
+const [stmt] = iam.Statement;
+assert.equal(iam.Statement.length, 1);
+assert.equal(stmt.Effect, "Allow");
+assert.equal(stmt.Action, "s3:PutObject");
+assert(png.key.startsWith(stmt.Resource.replace("arn:aws:s3:::example-uploads/", "").replace("*", "")), "the signer's keys fall under the granted prefix");
+
+// CORS lets the browser's POST through from the site's origin only
+const [rule] = JSON.parse(fs.readFileSync("cors.json", "utf8")).CORSRules;
+assert.deepEqual(rule.AllowedMethods, ["POST"]);
+assert(!rule.AllowedOrigins.includes("*"), "no wildcard origin");
+
+console.log("signed policy ok:", JSON.stringify(policy.conditions));
+```
+
 ## Verify
 
 An upload inside the policy succeeds, and the object is private:
@@ -159,6 +216,17 @@ An upload inside the policy succeeds, and the object is private:
 ```sh
 aws s3api head-object --bucket example-uploads --key uploads/<user>/<uuid>   # ContentType image/png
 curl -s -o /dev/null -w "%{http_code}\n" https://example-uploads.s3.eu-west-1.amazonaws.com/uploads/<user>/<uuid>   # 403
+```
+
+```sh check hidden
+export AWS_ACCESS_KEY_ID=placeholder AWS_SECRET_ACCESS_KEY=placeholder AWS_REGION=eu-west-1
+node policy-check.mjs
+# the browser snippet is syntactically sound, and does what the guide says: every field, then the file last
+node --check upload.js
+grep -q 'form.append("file", file)' upload.js
+file_line=$(grep -n 'form.append("file"' upload.js | cut -d: -f1)
+fields_line=$(grep -n 'form.append(name, value)' upload.js | cut -d: -f1)
+[ "$fields_line" -lt "$file_line" ]
 ```
 
 Uploads outside the policy are refused by S3 itself, before anything is stored:
