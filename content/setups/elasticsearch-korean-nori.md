@@ -1,7 +1,7 @@
 ---
 id: elasticsearch-korean-nori
 name: Korean full-text search with Elasticsearch and nori
-tagline: One Elasticsearch node with the nori analyzer, tuned so Korean queries find what they should
+tagline: One Elasticsearch node with nori, tuned so Korean queries find what they should
 environment: local
 difficulty: 3
 tags: [Search, Korean, Elasticsearch, Docker]
