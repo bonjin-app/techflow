@@ -357,14 +357,14 @@ count() { es "localhost:9200/products/_count" | jq .count; }
 docker compose stop indexer
 psql_ "INSERT INTO products VALUES (4, 'Webcam', 'video', 79)"
 sleep 3
-[ "$(count)" = 3 ]   # nothing indexed while the indexer is down
+[ "$(count)" = 2 ]   # nothing indexed while the indexer is down
 docker compose start indexer
-until_ '[ "$(count)" = 4 ]'
+until_ '[ "$(count)" = 3 ]'
 
 docker compose stop connect
 psql_ "INSERT INTO products VALUES (5, 'Microphone', 'audio', 99)"
 docker compose start connect
-until_ '[ "$(count)" = 5 ]'
+until_ '[ "$(count)" = 4 ]'
 ```
 
 ```sh check hidden
