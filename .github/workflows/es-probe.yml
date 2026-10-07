@@ -1,5 +1,7 @@
 name: es-probe
-on: workflow_dispatch
+on:
+  pull_request:
+    paths: [".github/workflows/es-probe.yml", "probe.sh"]
 jobs:
   probe:
     runs-on: ubuntu-latest
