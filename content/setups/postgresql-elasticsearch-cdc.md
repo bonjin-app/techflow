@@ -16,7 +16,7 @@ related:
   - { to: delivery-semantics, rel: RELATED_TO }
   - { to: elasticsearch-korean-nori, rel: RELATED_TO }
   - { to: indexing, rel: RELATED_TO }
-meta: { lastReviewed: 2026-10-07, confidence: medium }
+meta: { lastReviewed: 2026-10-07, confidence: high }
 ---
 
 ## TL;DR
