@@ -1,6 +1,11 @@
 set -e
 curl_es() { curl -sk -u elastic:changeme-probe "$@"; }
-for i in $(seq 90); do curl_es https://localhost:9200 >/dev/null 2>&1 && break; sleep 2; done
+# answering GET / is not being ready: the security index can still be unavailable, and every authenticated request 503s
+for i in $(seq 90); do
+  curl_es -f "https://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s" 2>/dev/null | jq -e '.status == "green" or .status == "yellow"' >/dev/null 2>&1 && break
+  sleep 2
+done
+curl_es "https://localhost:9200/_cluster/health" | jq -c '{status, unassigned_shards}'
 analyze() { echo "--- $1 | $2"; curl_es -H 'content-type: application/json' "https://localhost:9200/probe/_analyze" -d "{\"analyzer\":\"$1\",\"text\":\"$2\"}" | jq -c 'if .error then .error.reason else [.tokens[].token] end'; }
 curl_es -X PUT -H 'content-type: application/json' https://localhost:9200/probe -d '{
  "settings":{"analysis":{
