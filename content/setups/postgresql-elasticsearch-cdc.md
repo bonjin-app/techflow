@@ -374,7 +374,7 @@ sql() { docker compose exec -T postgres psql -At -U postgres -d shop -c "$1"; }
 
 # both sides hold the same ids, and the same prices
 db_ids=$(sql "SELECT id FROM products ORDER BY id" | tr '\n' ' ')
-es_ids=$(es "localhost:9200/products/_search?size=100&sort=_id" | jq -r '[.hits.hits[]._id | tonumber] | sort | map(tostring) | join(" ")')
+es_ids=$(es "localhost:9200/products/_search?size=100" | jq -r '[.hits.hits[]._id | tonumber] | sort | map(tostring) | join(" ")')
 [ "$db_ids" = "$es_ids " ]
 db_prices=$(sql "SELECT id || ':' || price FROM products ORDER BY id" | tr '\n' ' ')
 es_prices=$(es "localhost:9200/products/_search?size=100" | jq -r '[.hits.hits[] | "\(._id | tonumber):\(._source.price)"] | sort_by(split(":")[0] | tonumber) | join(" ")')
@@ -394,8 +394,8 @@ the rows:
 
 ```sh
 docker compose exec -T postgres psql -At -U postgres -d shop -c "SELECT id, price FROM products ORDER BY id"
-curl -s -u "elastic:$ELASTIC_PASSWORD" "localhost:9200/products/_search?size=100&sort=_id" \
-  | jq -r '.hits.hits[] | "\(._id)|\(._source.price)"'
+curl -s -u "elastic:$ELASTIC_PASSWORD" "localhost:9200/products/_search?size=100" \
+  | jq -r '[.hits.hits[] | {id: (._id | tonumber), price: ._source.price}] | sort_by(.id)[] | "\(.id)|\(.price)"'
 ```
 
 ## Going to production
