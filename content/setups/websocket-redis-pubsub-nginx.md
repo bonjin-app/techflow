@@ -17,7 +17,7 @@ related:
   - { to: chat-system, rel: RELATED_TO }
   - { to: nginx-nodejs-single-vm, rel: RELATED_TO }
   - { to: websocket-vs-sse, rel: RELATED_TO }
-meta: { lastReviewed: 2026-10-07, confidence: medium }
+meta: { lastReviewed: 2026-10-07, confidence: high }
 ---
 
 ## TL;DR
