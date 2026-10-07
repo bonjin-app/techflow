@@ -198,8 +198,8 @@ curl -s localhost:3000/products/42   # {"source":"cache", ...}
 ```
 
 ```sh check hidden
-out=$(curl -s localhost:3000/products/42); echo "$out"; echo "$out" | grep -q '"source":"database"'
-out=$(curl -s localhost:3000/products/42); echo "$out"; echo "$out" | grep -q '"source":"cache"'
+out=$(curl -s localhost:3000/products/42); echo "$out"; grep -q '"source":"database"' <<<"$out"
+out=$(curl -s localhost:3000/products/42); echo "$out"; grep -q '"source":"cache"' <<<"$out"
 ```
 
 Redis counts its own hits and misses, which is the number to watch once real traffic arrives:
@@ -213,8 +213,8 @@ docker compose exec redis redis-cli info stats | grep keyspace
 ```sh check hidden
 stats=$(docker compose exec -T redis redis-cli info stats | tr -d '\r')
 echo "$stats" | grep keyspace
-echo "$stats" | grep -qx 'keyspace_hits:1'
-echo "$stats" | grep -qx 'keyspace_misses:1'
+grep -qx 'keyspace_hits:1' <<<"$stats"
+grep -qx 'keyspace_misses:1' <<<"$stats"
 ```
 
 Check that a write invalidates, rather than waiting out the TTL:
@@ -225,11 +225,11 @@ docker compose exec redis redis-cli ttl product:42               # close to 60: 
 ```
 
 ```sh check hidden
-out=$(curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup"); echo "$out"; echo "$out" | grep -q '"source":"database".*"Lungo cup"'
+out=$(curl -s -X POST "localhost:3000/products/42?name=Lungo%20cup"); echo "$out"; grep -q '"source":"database".*"Lungo cup"' <<<"$out"
 ttl=$(docker compose exec -T redis redis-cli ttl product:42 | tr -d '\r')
 echo "ttl=$ttl"; [ "$ttl" -ge 50 ] && [ "$ttl" -le 60 ]
 out=$(curl -s localhost:3000/products/42)
-echo "$out" | grep -q '"source":"cache".*"Lungo cup"'
+grep -q '"source":"cache".*"Lungo cup"' <<<"$out"
 ```
 
 ## Going to production

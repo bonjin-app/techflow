@@ -184,9 +184,11 @@ python search.py "how do I get my money back"
 ```sh check hidden
 out=$(.venv/bin/python search.py "how do I get my money back")
 echo "$out"
-echo "$out" | head -1 | grep -q "Refunds are issued"
-echo "$out" | sed -n 2p | grep -q "Orders can be cancelled"
-! echo "$out" | grep -q "public holidays"
+first=$(sed -n 1p <<<"$out")
+second=$(sed -n 2p <<<"$out")
+grep -q "Refunds are issued" <<<"$first"
+grep -q "Orders can be cancelled" <<<"$second"
+! grep -q "public holidays" <<<"$out"
 ```
 
 The refund policy should rank first, with the clearly higher similarity, and the
@@ -205,7 +207,7 @@ docker compose exec db psql -U app -d search -c "EXPLAIN SELECT id FROM document
 v=$(docker compose exec -T db psql -U app -d search -tAc "SELECT extversion FROM pg_extension WHERE extname = 'vector'")
 echo "pgvector $v"; case "$v" in 0.8.*) ;; *) exit 1 ;; esac
 indexes=$(docker compose exec -T db psql -U app -d search -tAc "SELECT indexdef FROM pg_indexes WHERE tablename = 'documents'")
-echo "$indexes" | grep -q "USING hnsw (embedding vector_cosine_ops)"
+grep -q "USING hnsw (embedding vector_cosine_ops)" <<<"$indexes"
 ```
 
 With three rows the plan is a sequential scan, which is correct; insert a few thousand and

@@ -205,7 +205,7 @@ the check that `X-Forwarded-For` is being read. In Express that is `app.set("tru
 ```sh check hidden
 nginx_version=$(docker exec proxy nginx -v 2>&1)
 echo "$nginx_version"
-echo "$nginx_version" | grep -q "nginx/1\.24\."
+grep -q "nginx/1\.24\." <<<"$nginx_version"
 docker exec proxy nginx -t
 
 # an ordinary request: the app sees the original host and the client address, and is told it came over http
@@ -220,8 +220,8 @@ echo "$plain" | jq -c '.headers | {host, "x-real-ip": .["x-real-ip"], "x-forward
 
 # a WebSocket handshake gets through: the upgrade is passed on, and the app answers 101
 ws=$(curl -s -i --max-time 5 -H "Host: example.com" -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" localhost:8080/ || true)
-echo "$ws" | head -3
-echo "$ws" | grep -q "^HTTP/1.1 101"
+head -3 <<<"$ws"
+grep -q "^HTTP/1.1 101" <<<"$ws"
 ```
 
 ## Going to production

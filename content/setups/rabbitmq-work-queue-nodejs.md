@@ -194,12 +194,12 @@ docker compose exec rabbitmq rabbitmqctl list_queues name type messages
 # five attempts with 1–4 s between them: allow a minute for the job to reach the dead-letter queue
 for i in $(seq 30); do
   q=$(docker compose exec -T rabbitmq rabbitmqctl -q list_queues name type messages | tr -s ' \t' ' ')
-  echo "$q" | grep -qx 'jobs.dead quorum 1' && echo "$q" | grep -qx 'jobs quorum 0' && break
+  grep -qx 'jobs.dead quorum 1' <<<"$q" && grep -qx 'jobs quorum 0' <<<"$q" && break
   sleep 2
 done
 echo "$q"
-echo "$q" | grep -qx 'jobs.dead quorum 1'
-echo "$q" | grep -qx 'jobs quorum 0'
+grep -qx 'jobs.dead quorum 1' <<<"$q"
+grep -qx 'jobs quorum 0' <<<"$q"
 ```
 
 The worker's log shows the attempts spreading out — about one, two, three and four seconds

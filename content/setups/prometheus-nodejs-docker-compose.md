@@ -192,8 +192,8 @@ curl -s localhost:3000/metrics | grep -E "^http_request_duration_seconds_count|^
 curl -s localhost:3000/ > /dev/null
 out=$(curl -s localhost:3000/metrics)
 echo "$out" | grep -E "^http_request_duration_seconds_count|^nodejs_eventloop_lag_seconds "
-echo "$out" | grep -q '^http_request_duration_seconds_count{'
-echo "$out" | grep -q '^nodejs_eventloop_lag_seconds '
+grep -q '^http_request_duration_seconds_count{' <<<"$out"
+grep -q '^nodejs_eventloop_lag_seconds ' <<<"$out"
 ```
 
 Prometheus should show the target as up, and the configuration should validate:
