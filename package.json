@@ -24,11 +24,11 @@
   },
   "dependencies": {
     "d3-force": "^3.0.0",
-    "geist": "^1.7.2",
+    "geist": "^1.8.1",
     "gray-matter": "^4.0.3",
-    "next": "16.3.8",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },
