@@ -23,12 +23,12 @@
     "gen": "pnpm gen:index && pnpm gen:api"
   },
   "dependencies": {
-    "d3-force": "^3.0.0",
-    "geist": "^1.7.2",
+    "d3-force": "^3.0.1",
+    "geist": "^1.9.0",
     "gray-matter": "^4.0.3",
-    "next": "16.3.8",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "next": "16.4.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },
